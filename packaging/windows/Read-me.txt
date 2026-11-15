@@ -1,0 +1,43 @@
+LaborLens PH 0.1.0 - Desktop foundation
+
+Open LaborLensPH.exe, or use the installed desktop/Start menu shortcut.
+No command prompt, browser, Python, AI model, or API key is required.
+
+Available now:
+- Navy-and-cream desktop interface written in Rust.
+- Choose PDF/DOCX files or drag them into the app.
+- Keep a local list of document references, with search and file details.
+- Save workspace preferences locally.
+- Remove list entries without deleting the original files.
+- Separate private workspace storage and public legal-source catalog.
+
+Not implemented yet:
+- Document text extraction and OCR.
+- Verified legal sources and legal checking rules.
+- Compliance findings or reports.
+- Folder monitoring and daily source downloads.
+
+Choosing a file registers its name, path, size, and modification time.
+This version does not read its document text, alter it, copy it into the
+workspace, or upload it. Original files must remain accessible at their
+selected locations. A file that was moved should be added again.
+
+The Samples folder contains only synthetic examples. It is provided for
+trying the interface, not as a legal or employment-contract template.
+
+Local data on Windows:
+%LOCALAPPDATA%\LaborLens PH\private\workspace.sqlite3
+%LOCALAPPDATA%\LaborLens PH\library\catalog.sqlite3
+
+Uninstalling the application preserves the workspace data and originals.
+
+The application and current updater status stub contain no HTTP client.
+Network permissions for a future downloader must be implemented and tested
+before automatic legal-source synchronization is enabled.
+
+This foundation is unsigned. See the project verification notes for the
+Windows build, installer checks, and interactive-test scope:
+https://github.com/tatselkrik/laborlens-ph/blob/main/docs/VERIFICATION.md
+
+Source application: MIT license. Bundled fonts: SIL Open Font License.
+Additional dependency notices are in THIRD_PARTY_NOTICES.txt.

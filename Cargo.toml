@@ -1,0 +1,40 @@
+[workspace]
+members = ["crates/core", "crates/library", "crates/desktop", "crates/updater"]
+default-members = ["crates/desktop"]
+exclude = ["vendor/egui-file-dialog"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+chrono = { version = "=0.4.45", default-features = false, features = ["clock", "std"] }
+directories = "=6.0.0"
+eframe = { version = "=0.37.0", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "glow", "x11", "wayland"] }
+egui-file-dialog = { version = "=0.16.0", default-features = false, features = ["default_fonts"] }
+rusqlite = { version = "=0.43.0", features = ["bundled"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.27"
+thiserror = "2.0"
+
+[patch.crates-io]
+egui-file-dialog = { path = "vendor/egui-file-dialog" }
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[profile.release]
+opt-level = 2
+lto = "thin"
+strip = true
+codegen-units = 8

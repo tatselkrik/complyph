@@ -1,0 +1,1074 @@
+use crate::theme::*;
+use crate::widgets::{self, Icon};
+use chrono::{DateTime, Local};
+use eframe::egui::{
+    self, Align, Align2, FontId, Frame, Layout, Margin, Rect, RichText, ScrollArea, Sense, Stroke,
+    StrokeKind, Ui, UiBuilder, pos2, vec2,
+};
+use egui_file_dialog::{FileDialog, Filter};
+use laborlens_core::{Document, Preferences, Workspace, WorkspaceError, WorkspacePaths};
+use laborlens_library::{LibraryCatalog, LibrarySummary};
+use std::path::PathBuf;
+use std::sync::mpsc::{self, Receiver, Sender};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Page {
+    Review,
+    Documents,
+    Library,
+    Reports,
+    Settings,
+}
+
+impl Page {
+    const ALL: [Self; 5] = [
+        Self::Review,
+        Self::Documents,
+        Self::Library,
+        Self::Reports,
+        Self::Settings,
+    ];
+    fn key(self) -> &'static str {
+        match self {
+            Self::Review => "review",
+            Self::Documents => "documents",
+            Self::Library => "library",
+            Self::Reports => "reports",
+            Self::Settings => "settings",
+        }
+    }
+    fn label(self) -> &'static str {
+        match self {
+            Self::Review => "Review",
+            Self::Documents => "Documents",
+            Self::Library => "Legal library",
+            Self::Reports => "Reports",
+            Self::Settings => "Settings",
+        }
+    }
+    fn icon(self) -> Icon {
+        match self {
+            Self::Review => Icon::Review,
+            Self::Documents => Icon::Document,
+            Self::Library => Icon::Library,
+            Self::Reports => Icon::Reports,
+            Self::Settings => Icon::Settings,
+        }
+    }
+    fn parse(key: &str) -> Self {
+        Self::ALL
+            .into_iter()
+            .find(|p| p.key() == key)
+            .unwrap_or(Self::Review)
+    }
+}
+
+enum Message {
+    Imported { ids: Vec<i64>, errors: Vec<String> },
+    Failed(String),
+}
+
+struct Notice {
+    text: String,
+    error: bool,
+}
+
+pub struct LaborLensApp {
+    paths: Option<WorkspacePaths>,
+    workspace: Option<Workspace>,
+    catalog: Option<LibraryCatalog>,
+    library: LibrarySummary,
+    library_error: Option<String>,
+    startup_error: Option<String>,
+    preferences: Preferences,
+    page: Page,
+    documents: Vec<Document>,
+    selected: Option<i64>,
+    search: String,
+    sender: Sender<Message>,
+    receiver: Receiver<Message>,
+    choosing: bool,
+    notice: Option<Notice>,
+    pending_remove: Option<i64>,
+    file_dialog: FileDialog,
+}
+
+impl LaborLensApp {
+    pub fn new(paths: Result<WorkspacePaths, WorkspaceError>) -> Self {
+        let (sender, receiver) = mpsc::channel();
+        let mut app = Self {
+            paths: None,
+            workspace: None,
+            catalog: None,
+            library: LibrarySummary::default(),
+            library_error: None,
+            startup_error: None,
+            preferences: Preferences::default(),
+            page: Page::Review,
+            documents: Vec::new(),
+            selected: None,
+            search: String::new(),
+            sender,
+            receiver,
+            choosing: false,
+            notice: None,
+            pending_remove: None,
+            file_dialog: FileDialog::new()
+                .title("Choose documents")
+                .add_file_filter(
+                    "PDF and Word documents",
+                    Filter::new(|path: &std::path::Path| {
+                        laborlens_core::DocumentKind::from_path(path).is_some()
+                    }),
+                )
+                .default_file_filter("PDF and Word documents")
+                .default_size([760.0, 500.0])
+                .show_new_folder_button(false)
+                .show_pinned_folders(false)
+                .show_devices(false)
+                .show_removable_devices(false)
+                .show_hidden_option(false)
+                .show_system_files_option(false)
+                .show_all_files_filter(false)
+                .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                .as_modal(true),
+        };
+        match paths.and_then(|paths| Workspace::open(&paths).map(|workspace| (paths, workspace))) {
+            Ok((paths, workspace)) => {
+                match workspace.preferences() {
+                    Ok(preferences) => app.preferences = preferences,
+                    Err(error) => app.startup_error = Some(error.to_string()),
+                }
+                match workspace.documents() {
+                    Ok(documents) => app.documents = documents,
+                    Err(error) => app.startup_error = Some(error.to_string()),
+                }
+                match LibraryCatalog::open(&paths.library_dir) {
+                    Ok(catalog) => {
+                        match catalog.summary() {
+                            Ok(summary) => app.library = summary,
+                            Err(error) => app.library_error = Some(error.to_string()),
+                        }
+                        app.catalog = Some(catalog);
+                    }
+                    Err(error) => app.library_error = Some(error.to_string()),
+                }
+                app.paths = Some(paths);
+                app.workspace = Some(workspace);
+                if app.preferences.remember_page {
+                    app.page = Page::parse(&app.preferences.last_page);
+                }
+            }
+            Err(error) => app.startup_error = Some(error.to_string()),
+        }
+        app
+    }
+
+    fn navigate(&mut self, page: Page) {
+        self.page = page;
+        self.preferences.last_page = page.key().to_owned();
+        self.save_preferences();
+    }
+
+    fn save_preferences(&mut self) {
+        if self.startup_error.is_some() {
+            return;
+        }
+        if let Some(workspace) = &self.workspace
+            && let Err(error) = workspace.save_preferences(&self.preferences)
+        {
+            self.notice = Some(Notice {
+                text: error.to_string(),
+                error: true,
+            });
+        }
+    }
+
+    fn choose_documents(&mut self, ctx: &egui::Context) {
+        if self.choosing || self.workspace.is_none() || self.startup_error.is_some() {
+            return;
+        }
+        self.file_dialog.pick_multiple();
+        ctx.request_repaint();
+    }
+
+    fn accept_files(&mut self, files: Vec<PathBuf>, ctx: &egui::Context) {
+        if files.is_empty() || self.choosing || self.startup_error.is_some() {
+            return;
+        }
+        let Some(paths) = self.paths.clone() else {
+            return;
+        };
+        self.choosing = true;
+        let sender = self.sender.clone();
+        let ctx = ctx.clone();
+        std::thread::spawn(move || {
+            import_files(paths, files, &sender);
+            ctx.request_repaint();
+        });
+    }
+
+    fn messages(&mut self) {
+        while let Ok(message) = self.receiver.try_recv() {
+            self.choosing = false;
+            match message {
+                Message::Imported { ids, errors } => {
+                    if let Some(workspace) = &self.workspace {
+                        match workspace.documents() {
+                            Ok(documents) => self.documents = documents,
+                            Err(error) => {
+                                self.notice = Some(Notice {
+                                    text: error.to_string(),
+                                    error: true,
+                                })
+                            }
+                        }
+                    }
+                    if let Some(id) = ids.last() {
+                        self.selected = Some(*id);
+                        self.navigate(Page::Review);
+                    }
+                    let count = ids.len();
+                    let text = if errors.is_empty() {
+                        format!(
+                            "{} document{} saved to your local list. Original files are unchanged.",
+                            count,
+                            if count == 1 { "" } else { "s" }
+                        )
+                    } else {
+                        format!(
+                            "{} document{} added. {}",
+                            count,
+                            if count == 1 { "" } else { "s" },
+                            errors.join(" ")
+                        )
+                    };
+                    self.notice = Some(Notice {
+                        text,
+                        error: !errors.is_empty(),
+                    });
+                }
+                Message::Failed(text) => self.notice = Some(Notice { text, error: true }),
+            }
+        }
+    }
+
+    fn sidebar(&mut self, ui: &mut Ui, rect: Rect) {
+        ui.painter().rect_filled(rect, 0, NAVY_DEEP);
+        let brand = Rect::from_min_size(rect.min + vec2(22.0, 28.0), vec2(38.0, 38.0));
+        widgets::logo(ui.painter(), brand, CREAM);
+        ui.painter().text(
+            pos2(rect.left() + 73.0, rect.top() + 36.0),
+            Align2::LEFT_CENTER,
+            "LaborLens",
+            heading(24.0),
+            IVORY,
+        );
+        ui.painter().text(
+            pos2(rect.left() + 74.0, rect.top() + 59.0),
+            Align2::LEFT_CENTER,
+            "P H I L I P P I N E S",
+            FontId::proportional(9.5),
+            NAV_MUTED,
+        );
+
+        let nav = Rect::from_min_max(
+            rect.min + vec2(14.0, 128.0),
+            pos2(rect.right() - 14.0, rect.bottom() - 200.0),
+        );
+        ui.scope_builder(UiBuilder::new().max_rect(nav), |ui| {
+            ui.add_space(2.0);
+            ui.label(
+                RichText::new("    WORKSPACE")
+                    .font(heading(10.5))
+                    .color(NAV_MUTED),
+            );
+            ui.add_space(8.0);
+            for page in Page::ALL {
+                let count = if page == Page::Documents {
+                    Some(self.documents.len())
+                } else {
+                    None
+                };
+                if widgets::navigation(ui, page.label(), page.icon(), self.page == page, count)
+                    .clicked()
+                {
+                    self.navigate(page);
+                }
+                ui.add_space(3.0);
+            }
+        });
+        let privacy_rect = Rect::from_min_max(
+            pos2(rect.left() + 18.0, rect.bottom() - 172.0),
+            pos2(rect.right() - 18.0, rect.bottom() - 62.0),
+        );
+        ui.painter().rect_filled(privacy_rect, 10, NAVY);
+        widgets::paint_icon(
+            ui.painter(),
+            Rect::from_min_size(privacy_rect.min + vec2(14.0, 15.0), vec2(20.0, 20.0)),
+            Icon::Lock,
+            CREAM,
+        );
+        ui.painter().text(
+            privacy_rect.min + vec2(14.0, 53.0),
+            Align2::LEFT_CENTER,
+            "Private by design",
+            heading(13.0),
+            CREAM,
+        );
+        ui.painter().text(
+            privacy_rect.min + vec2(14.0, 76.0),
+            Align2::LEFT_CENTER,
+            "Your documents stay here.",
+            FontId::proportional(11.5),
+            NAV_MUTED,
+        );
+        ui.painter().text(
+            pos2(rect.left() + 25.0, rect.bottom() - 30.0),
+            Align2::LEFT_CENTER,
+            "FOUNDATION  /  0.1.0",
+            FontId::proportional(10.0),
+            NAV_MUTED,
+        );
+    }
+
+    fn topbar(&self, ui: &mut Ui, rect: Rect) {
+        ui.painter().rect_filled(rect, 0, IVORY);
+        ui.painter().line_segment(
+            [rect.left_bottom(), rect.right_bottom()],
+            Stroke::new(1.0, BORDER),
+        );
+        ui.painter().text(
+            pos2(rect.left() + 32.0, rect.center().y),
+            Align2::LEFT_CENTER,
+            format!("Workspace   /   {}", self.page.label()),
+            FontId::proportional(13.0),
+            MUTED,
+        );
+        let pill_rect = Rect::from_min_size(
+            pos2(rect.right() - 181.0, rect.center().y - 15.0),
+            vec2(150.0, 30.0),
+        );
+        ui.scope_builder(UiBuilder::new().max_rect(pill_rect), |ui| {
+            widgets::pill(ui, "Local workspace", GREEN, GREEN_TINT, true);
+        });
+    }
+
+    fn page_header(&self, ui: &mut Ui, eyebrow: &str, title: &str, subtitle: &str) {
+        widgets::eyebrow(ui, eyebrow);
+        ui.add_space(2.0);
+        widgets::title(ui, title);
+        ui.add_space(1.0);
+        widgets::muted(ui, subtitle);
+        ui.add_space(20.0);
+    }
+
+    fn stats(&self, ui: &mut Ui) {
+        ui.columns(3, |columns| {
+            for (index, label, value, description) in [
+                (
+                    0,
+                    "DOCUMENTS",
+                    self.documents.len().to_string(),
+                    "In your local workspace",
+                ),
+                (
+                    1,
+                    "LEGAL SOURCES",
+                    self.library.source_count.to_string(),
+                    "Library not yet configured",
+                ),
+                (
+                    2,
+                    "DOCUMENT STORAGE",
+                    "On this device".to_owned(),
+                    "Original files stay in place",
+                ),
+            ] {
+                widgets::card()
+                    .inner_margin(Margin::same(18))
+                    .show(&mut columns[index], |ui| {
+                        ui.set_min_width(ui.available_width());
+                        widgets::eyebrow(ui, label);
+                        ui.add_space(2.0);
+                        ui.label(RichText::new(value).font(heading(if index == 2 {
+                            23.0
+                        } else {
+                            29.0
+                        })));
+                        ui.label(RichText::new(description).size(12.0).color(MUTED));
+                    });
+            }
+        });
+    }
+
+    fn chooser_card(&mut self, ui: &mut Ui) {
+        let hovering = ui.ctx().input(|i| !i.raw.hovered_files.is_empty());
+        let stroke = if hovering {
+            Stroke::new(2.0, NAVY)
+        } else {
+            Stroke::new(1.0, BORDER)
+        };
+        widgets::card().stroke(stroke).show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.set_min_height(252.0);
+            ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                ui.add_space(6.0);
+                let (rect, _) = ui.allocate_exact_size(vec2(60.0, 60.0), Sense::hover());
+                ui.painter().circle_filled(rect.center(), 30.0, CREAM);
+                widgets::paint_icon(ui.painter(), rect.shrink(13.0), Icon::Document, NAVY);
+                ui.add_space(10.0);
+                ui.label(RichText::new("Bring a document into focus").font(heading(21.0)));
+                ui.label(
+                    RichText::new("Choose a file, or drop it into this window.")
+                        .color(MUTED)
+                        .size(14.0),
+                );
+                ui.add_space(8.0);
+                let label = if self.choosing {
+                    "Adding documents..."
+                } else {
+                    "Choose document"
+                };
+                if widgets::primary(ui, label, !self.choosing).clicked() {
+                    self.choose_documents(ui.ctx());
+                }
+                ui.add_space(4.0);
+                ui.label(
+                    RichText::new("PDF  ·  DOCX")
+                        .font(heading(11.0))
+                        .color(MUTED),
+                );
+                ui.label(
+                    RichText::new("Originals are kept exactly where they are.")
+                        .size(11.5)
+                        .color(MUTED),
+                );
+            });
+        });
+    }
+
+    fn workflow_card(&self, ui: &mut Ui) {
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.set_min_height(252.0);
+            ui.label(RichText::new("Your review workflow").font(heading(18.0)));
+            ui.add_space(10.0);
+            for (number, title, subtitle, available) in [
+                ("01", "Add your documents", "Available now", true),
+                ("02", "Establish legal sources", "Next milestone", false),
+                (
+                    "03",
+                    "Review with citations",
+                    "Follows source verification",
+                    false,
+                ),
+            ] {
+                ui.horizontal(|ui| {
+                    let (rect, _) = ui.allocate_exact_size(vec2(30.0, 30.0), Sense::hover());
+                    ui.painter()
+                        .rect_filled(rect, 7, if available { NAVY } else { CREAM });
+                    ui.painter().text(
+                        rect.center(),
+                        Align2::CENTER_CENTER,
+                        number,
+                        heading(11.0),
+                        if available { CREAM } else { MUTED },
+                    );
+                    ui.vertical(|ui| {
+                        ui.spacing_mut().item_spacing.y = 3.0;
+                        ui.label(RichText::new(title).font(heading(13.5)));
+                        ui.label(RichText::new(subtitle).size(11.5).color(MUTED));
+                    });
+                });
+                ui.add_space(6.0);
+            }
+            ui.add_space(4.0);
+            widgets::pill(ui, "Legal checking comes next", AMBER, AMBER_TINT, false);
+        });
+    }
+
+    fn review(&mut self, ui: &mut Ui) {
+        self.page_header(
+            ui,
+            "DOCUMENT REVIEW",
+            "Clarity starts with a document.",
+            "A private space for your contracts, policies, and handbooks.",
+        );
+        self.stats(ui);
+        ui.add_space(20.0);
+        let selected = self
+            .selected
+            .and_then(|id| self.documents.iter().find(|d| d.id == id))
+            .cloned();
+        if let Some(document) = selected {
+            self.document_details(ui, &document);
+        } else if ui.available_width() >= 790.0 {
+            let width = ui.available_width();
+            ui.horizontal_top(|ui| {
+                ui.allocate_ui_with_layout(
+                    vec2(width * 0.63 - 8.0, 300.0),
+                    Layout::top_down(Align::Min),
+                    |ui| self.chooser_card(ui),
+                );
+                ui.allocate_ui_with_layout(
+                    vec2(width * 0.37 - 8.0, 300.0),
+                    Layout::top_down(Align::Min),
+                    |ui| self.workflow_card(ui),
+                );
+            });
+        } else {
+            self.chooser_card(ui);
+            ui.add_space(14.0);
+            self.workflow_card(ui);
+        }
+        ui.add_space(20.0);
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Recent documents").font(heading(18.0)));
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui
+                        .link(RichText::new("View all").font(heading(12.5)))
+                        .clicked()
+                    {
+                        self.navigate(Page::Documents);
+                    }
+                });
+            });
+            ui.add_space(10.0);
+            if self.documents.is_empty() {
+                ui.add_space(8.0);
+                ui.horizontal(|ui| {
+                    widgets::icon(ui, Icon::Document, 22.0, MUTED);
+                    widgets::muted(ui, "Your documents will appear here once you add them.");
+                });
+                ui.add_space(8.0);
+            } else {
+                for document in self.documents.iter().take(3).cloned().collect::<Vec<_>>() {
+                    if document_row(ui, &document, self.selected == Some(document.id), false)
+                        .clicked()
+                    {
+                        self.selected = Some(document.id);
+                    }
+                }
+            }
+        });
+    }
+
+    fn document_details(&mut self, ui: &mut Ui, document: &Document) {
+        widgets::card().show(ui,|ui| {
+            ui.set_min_width(ui.available_width());
+            ui.horizontal(|ui| {
+                widgets::icon(ui,Icon::Document,30.0,NAVY);
+                ui.vertical(|ui| {
+                    ui.label(RichText::new(&document.name).font(heading(21.0)));
+                    ui.label(RichText::new("Added to your local workspace").size(12.5).color(MUTED));
+                });
+                ui.with_layout(Layout::right_to_left(Align::Center),|ui| { widgets::pill(ui,"Not reviewed",AMBER,AMBER_TINT,false); });
+            });
+            ui.add_space(18.0);
+            ui.columns(3,|columns| {
+                widgets::metadata(&mut columns[0],"FILE TYPE",document.kind.label());
+                widgets::metadata(&mut columns[1],"SIZE",&format_size(document.bytes));
+                widgets::metadata(&mut columns[2],"ADDED",&format_date(document.added_at));
+            });
+            ui.add_space(14.0);
+            ui.separator();
+            ui.add_space(10.0);
+            ui.label(RichText::new("The file is registered. Text extraction and legal checks come next.").font(heading(15.0)));
+            widgets::muted(ui,"No compliance assessment has been made. This foundation keeps a reference to your original file.");
+            if !document.path.is_file() {
+                ui.label(RichText::new("This file has moved or is no longer available. Add it again from its current location.").color(RED));
+            }
+            if self.preferences.show_full_paths {
+                ui.add_space(8.0);
+                ui.add(egui::Label::new(RichText::new(document.path.display().to_string()).size(12.0).color(MUTED)).wrap().selectable(true));
+            }
+            ui.add_space(12.0);
+            ui.horizontal_wrapped(|ui| {
+                widgets::primary(ui,"Check document",false).on_disabled_hover_text("Available after verified legal sources and checking rules are implemented.");
+                if widgets::secondary(ui,"Choose another").clicked() { self.choose_documents(ui.ctx()); }
+                if ui.button("Remove entry").clicked() { self.pending_remove=Some(document.id); }
+            });
+        });
+    }
+
+    fn documents_page(&mut self, ui: &mut Ui) {
+        self.page_header(
+            ui,
+            "LOCAL FILES",
+            "Your documents",
+            "An organized workspace, with your original files kept in place.",
+        );
+        ui.horizontal(|ui| {
+            widgets::icon(ui, Icon::Search, 18.0, MUTED);
+            let width = (ui.available_width() - 205.0).max(170.0);
+            ui.add(
+                egui::TextEdit::singleline(&mut self.search)
+                    .hint_text("Search by filename...")
+                    .desired_width(width)
+                    .margin(vec2(10.0, 10.0)),
+            );
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if widgets::primary(ui, "Add documents", !self.choosing).clicked() {
+                    self.choose_documents(ui.ctx());
+                }
+            });
+        });
+        ui.add_space(14.0);
+        let query = self.search.to_lowercase();
+        let filtered = self
+            .documents
+            .iter()
+            .filter(|d| d.name.to_lowercase().contains(&query))
+            .cloned()
+            .collect::<Vec<_>>();
+        ui.label(
+            RichText::new(format!(
+                "{} document{}",
+                filtered.len(),
+                if filtered.len() == 1 { "" } else { "s" }
+            ))
+            .size(12.0)
+            .color(MUTED),
+        );
+        ui.add_space(6.0);
+        if self.documents.is_empty() {
+            self.chooser_card(ui);
+            return;
+        }
+        widgets::card()
+            .inner_margin(Margin::same(10))
+            .show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                if filtered.is_empty() {
+                    ui.add_space(20.0);
+                    ui.vertical_centered(|ui| {
+                        ui.label(RichText::new("No matching documents").font(heading(20.0)));
+                        widgets::muted(ui, "Try another filename or clear your search.");
+                        if widgets::secondary(ui, "Clear search").clicked() {
+                            self.search.clear();
+                        }
+                    });
+                    ui.add_space(20.0);
+                }
+                for document in filtered {
+                    if document_row(
+                        ui,
+                        &document,
+                        self.selected == Some(document.id),
+                        self.preferences.show_full_paths,
+                    )
+                    .clicked()
+                    {
+                        self.selected = Some(document.id);
+                        self.navigate(Page::Review);
+                    }
+                }
+            });
+    }
+
+    fn library_page(&mut self, ui: &mut Ui) {
+        self.page_header(
+            ui,
+            "LEGAL REFERENCE",
+            "A library you can trace.",
+            "Official sources, effective dates, and history will live together on this device.",
+        );
+        if let Some(error) = &self.library_error {
+            widgets::card().show(ui, |ui| {
+                ui.colored_label(RED, error);
+            });
+            return;
+        }
+        ui.horizontal(|ui| {
+            widgets::pill(ui, "Not configured", AMBER, AMBER_TINT, true);
+            ui.label(
+                RichText::new(format!(
+                    "{} sources  ·  {} verified",
+                    self.library.source_count, self.library.verified_source_count
+                ))
+                .size(13.0)
+                .color(MUTED),
+            );
+        });
+        ui.add_space(20.0);
+        self.empty_state(ui,Icon::Library,"Start with trusted sources.","The verified legal library is the next milestone. No laws or checking rules have been installed yet.");
+        ui.add_space(14.0);
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(RichText::new("Source updates").font(heading(18.0)));
+            widgets::muted(
+                ui,
+                "Daily checks and manual source addition will use a separate legal-source updater.",
+            );
+            ui.add_space(7.0);
+            ui.horizontal(|ui| {
+                widgets::primary(ui, "Add source", false).on_disabled_hover_text(
+                    "Source management belongs to the verified-library milestone.",
+                );
+                ui.add_enabled(false, egui::Button::new("Check for updates"))
+                    .on_disabled_hover_text("The source updater is not active in this foundation.");
+            });
+            ui.add_space(4.0);
+            ui.label(
+                RichText::new("Last successful update: no check has run")
+                    .size(12.0)
+                    .color(MUTED),
+            );
+        });
+    }
+
+    fn reports_page(&self, ui: &mut Ui) {
+        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Reports will preserve the document references, legal sources, and rules used for each review.");
+        self.empty_state(ui,Icon::Reports,"Your first report will appear here.","Reporting becomes available after document extraction and supported legal checks are implemented.");
+    }
+
+    fn empty_state(&self, ui: &mut Ui, icon: Icon, title: &str, text: &str) {
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.add_space(32.0);
+            ui.vertical_centered(|ui| {
+                let (rect, _) = ui.allocate_exact_size(vec2(66.0, 66.0), Sense::hover());
+                ui.painter().circle_filled(rect.center(), 33.0, CREAM);
+                widgets::paint_icon(ui.painter(), rect.shrink(16.0), icon, NAVY);
+                ui.add_space(12.0);
+                ui.label(RichText::new(title).font(heading(23.0)));
+                ui.add_space(3.0);
+                ui.label(RichText::new(text).size(14.0).color(MUTED));
+            });
+            ui.add_space(36.0);
+        });
+    }
+
+    fn settings_page(&mut self, ui: &mut Ui) {
+        self.page_header(
+            ui,
+            "PREFERENCES",
+            "Make yourself at home.",
+            "A few thoughtful settings for this local workspace.",
+        );
+        let mut changed = false;
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(RichText::new("Workspace preferences").font(heading(19.0)));
+            ui.add_space(12.0);
+            changed |= ui
+                .checkbox(
+                    &mut self.preferences.remember_page,
+                    "Remember where I left off",
+                )
+                .changed();
+            widgets::muted(
+                ui,
+                "Open the last section you used when LaborLens PH starts.",
+            );
+            ui.add_space(12.0);
+            ui.separator();
+            ui.add_space(12.0);
+            changed |= ui
+                .checkbox(
+                    &mut self.preferences.show_full_paths,
+                    "Show full document paths",
+                )
+                .changed();
+            widgets::muted(
+                ui,
+                "Display the original file location in document details and lists.",
+            );
+        });
+        if changed {
+            self.save_preferences();
+        }
+        ui.add_space(18.0);
+        widgets::card().show(ui,|ui| {
+            ui.set_min_width(ui.available_width());
+            ui.horizontal(|ui| { widgets::icon(ui,Icon::Lock,22.0,NAVY); ui.label(RichText::new("Stored on this computer").font(heading(19.0))); });
+            ui.add_space(8.0);
+            widgets::muted(ui,"The workspace stores document references and preferences. It does not copy or upload your document contents.");
+            if let Some(paths) = &self.paths {
+                ui.add_space(10.0);
+                widgets::eyebrow(ui,"WORKSPACE LOCATION");
+                ui.add(egui::Label::new(RichText::new(paths.root.display().to_string()).size(12.0).color(MUTED)).wrap().selectable(true));
+                if widgets::secondary(ui,"Copy location").clicked() {
+                    ui.ctx().copy_text(paths.root.display().to_string());
+                    self.notice=Some(Notice {text:"Workspace location copied.".into(),error:false});
+                }
+            }
+        });
+        ui.add_space(18.0);
+        widgets::card().show(ui,|ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(RichText::new("LaborLens PH").font(heading(20.0)));
+            widgets::muted(ui,"Review HR documents against Philippine labor law.");
+            ui.label(RichText::new("Version 0.1.0 · Desktop foundation").size(12.5).color(MUTED));
+            ui.add_space(8.0);
+            ui.label(RichText::new("Document extraction, legal checking, and automatic source updates are planned milestones.").size(12.5).color(AMBER));
+        });
+    }
+
+    fn show_notice(&mut self, ui: &mut Ui) {
+        let Some(notice) = &self.notice else {
+            return;
+        };
+        let mut close = false;
+        Frame::new()
+            .fill(if notice.error { RED_TINT } else { GREEN_TINT })
+            .corner_radius(8)
+            .inner_margin(Margin::same(12))
+            .show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                ui.horizontal(|ui| {
+                    ui.add(
+                        egui::Label::new(
+                            RichText::new(&notice.text)
+                                .size(13.0)
+                                .color(if notice.error { RED } else { GREEN }),
+                        )
+                        .wrap(),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        close = ui.small_button("Dismiss").clicked();
+                    });
+                });
+            });
+        ui.add_space(12.0);
+        if close {
+            self.notice = None;
+        }
+    }
+
+    fn removal_dialog(&mut self, ctx: &egui::Context) {
+        let Some(id) = self.pending_remove else {
+            return;
+        };
+        let document = self.documents.iter().find(|d| d.id == id).cloned();
+        let Some(document) = document else {
+            self.pending_remove = None;
+            return;
+        };
+        let mut remove = false;
+        let mut cancel = false;
+        egui::Window::new("Remove this workspace entry?").collapsible(false).resizable(false)
+            .anchor(Align2::CENTER_CENTER,[0.0,0.0]).default_width(420.0).show(ctx,|ui| {
+                ui.label(RichText::new(&document.name).font(heading(17.0)));
+                ui.label("Only its entry in LaborLens PH will be removed. The original file will stay exactly where it is.");
+                ui.add_space(14.0);
+                ui.horizontal(|ui| {
+                    remove=widgets::primary(ui,"Remove entry",true).clicked();
+                    cancel=widgets::secondary(ui,"Keep document").clicked();
+                });
+            });
+        if remove && let Some(workspace) = &self.workspace {
+            match workspace
+                .remove_document(id)
+                .and_then(|()| workspace.documents())
+            {
+                Ok(documents) => {
+                    self.documents = documents;
+                    if self.selected == Some(id) {
+                        self.selected = None;
+                    }
+                    self.notice = Some(Notice {
+                        text: "Workspace entry removed. The original file is unchanged.".into(),
+                        error: false,
+                    });
+                }
+                Err(error) => {
+                    self.notice = Some(Notice {
+                        text: error.to_string(),
+                        error: true,
+                    })
+                }
+            }
+        }
+        if remove || cancel || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.pending_remove = None;
+        }
+    }
+}
+
+impl eframe::App for LaborLensApp {
+    fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.messages();
+        if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
+            self.choose_documents(ctx);
+        }
+        let files = ctx.input(|i| {
+            i.raw
+                .dropped_files
+                .iter()
+                .map(|f| f.path().to_path_buf())
+                .collect::<Vec<_>>()
+        });
+        self.accept_files(files, ctx);
+    }
+
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        let rect = ui.available_rect_before_wrap();
+        ui.painter().rect_filled(rect, 0, CREAM);
+        let sidebar_width = if rect.width() < 1100.0 { 208.0 } else { 232.0 };
+        let sidebar_rect =
+            Rect::from_min_max(rect.min, pos2(rect.left() + sidebar_width, rect.bottom()));
+        let header_rect = Rect::from_min_max(
+            pos2(sidebar_rect.right(), rect.top()),
+            pos2(rect.right(), rect.top() + 66.0),
+        );
+        self.sidebar(ui, sidebar_rect);
+        self.topbar(ui, header_rect);
+        let content_rect = Rect::from_min_max(
+            pos2(sidebar_rect.right() + 30.0, header_rect.bottom() + 28.0),
+            pos2(rect.right() - 30.0, rect.bottom() - 20.0),
+        );
+        ui.scope_builder(UiBuilder::new().max_rect(content_rect).layout(Layout::top_down(Align::Min)),|ui| {
+            ScrollArea::vertical().id_salt(("main",self.page.key())).auto_shrink([false,false]).show(ui,|ui| {
+                if let Some(error) = &self.startup_error {
+                    widgets::title(ui,"Your workspace needs attention.");
+                    ui.add_space(15.0);
+                    widgets::card().show(ui,|ui| {
+                        ui.colored_label(RED,error);
+                        ui.label("Your existing files have been preserved. Resolve the local storage issue before adding documents.");
+                    });
+                    return;
+                }
+                self.show_notice(ui);
+                match self.page {
+                    Page::Review=>self.review(ui),
+                    Page::Documents=>self.documents_page(ui),
+                    Page::Library=>self.library_page(ui),
+                    Page::Reports=>self.reports_page(ui),
+                    Page::Settings=>self.settings_page(ui),
+                }
+                ui.add_space(18.0);
+            });
+        });
+        self.removal_dialog(ui.ctx());
+        self.file_dialog.update(ui.ctx());
+        if let Some(files) = self.file_dialog.take_picked_multiple() {
+            self.accept_files(files, ui.ctx());
+        }
+    }
+}
+
+fn import_files(paths: WorkspacePaths, files: Vec<PathBuf>, sender: &Sender<Message>) {
+    let workspace = match Workspace::open(&paths) {
+        Ok(workspace) => workspace,
+        Err(error) => {
+            let _ = sender.send(Message::Failed(error.to_string()));
+            return;
+        }
+    };
+    let mut ids = Vec::new();
+    let mut errors = Vec::new();
+    for file in files {
+        match workspace.register_document(&file) {
+            Ok(document) => {
+                if !ids.contains(&document.id) {
+                    ids.push(document.id);
+                }
+            }
+            Err(error) => errors.push(error.to_string()),
+        }
+    }
+    let _ = sender.send(Message::Imported { ids, errors });
+}
+
+fn document_row(
+    ui: &mut Ui,
+    document: &Document,
+    selected: bool,
+    show_path: bool,
+) -> egui::Response {
+    let width = ui.available_width();
+    let height = if show_path { 91.0 } else { 72.0 };
+    let (rect, response) = ui.allocate_exact_size(vec2(width, height), Sense::click());
+    if selected || response.hovered() {
+        ui.painter().rect_filled(rect, 8, CREAM);
+    }
+    if response.has_focus() {
+        ui.painter()
+            .rect_stroke(rect, 8, Stroke::new(1.5, NAVY), StrokeKind::Inside);
+    }
+    let icon_rect = Rect::from_min_size(rect.min + vec2(12.0, 16.0), vec2(38.0, 40.0));
+    ui.painter().rect_filled(icon_rect, 7, CREAM);
+    widgets::paint_icon(ui.painter(), icon_rect.shrink(8.0), Icon::Document, NAVY);
+    let name_rect = Rect::from_min_max(
+        rect.min + vec2(65.0, 11.0),
+        pos2(rect.right() - 156.0, rect.top() + 36.0),
+    );
+    ui.scope_builder(UiBuilder::new().max_rect(name_rect), |ui| {
+        ui.add(
+            egui::Label::new(RichText::new(&document.name).font(heading(15.0)))
+                .truncate()
+                .selectable(false),
+        );
+    });
+    ui.painter().text(
+        rect.min + vec2(65.0, 45.0),
+        Align2::LEFT_CENTER,
+        format!(
+            "{}   ·   {}   ·   {}",
+            document.kind.label(),
+            format_size(document.bytes),
+            format_date(document.added_at)
+        ),
+        FontId::proportional(11.5),
+        MUTED,
+    );
+    if show_path {
+        let path_rect = Rect::from_min_max(
+            rect.min + vec2(65.0, 61.0),
+            pos2(rect.right() - 20.0, rect.bottom()),
+        );
+        ui.scope_builder(UiBuilder::new().max_rect(path_rect), |ui| {
+            ui.add(
+                egui::Label::new(
+                    RichText::new(document.path.display().to_string())
+                        .size(11.0)
+                        .color(MUTED),
+                )
+                .truncate()
+                .selectable(false),
+            );
+        });
+    }
+    ui.painter().text(
+        pos2(rect.right() - 55.0, rect.top() + 35.0),
+        Align2::RIGHT_CENTER,
+        "Not reviewed",
+        FontId::proportional(11.5),
+        AMBER,
+    );
+    widgets::paint_icon(
+        ui.painter(),
+        Rect::from_center_size(
+            pos2(rect.right() - 22.0, rect.top() + 35.0),
+            vec2(18.0, 18.0),
+        ),
+        Icon::Arrow,
+        MUTED,
+    );
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), &document.name)
+    });
+    response
+        .on_hover_text(&document.name)
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+fn format_size(bytes: u64) -> String {
+    if bytes < 1024 {
+        format!("{bytes} B")
+    } else if bytes < 1024 * 1024 {
+        format!("{:.1} KB", bytes as f64 / 1024.0)
+    } else {
+        format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
+    }
+}
+
+fn format_date(timestamp: i64) -> String {
+    DateTime::from_timestamp(timestamp, 0)
+        .map(|d| d.with_timezone(&Local).format("%b %-d, %Y").to_string())
+        .unwrap_or_else(|| "Unknown date".to_owned())
+}
