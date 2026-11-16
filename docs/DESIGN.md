@@ -1,6 +1,6 @@
 # Interface design
 
-LaborLens PH uses a clean native desktop interface with navy blue and cream as its main colors.
+ComplyPH uses a clean native desktop interface with navy blue and cream as its main colors.
 
 | Role | Color | Use |
 | --- | --- | --- |
@@ -22,4 +22,6 @@ Future reviews should allow the user to choose compliance domains within the sha
 
 File selection uses an egui dialog that follows the application theme. Filename rows act as single clickable controls; text inside a row should not intercept activation. Full paths remain optional and can be selected in document details.
 
-The screenshot in the README is an actual running native Linux application window with a synthetic sample. Windows shares the Rust UI implementation but still needs target-device checks for display scaling, assistive technology, and drag-and-drop behavior.
+The README screenshot is the actual native ComplyPH library on Linux, with public source material and a synthetic workspace. Windows shares the Rust UI implementation but still needs target-device checks for display scaling, assistive technology, and drag-and-drop behavior.
+
+The current library supports seven domain filters, metadata search, a bounded source reader, text search within a source, and original export. Source verification details are collapsible; applicability and OCR limits remain visible.

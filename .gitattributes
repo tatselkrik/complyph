@@ -6,3 +6,5 @@
 *.ttf binary
 *.exe binary
 *.zip binary
+library/starter/raw/** binary
+library/starter/text/** -whitespace

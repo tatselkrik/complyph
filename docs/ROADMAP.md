@@ -1,6 +1,10 @@
 # Roadmap
 
-## 0.1.0 — Desktop foundation
+## 0.2.0 — ComplyPH and the starter library
+
+Implemented: ComplyPH branding, preserving legacy-data discovery, schema 2 public catalog migration, 14 original official-publication snapshots across seven domains, domain filters, source search, offline reading, search within a source, source-copy export, and integrity checks. Known acquisition gaps remain explicit; source verification is not legal currency or compliance.
+
+## 0.1.0 — LaborLens PH desktop foundation
 
 Implemented: the native Rust interface, local PDF/DOCX file registration, searchable document history, metadata, saved preferences, private SQLite storage, an independent public legal-source catalog, and Windows packaging.
 
@@ -14,7 +18,7 @@ Begin with one labor review area and validate the full workflow. Add other domai
 
 ## Verified sources and first checking rules
 
-Establish a small official-source collection and one well-defined labor review area. Record domain membership, issuer, source URL, publication and effective dates, applicability, verification state, and version history. Allow a source to belong to more than one domain. Pair supported requirements with explicit checking rules and representative validation cases.
+Extend the initial official-source collection, close acquisition gaps, and establish one well-defined labor review area. Record domain membership, issuer, source URL, publication and effective dates, applicability, verification state, and version history. Allow a source to belong to more than one domain. Pair supported requirements with explicit checking rules and representative validation cases.
 
 Maintain source documents and rule coverage separately. A new source does not automatically establish a correct new checking rule.
 

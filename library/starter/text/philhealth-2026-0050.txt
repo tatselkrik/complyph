@@ -1,0 +1,37 @@
+ADVISORY          No. 2026-0050
+
+
+
+
+Electronic Premium Remittance
+System (EPRS) Version 4.9.0
+Signed September 17, 2026
+
+
+
+In line with PhilHealth’s continuing implementation of the
+Electronic Premium Remittance System (EPRS) to facilitate
+the online remittance, reporting and immediate posting of
+premium contributions, all employers in the Government
+and Private Sectors are hereby informed that the enhanced
+features of the EPRS Version 4.9.0 to support additional
+premium payment transactions will be made available
+beginning October 1, 2026.
+
+In view thereof, starting September 15, 2026, employers
+may submit request letters to their servicing Local Health
+Insurance Office (LHIO) or the nearest PhilHealth Regional
+Office (PRO) to access the additional payment modules of the
+EPRS Version 4.9.0. Please be advised that the enhancement
+will only be accessible after processing of the approved
+request.
+
+All payments for additional employees and salary differentials
+shall be made through the EPRS online payment channels
+using the Statement of Premium Account (SPA). Over the
+counter payments will no longer be accepted in PhilHealth
+Cashiers and Accredited Collecting Agents. Employers are
+encouraged to coordinate with their respective PhilHealth
+Accounts Information Management Specialist (PAIMS) for
+further information on the requirements and procedures for
+submission of requests.

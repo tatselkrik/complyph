@@ -1,18 +1,19 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 mod app;
+mod library_view;
 mod theme;
 mod widgets;
 
-use laborlens_core::WorkspacePaths;
+use complyph_core::WorkspacePaths;
 use std::path::PathBuf;
 
 fn main() -> eframe::Result {
     let data_override = parse_arguments();
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_title("LaborLens PH")
-            .with_app_id("ph.laborlens.desktop")
+            .with_title("ComplyPH")
+            .with_app_id("ph.complyph.desktop")
             .with_icon(
                 eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/icon.png"))
                     .expect("the bundled application icon is valid"),
@@ -23,7 +24,7 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "LaborLens PH",
+        "ComplyPH",
         options,
         Box::new(move |creation| {
             theme::install(&creation.egui_ctx);
@@ -31,7 +32,7 @@ fn main() -> eframe::Result {
                 .map(WorkspacePaths::under)
                 .map(Ok)
                 .unwrap_or_else(WorkspacePaths::default_location);
-            Ok(Box::new(app::LaborLensApp::new(paths)))
+            Ok(Box::new(app::ComplyApp::new(paths)))
         }),
     )
 }
@@ -52,7 +53,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "LaborLens PH desktop\n\nOpen the application normally, or use --data-dir PATH for an isolated test workspace."
+                "ComplyPH desktop\n\nOpen the application normally, or use --data-dir PATH for an isolated test workspace."
             );
             std::process::exit(0);
         }

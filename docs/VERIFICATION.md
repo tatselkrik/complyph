@@ -1,38 +1,35 @@
 # Verification
 
-## Automated source checks
+## Automated Rust checks
 
-The foundation has eight tests covering:
+Sixteen tests cover:
 
-- Document references and preferences surviving a database reopen.
-- Duplicate canonical paths refreshing metadata without duplicate entries.
-- Unsupported files, missing files, and folders not creating document records.
-- Entry removal preserving original file bytes.
-- Newer database schemas being rejected without overwrite.
-- Malformed stored preferences being reported without replacement.
-- Empty catalogs never claiming verified sources or a successful update.
-- Public catalog initialization preserving an unrelated private-workspace sentinel.
+- Seven private-workspace cases: persistence, duplicate paths, unsupported/missing files, original preservation, future schemas, malformed settings, and reopening legacy documents/preferences after the rename.
+- Seven public-catalog cases: real snapshots in seven domains without a fabricated runtime update, idempotent imports and private-file isolation, schema 1 migration, corruption rejection, exact-byte export and overwrite refusal, future-schema protection, and concurrent first opens.
+- Two location-discovery cases: reuse of legacy data without moving it, and explicit handling of two existing branded roots.
 
-The source is checked with formatting and workspace Clippy with warnings denied. The GitHub workflow repeats these checks on Windows, builds the release, packages it, and runs the isolated installer smoke check. Its exact-commit result is available from the repository's Actions page.
+Formatting and workspace Clippy run with warnings denied. Bundled originals and reading text are hash checked; raw HTML is marked binary in Git so checkout cannot change its line endings.
 
-## Native UI verification
+## Native interface
 
-The foundation was run as a native egui/eframe Linux application. Observed checks include all five navigation destinations, file-browser navigation and sample registration, Ctrl+O and Escape, filename search and clearing, document details, saved preferences, and recovery of the last section and document list after restart.
+The actual ComplyPH application was run on the Cloud Linux desktop with public legal sources and a synthetic document workspace. Observed checks include seven domain filters, source-title search, an offline source reader, search within a source, original-file export, and reopening the retained document list and catalog.
 
-A filename-row activation issue caused by selectable text was fixed and retested. The file browser's hard-coded black editor backgrounds were corrected for the light theme. The original synthetic PDF remained unchanged.
+The exported NPC circular matched the original PDF SHA-256 byte for byte. The reader was adjusted to collapse excessive blank display lines and provide a larger text area; original stored reading text and publication bytes remain unchanged.
 
-The README screenshot is from the actual native window using a synthetic sample. No real employee or employer records are included in the repository or screenshots.
+The README preview is from this actual native window. It contains no real employee/employer documents. Earlier document intake and preference interactions were also checked in the v0.1.0 foundation.
 
-## Windows packaging checks
+## Windows workflow
 
-The Windows workflow uses the pinned Rust/MSVC toolchain with a statically linked C runtime. It builds the application and updater, packages an NSIS installer and app ZIP, and checks installation, desktop and Start menu shortcuts, CLI startup through `--help`, catalog status, and preservation of synthetic data and originals through uninstallation.
+The Windows workflow uses the pinned Rust/MSVC toolchain and a statically linked C runtime. It repeats source checks, builds the desktop and catalog tool, packages an NSIS installer/app ZIP, and runs an isolated installation check.
 
-The installer smoke test runs only on an isolated GitHub Actions runner and refuses to run over an existing installation. It does not install software on a contributor's personal computer.
+The check installs the published v0.1.0 fixture after verifying its hash, creates synthetic schema 1 private/public databases, upgrades to ComplyPH using the registered old installation directory, and verifies replacement branding, shortcuts, CLI startup, and discovery of the existing data root. Catalog import must produce 14 verified publication snapshots across seven domains without changing private database bytes.
 
-The release is unsigned. Checksums accompany release assets. Hosted-runner installation checks do not establish Windows UI behavior on every graphics driver or device. Windows interactive display scaling, assistive technology, and native drag and drop remain target-device acceptance checks.
+It also checks a fresh ComplyPH installation and verifies that uninstall preserves the private workspace, reference catalog, and original synthetic document. The check refuses an existing runner installation or workspace and does not run on a contributor's personal PC.
 
-## Current scope
+Exact-commit results and machine-readable installation evidence accompany releases. These checks do not establish interactive Windows scaling, assistive-technology behavior, or drag and drop on every device. The build is unsigned.
 
-The app records file references and metadata only. There is no document-text extraction, verified legal corpus, checking engine, report generation, watched folder, or daily downloader yet. The current updater is a local status stub and makes no network requests.
+## Source verification scope
 
-The crate boundary between public and private storage is verified by source structure and tests. A future downloader still requires operating-system sandboxing, approved-source restrictions, and runtime network verification before networking is enabled.
+See [Starter library](../library/README.md) for official publication links, source-specific notes, extraction limitations, and blocked acquisitions. Verification concerns provenance, document identity, and hashes; it does not certify legal currency, complete amendment coverage, interpretation, or compliance.
+
+There is no private-document extraction/checking engine, report generator, watched folder, manual source importer, or daily downloader. No runtime update check has run. Future networking still requires operating-system restrictions and boundary verification.

@@ -1,6 +1,5 @@
 //! Private, local workspace data. This crate has no networking dependencies.
 
-use directories::BaseDirs;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -20,12 +19,12 @@ pub enum WorkspaceError {
     Settings(#[from] serde_json::Error),
     #[error("{0}")]
     InvalidDocument(String),
-    #[error(
-        "This workspace uses a newer database version. Open it with a newer LaborLens PH release."
-    )]
+    #[error("This workspace uses a newer database version. Open it with a newer ComplyPH release.")]
     NewerDatabase,
     #[error("The operating system did not provide a local application-data directory.")]
     MissingDataDirectory,
+    #[error("{0}")]
+    Location(#[from] complyph_paths::LocationError),
 }
 
 pub type Result<T> = std::result::Result<T, WorkspaceError>;
@@ -40,8 +39,7 @@ pub struct WorkspacePaths {
 
 impl WorkspacePaths {
     pub fn default_location() -> Result<Self> {
-        let base = BaseDirs::new().ok_or(WorkspaceError::MissingDataDirectory)?;
-        Ok(Self::under(base.data_local_dir().join("LaborLens PH")))
+        Ok(Self::under(complyph_paths::default_data_root()?))
     }
 
     pub fn under(root: impl Into<PathBuf>) -> Self {
@@ -271,6 +269,30 @@ fn unix_seconds(time: SystemTime) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn renamed_app_reopens_legacy_documents_and_preferences() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let legacy = WorkspacePaths::under(temp.path().join("LaborLens PH"));
+        let document = temp.path().join("Original.pdf");
+        fs::write(&document, b"synthetic original").unwrap();
+        let workspace = Workspace::open(&legacy).unwrap();
+        workspace.register_document(&document).unwrap();
+        let preferences = Preferences {
+            show_full_paths: true,
+            last_page: "documents".into(),
+            ..Preferences::default()
+        };
+        workspace.save_preferences(&preferences).unwrap();
+        drop(workspace);
+        let discovered =
+            WorkspacePaths::under(complyph_paths::data_root_under(temp.path()).unwrap());
+        let reopened = Workspace::open(&discovered).unwrap();
+        assert_eq!(reopened.documents().unwrap().len(), 1);
+        assert_eq!(reopened.preferences().unwrap(), preferences);
+        assert_eq!(fs::read(document).unwrap(), b"synthetic original");
+        assert!(!temp.path().join("ComplyPH").exists());
+    }
     use tempfile::TempDir;
 
     #[test]

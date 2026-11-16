@@ -3,33 +3,34 @@ Unicode True
 !include "LogicLib.nsh"
 
 !ifndef APP_EXE
-  !error "Pass /DAPP_EXE=path-to-laborlens-ph.exe"
+  !error "Pass /DAPP_EXE=path-to-complyph.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "LaborLensPH-Setup-0.1.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.2.0.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
 !endif
 
-Name "LaborLens PH"
+Name "ComplyPH"
 OutFile "${OUTPUT_FILE}"
-InstallDir "$LOCALAPPDATA\Programs\LaborLens PH"
+InstallDir "$LOCALAPPDATA\Programs\ComplyPH"
+Var LegacyInstallDir
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
-BrandingText "LaborLens PH - Desktop foundation"
-VIProductVersion "0.1.0.0"
-VIAddVersionKey /LANG=1033 "ProductName" "LaborLens PH"
-VIAddVersionKey /LANG=1033 "FileDescription" "LaborLens PH desktop foundation installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.1.0"
-VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 LaborLens PH contributors"
+BrandingText "ComplyPH - Official source library"
+VIProductVersion "0.2.0.0"
+VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
+VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local reference library installer"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.2.0"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
-!define MUI_WELCOMEPAGE_TITLE "Welcome to LaborLens PH"
-!define MUI_WELCOMEPAGE_TEXT "Install the local desktop foundation for LaborLens PH.$\r$\n$\r$\nThis version provides a private document workspace and local preferences. Legal checking and automatic source updates are not available yet."
-!define MUI_FINISHPAGE_RUN "$INSTDIR\LaborLensPH.exe"
-!define MUI_FINISHPAGE_RUN_TEXT "Open LaborLens PH"
+!define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
+!define MUI_WELCOMEPAGE_TEXT "Install the local reference library for ComplyPH.$\r$\n$\r$\nThis version includes a private document workspace and 14 official source snapshots across seven Philippine compliance domains. Legal checking and automatic source updates are not available yet."
+!define MUI_FINISHPAGE_RUN "$INSTDIR\ComplyPH.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Open ComplyPH"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -38,47 +39,75 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 LaborLens PH contributors"
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE "English"
 
-Section "LaborLens PH" SEC_APP
+Function .onInit
+  ReadRegStr $LegacyInstallDir HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "InstallLocation"
+  StrCmp $LegacyInstallDir "" done
+  IfFileExists "$LegacyInstallDir\LaborLensPH.exe" 0 done
+  StrCpy $INSTDIR $LegacyInstallDir
+  FindWindow $0 "" "LaborLens PH"
+  StrCmp $0 0 done
+  IfSilent 0 +2
+  Abort
+  MessageBox MB_OK "Close LaborLens PH before upgrading to ComplyPH."
+  Abort
+  done:
+FunctionEnd
+
+Section "ComplyPH" SEC_APP
   SetShellVarContext current
   SetOutPath "$INSTDIR"
-  File /oname=LaborLensPH.exe "${APP_EXE}"
-  File /oname=LaborLensPH.ico "..\..\assets\icon.ico"
+  StrCmp $INSTDIR $LegacyInstallDir 0 not_legacy_upgrade
+  ClearErrors
+  Delete "$INSTDIR\LaborLensPH.exe"
+  IfErrors 0 +2
+  Abort "Close LaborLens PH and run the installer again."
+  Delete "$INSTDIR\LaborLensPH.ico"
+  Delete "$SMPROGRAMS\LaborLens PH.lnk"
+  Delete "$DESKTOP\LaborLens PH.lnk"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH"
+  not_legacy_upgrade:
+  File /oname=ComplyPH.exe "${APP_EXE}"
+  File /oname=ComplyPH.ico "..\..\assets\icon.ico"
   File /oname=LICENSE.txt "..\..\LICENSE"
   File /oname=Lato-OFL.txt "..\..\assets\fonts\OFL.txt"
   File /oname=THIRD_PARTY_NOTICES.txt "${NOTICES_FILE}"
   File /oname=Read-me.txt "..\..\packaging\windows\Read-me.txt"
+  File /oname=starter-manifest.json "..\..\library\starter\manifest.json"
+  File /oname=Library-notes.md "..\..\library\README.md"
   SetOutPath "$INSTDIR\Samples"
   File "..\..\examples\Synthetic sample.pdf"
   File "..\..\examples\Synthetic sample.docx"
   SetOutPath "$INSTDIR"
-  CreateShortCut "$SMPROGRAMS\LaborLens PH.lnk" "$INSTDIR\LaborLensPH.exe" "" "$INSTDIR\LaborLensPH.ico"
-  CreateShortCut "$DESKTOP\LaborLens PH.lnk" "$INSTDIR\LaborLensPH.exe" "" "$INSTDIR\LaborLensPH.ico"
+  CreateShortCut "$SMPROGRAMS\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
+  CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "DisplayName" "LaborLens PH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "DisplayVersion" "0.1.0"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "Publisher" "LaborLens PH contributors"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "InstallLocation" "$INSTDIR"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "DisplayIcon" "$INSTDIR\LaborLensPH.ico"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
-  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "NoModify" 1
-  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH" "NoRepair" 1
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.2.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "NoModify" 1
+  WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "NoRepair" 1
 SectionEnd
 
 Section "Uninstall"
   SetShellVarContext current
-  Delete "$SMPROGRAMS\LaborLens PH.lnk"
-  Delete "$DESKTOP\LaborLens PH.lnk"
-  Delete "$INSTDIR\LaborLensPH.exe"
-  Delete "$INSTDIR\LaborLensPH.ico"
+  Delete "$SMPROGRAMS\ComplyPH.lnk"
+  Delete "$DESKTOP\ComplyPH.lnk"
+  Delete "$INSTDIR\ComplyPH.exe"
+  Delete "$INSTDIR\ComplyPH.ico"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\Lato-OFL.txt"
   Delete "$INSTDIR\THIRD_PARTY_NOTICES.txt"
   Delete "$INSTDIR\Read-me.txt"
+  Delete "$INSTDIR\starter-manifest.json"
+  Delete "$INSTDIR\Library-notes.md"
   Delete "$INSTDIR\Samples\Synthetic sample.pdf"
   Delete "$INSTDIR\Samples\Synthetic sample.docx"
   RMDir "$INSTDIR\Samples"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\LaborLensPH"
+  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH"
   ; Deliberately preserve local workspace data and every original document.
 SectionEnd

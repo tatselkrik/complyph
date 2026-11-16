@@ -1,43 +1,42 @@
-LaborLens PH 0.1.0 - Desktop foundation
+ComplyPH 0.2.0 — Official source library
+Formerly LaborLens PH
 
-Open LaborLensPH.exe, or use the installed desktop/Start menu shortcut.
-No command prompt, browser, Python, AI model, or API key is required.
+Close LaborLens PH or ComplyPH before installing. Keep the detected installation
+location when upgrading. Open ComplyPH from its desktop/Start menu shortcut,
+or extract the app ZIP and open ComplyPH.exe. Normal use needs no command prompt,
+Rust installation, browser session, AI model, or API key.
 
-Available now:
-- Navy-and-cream desktop interface written in Rust.
-- Choose PDF/DOCX files or drag them into the app.
-- Keep a local list of document references, with search and file details.
-- Save workspace preferences locally.
-- Remove list entries without deleting the original files.
-- Separate private workspace storage and public legal-source catalog.
+Available:
+- Navy-and-cream native Rust workspace.
+- Register local PDF/DOCX references, search metadata, and save preferences.
+- Browse 14 official publication snapshots across seven compliance domains.
+- Filter/search sources, read local text, search within a source, and save originals.
+- Source URLs, provenance, dates, applicability notes, and SHA-256 checks.
 
-Not implemented yet:
-- Document text extraction and OCR.
-- Verified legal sources and legal checking rules.
-- Compliance findings or reports.
-- Folder monitoring and daily source downloads.
+"Verified" concerns official origin, document identity, and preserved-content
+integrity. This is a starter collection with documented gaps, not a complete
+current legal corpus. OCR and table layouts may be imperfect; use originals.
 
-Choosing a file registers its name, path, size, and modification time.
-This version does not read its document text, alter it, copy it into the
-workspace, or upload it. Original files must remain accessible at their
-selected locations. A file that was moved should be added again.
+Open Legal library to inspect the collection. Library-notes.md and
+starter-manifest.json describe the included sources and missing acquisitions.
 
-The Samples folder contains only synthetic examples. It is provided for
-trying the interface, not as a legal or employment-contract template.
+Private document text extraction, legal checking, reports, folder monitoring,
+manual source import, and daily downloads are not implemented yet.
+Selecting a private document stores metadata only and does not upload, copy,
+or modify it. Samples contains synthetic files, not legal templates.
 
-Local data on Windows:
-%LOCALAPPDATA%\LaborLens PH\private\workspace.sqlite3
-%LOCALAPPDATA%\LaborLens PH\library\catalog.sqlite3
+New Windows data:
+%LOCALAPPDATA%\ComplyPH\private\workspace.sqlite3
+%LOCALAPPDATA%\ComplyPH\library\catalog.sqlite3
 
-Uninstalling the application preserves the workspace data and originals.
+An existing %LOCALAPPDATA%\LaborLens PH data root is reused without moving
+databases. If both branded roots exist, the app preserves both and requires
+explicit workspace selection. Uninstalling preserves data and original documents.
 
-The application and current updater status stub contain no HTTP client.
-Network permissions for a future downloader must be implemented and tested
-before automatic legal-source synchronization is enabled.
-
-This foundation is unsigned. See the project verification notes for the
-Windows build, installer checks, and interactive-test scope:
+This build is unsigned. Windows source, installation, and legacy-upgrade checks
+are documented at:
 https://github.com/tatselkrik/laborlens-ph/blob/main/docs/VERIFICATION.md
 
-Source application: MIT license. Bundled fonts: SIL Open Font License.
-Additional dependency notices are in THIRD_PARTY_NOTICES.txt.
+Source: MIT license. Fonts: SIL Open Font License. Additional dependency notices
+are in THIRD_PARTY_NOTICES.txt. Agency names/marks identify publication sources
+and do not imply government endorsement.

@@ -2,64 +2,65 @@
 
 ## Current implementation
 
-LaborLens PH 0.1.0 is a native Rust desktop foundation using egui/eframe. It registers references to local PDF/DOCX files and stores preferences. It does not yet extract text, apply legal rules, create reports, watch folders, or download sources.
+ComplyPH 0.2.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX reference workspace with 14 bundled official-publication snapshots across seven compliance domains. Private-document extraction, legal checking, reports, folder monitoring, manual source import, and runtime source downloads remain future work.
 
-| Component | Responsibility | Dependencies on private data |
+| Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
-| `laborlens-desktop` | Native UI, local file browser, document list, and preferences | Uses private workspace and public catalog |
-| `laborlens-core` | Private file references, settings, paths, and SQLite migrations | Owns the private workspace |
-| `laborlens-library` | Public legal-source catalog and source-version schema | No private-workspace dependency |
-| `laborlens-updater` | Independent public-catalog status stub | Public catalog only |
+| `complyph-desktop` | Native workspace, file selection, source filters, reader, and original export | Uses both stores |
+| `complyph-core` | Private document references, settings, paths, and schema protection | Owns private workspace |
+| `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
+| `complyph-paths` | Shared current/legacy data-root discovery | Directory existence only; no document or database reads |
+| `complyph-updater` | Independent public-catalog status CLI and bundled import | Public catalog only |
 
-The desktop and updater stub contain no HTTP client. The public library and private workspace have different databases. The current updater reports zero sources and no successful update when initialized; it does not fabricate freshness or verification status.
+There is no HTTP client, telemetry, AI integration, or runtime downloader. Source acquisition for the bundled collection is a maintainer activity involving public publications only.
 
-## Local storage
+## Local storage and the rename
 
-On Windows, the default data root is `%LOCALAPPDATA%\LaborLens PH`:
+Fresh Windows installations use `%LOCALAPPDATA%\ComplyPH`. If only `%LOCALAPPDATA%\LaborLens PH` exists, both the desktop and catalog status tool reuse it in place. Live SQLite files are not copied or moved. If both roots exist, discovery fails visibly and preserves both; the developer `--data-dir` override can select a workspace explicitly.
 
 ```text
-private/workspace.sqlite3   Document references and preferences
-library/catalog.sqlite3    Public sources and source-version metadata
+private/workspace.sqlite3   Private document references and preferences; schema 1
+library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 2
 ```
 
-Document references use canonical paths. Re-registering the same path refreshes file metadata without creating a second entry. Removing an entry leaves the original untouched. SQLite schema versions newer than the application supports are rejected, and malformed preferences are reported instead of silently overwritten.
+The installer detects a registered LaborLens PH installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
+
+Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry preserves the original file. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
+
+## Public source catalog
+
+[The starter manifest](../library/starter/manifest.json) defines stable source keys, seven domain IDs, original and resolved publication URLs, acquisition/verification dates, hashes, extraction methods, applicability notes, and known gaps. [The library notes](../library/README.md) define verification scope and inventory.
+
+On catalog open, migrations preserve schema 1 entries and versions. A local transaction imports original bytes and derived reading text into source snapshots, relates sources to domains, and records the immutable bundle identity. Sources can belong to several domains. Repeated and concurrent opens must not duplicate the bundle.
+
+Original bytes and reading text are SHA-256 checked against their metadata before import, after reopen, and before export. A damaged snapshot produces an integrity error. Export uses a new file and refuses to overwrite an existing path.
+
+Verification establishes publication provenance, document identity, and content integrity. It does not establish complete amendments, current applicability, OCR accuracy, or a legal conclusion. A bundled verification timestamp is separate from a successful runtime-update check; the latter remains unset.
+
+Signed/issued dates are recorded only where established. Unknown effective dates remain unknown. Conditional effectivity clauses and applicability notes are preserved. Source retrieval is not treated as legal effectivity.
 
 ## Interface
 
-The interface and application logic are Rust. The file browser is also rendered in egui, so selection does not depend on a platform file-picker service. Its pinned local patch corrects light-theme editor backgrounds. Fonts and icons are bundled.
+The interface and application logic are Rust; operating-system components and bundled SQLite also contain native code in other languages. The egui file browser, fonts, and icons are local.
 
-SQLite and operating-system components include native code written in other languages. Rust application code does not imply that every dependency is implemented in Rust.
+The Legal library page filters sources by domain, searches titles/instruments/issuers, displays reading text in bounded sections, searches within a source, and exports an exact original. Reading sections are display chunks, not source page citations. Active source HTML is never rendered.
 
-## Planned compliance domains
+## Planned checking pipeline
 
-Labor compliance is the first review area. The shared review engine should also support occupational safety and health (DOLE OSHS), data privacy (the Data Privacy Act and NPC issuances), tax requirements (BIR), and SSS, PhilHealth, and Pag-IBIG requirements as coverage is developed.
+1. Extract private PDF/DOCX text locally with original document-location references.
+2. Select review domains and collect required local context and evidence, including the period under review.
+3. Resolve applicable source and rule versions for that period.
+4. Evaluate explicit, versioned rules and produce findings with passages, source provisions, missing facts, and review status.
+5. Preserve evaluated domains, coverage, evidence, source versions, and rule versions in reports.
 
-Keep document extraction, private evidence storage, applicability evaluation, finding presentation, and report snapshots shared. Each domain supplies its source mappings, required facts, versioned rules, evaluators, and validation cases. Several domains can apply to one document or review.
+The source/domain layer is implemented. Rule definitions, rule-to-provision mappings, structured review evidence, and the checking engine are not implemented. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
 
-The current catalog already stores generic source titles, issuers, URLs, and source versions; it has no Labor Code-specific schema. Domain membership, a rule registry, structured evidence, and rule applicability are not implemented yet. Their future migrations should use stable identifiers, allow one source to support several domains, and keep regulators distinct from domains. DOLE, for example, can issue sources relevant to both labor and occupational safety and health.
+## Planned source updates
 
-The [compliance-domain design](COMPLIANCE_DOMAINS.md) defines these boundaries and the extension points. Domain expansion retains local document processing and the independent public-source updater.
+A separate updater will check approved public publication listings and registered documents daily, preserve valid new versions, and show last successful checks and failures per source. Missed checks should run when the PC becomes available.
 
-## Planned review pipeline
+The updater must receive no private document contents, filenames, paths, hashes, employee/employer details, payroll data, findings, or document-derived queries. Requests must be determined by the public catalog. Validate source domains, redirects, file types, and acquisition metadata.
 
-1. Extract local PDF/DOCX text with document-location references; use offline OCR for scans where supported.
-2. Select the review domains and collect the context and local evidence each requires, such as region, employment category, industry, and the period under review.
-3. Resolve applicable source and rule versions for that period and evaluate explicit, versioned rules against the supplied facts.
-4. Produce findings with the document passage, source provision, explanation, and any missing context.
-5. Preserve the source and rule versions used by each report.
+Before networking is enabled, enforce operating-system file/network restrictions and verify the boundary at runtime. A crate boundary alone is insufficient. Source acquisition, verification, applicability, and rule coverage remain distinct. A new source version does not silently activate a new legal interpretation.
 
-Rules are validated data and Rust logic, not executable instructions downloaded from a website. Money calculations should use exact decimal arithmetic. Unsupported wording and missing facts must produce a review state rather than an unsupported legal conclusion.
-
-Reports must identify the selected domains, evaluated rules, missing evidence, and unsupported coverage. A document review does not establish that an external payment, filing, or workplace activity occurred; checks that depend on those facts need suitable local evidence.
-
-## Planned automatic source updates
-
-A separate updater will check approved publication listings and registered legal documents daily, download valid changes into staging, preserve earlier versions, and refresh the local source index. Checks missed while a PC is off or offline should run when it becomes available. The UI must show last successful checks and failures per source.
-
-The updater must receive no private document contents, file paths, hashes, employee details, findings, or document-derived search queries. Its requests are determined by the public source catalog. Redirects, source domains, file types, and acquisition metadata need validation.
-
-Before networking is enabled, enforce the updater's file and network restrictions at the operating-system level and verify them at runtime. A crate boundary alone does not provide that enforcement.
-
-Source text, source verification, applicability, and rule coverage are separate states. A valid acquisition can update the local source library automatically. Updating a checking rule automatically requires a supported, validated transformation. New or ambiguous legal requirements should flag affected checks as needing maintenance.
-
-Manual source addition should accept an official URL or local legal document, preserve provenance and dates, and identify unresolved verification. Adding a source does not silently create a new legal interpretation.
+Manual source import remains planned and must preserve provenance, dates, unresolved verification, and domain assignments.

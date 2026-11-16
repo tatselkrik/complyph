@@ -2,9 +2,9 @@
 
 ## Product direction
 
-LaborLens PH is intended to grow into a local Philippine compliance document-review application. Labor compliance is the first review area. Future domains can reuse the same desktop workspace, document extraction, evidence handling, rule evaluation, and reporting pipeline.
+ComplyPH is intended to grow into a local Philippine compliance document-review application. Labor compliance is the first review area. Future domains can reuse the same desktop workspace, document extraction, evidence handling, rule evaluation, and reporting pipeline.
 
-This document is an architecture plan. v0.1.0 provides file registration and local storage; it does not yet implement checking rules or any of the domains below. The application and repository keep their current name.
+ComplyPH 0.2.0 implements the source/domain registry and a 14-snapshot starter library. Checking rules and the shared review engine remain planned. See the source inventory for current references and gaps.
 
 | Planned domain | Examples of future review inputs |
 | --- | --- |
@@ -35,7 +35,7 @@ Keep domain definitions as validated data and reviewed application code. Public 
 
 ## Sources, domains, and regulators
 
-Use stable domain identifiers independent of display names, such as `ph.labor`, `ph.osh`, `ph.privacy`, `ph.tax`, `ph.sss`, `ph.philhealth`, and `ph.pagibig`. These are proposed identifiers; they are not an implemented registry or an exhaustive enum.
+Use stable domain identifiers independent of display names, such as `ph.labor`, `ph.osh`, `ph.privacy`, `ph.tax`, `ph.sss`, `ph.philhealth`, and `ph.pagibig`. These are the current source-domain identifiers. The registry is an extensible list, not an exhaustive enum.
 
 Keep the following relationships explicit in future storage migrations:
 
@@ -45,7 +45,7 @@ Keep the following relationships explicit in future storage migrations:
 - A rule version can cite several specific source versions and provisions.
 - A review can select several domains and evaluate only the rules applicable to its facts and review period.
 
-The current catalog has generic sources and source versions. Domain membership, rule definitions, rule-to-source references, and structured review evidence still need schema design and migrations before implementation.
+The current catalog implements sources, source versions, domain membership, original snapshots, provenance, and reading text. Rule definitions, rule-to-provision references, and structured review evidence still need schema design and migrations.
 
 ## Applicability and evidence
 
@@ -67,7 +67,7 @@ The updater still requires operating-system file and network restrictions before
 
 Use domain selection inside the common Review workspace. A saved local review profile can select several domains and retain the context needed for that review. Show findings and coverage per domain, with library filters for domain and issuer. The navy-and-cream interface remains the shared visual language.
 
-Keep domain, source, and rule identifiers independent of product branding. Any future product rename must account for the existing data directory, installer identity, and saved workspace. No rename or storage-path change is part of this plan.
+Keep domain, source, and rule identifiers independent of product branding. Any future product rename must account for the existing data directory, installer identity, and saved workspace. The v0.2.0 rename to ComplyPH retains existing LaborLens PH data in place through shared data-root discovery; new installations use the ComplyPH root.
 
 ## Delivery
 

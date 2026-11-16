@@ -1,13 +1,14 @@
+use crate::library_view::LibraryView;
 use crate::theme::*;
 use crate::widgets::{self, Icon};
 use chrono::{DateTime, Local};
+use complyph_core::{Document, Preferences, Workspace, WorkspaceError, WorkspacePaths};
+use complyph_library::{LibraryCatalog, LibrarySummary};
 use eframe::egui::{
     self, Align, Align2, FontId, Frame, Layout, Margin, Rect, RichText, ScrollArea, Sense, Stroke,
     StrokeKind, Ui, UiBuilder, pos2, vec2,
 };
 use egui_file_dialog::{FileDialog, Filter};
-use laborlens_core::{Document, Preferences, Workspace, WorkspaceError, WorkspacePaths};
-use laborlens_library::{LibraryCatalog, LibrarySummary};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 
@@ -73,12 +74,13 @@ struct Notice {
     error: bool,
 }
 
-pub struct LaborLensApp {
+pub struct ComplyApp {
     paths: Option<WorkspacePaths>,
     workspace: Option<Workspace>,
     catalog: Option<LibraryCatalog>,
     library: LibrarySummary,
     library_error: Option<String>,
+    library_view: LibraryView,
     startup_error: Option<String>,
     preferences: Preferences,
     page: Page,
@@ -93,7 +95,7 @@ pub struct LaborLensApp {
     file_dialog: FileDialog,
 }
 
-impl LaborLensApp {
+impl ComplyApp {
     pub fn new(paths: Result<WorkspacePaths, WorkspaceError>) -> Self {
         let (sender, receiver) = mpsc::channel();
         let mut app = Self {
@@ -102,6 +104,7 @@ impl LaborLensApp {
             catalog: None,
             library: LibrarySummary::default(),
             library_error: None,
+            library_view: LibraryView::default(),
             startup_error: None,
             preferences: Preferences::default(),
             page: Page::Review,
@@ -118,7 +121,7 @@ impl LaborLensApp {
                 .add_file_filter(
                     "PDF and Word documents",
                     Filter::new(|path: &std::path::Path| {
-                        laborlens_core::DocumentKind::from_path(path).is_some()
+                        complyph_core::DocumentKind::from_path(path).is_some()
                     }),
                 )
                 .default_file_filter("PDF and Word documents")
@@ -145,6 +148,9 @@ impl LaborLensApp {
                 }
                 match LibraryCatalog::open(&paths.library_dir) {
                     Ok(catalog) => {
+                        if let Err(error) = app.library_view.load(&catalog) {
+                            app.library_error = Some(error.to_string());
+                        }
                         match catalog.summary() {
                             Ok(summary) => app.library = summary,
                             Err(error) => app.library_error = Some(error.to_string()),
@@ -260,7 +266,7 @@ impl LaborLensApp {
         ui.painter().text(
             pos2(rect.left() + 73.0, rect.top() + 36.0),
             Align2::LEFT_CENTER,
-            "LaborLens",
+            "ComplyPH",
             heading(24.0),
             IVORY,
         );
@@ -326,7 +332,7 @@ impl LaborLensApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            "FOUNDATION  /  0.1.0",
+            "LIBRARY  /  0.2.0",
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -376,7 +382,7 @@ impl LaborLensApp {
                     1,
                     "LEGAL SOURCES",
                     self.library.source_count.to_string(),
-                    "Library not yet configured",
+                    "Official snapshots saved locally",
                 ),
                 (
                     2,
@@ -672,9 +678,9 @@ impl LaborLensApp {
     fn library_page(&mut self, ui: &mut Ui) {
         self.page_header(
             ui,
-            "LEGAL REFERENCE",
+            "OFFICIAL REFERENCE",
             "A library you can trace.",
-            "Official sources, effective dates, and history will live together on this device.",
+            "Browse saved official publications across Philippine compliance domains.",
         );
         if let Some(error) = &self.library_error {
             widgets::card().show(ui, |ui| {
@@ -682,42 +688,9 @@ impl LaborLensApp {
             });
             return;
         }
-        ui.horizontal(|ui| {
-            widgets::pill(ui, "Not configured", AMBER, AMBER_TINT, true);
-            ui.label(
-                RichText::new(format!(
-                    "{} sources  ·  {} verified",
-                    self.library.source_count, self.library.verified_source_count
-                ))
-                .size(13.0)
-                .color(MUTED),
-            );
-        });
-        ui.add_space(20.0);
-        self.empty_state(ui,Icon::Library,"Start with trusted sources.","The verified legal library is the next milestone. No laws or checking rules have been installed yet.");
-        ui.add_space(14.0);
-        widgets::card().show(ui, |ui| {
-            ui.set_min_width(ui.available_width());
-            ui.label(RichText::new("Source updates").font(heading(18.0)));
-            widgets::muted(
-                ui,
-                "Daily checks and manual source addition will use a separate legal-source updater.",
-            );
-            ui.add_space(7.0);
-            ui.horizontal(|ui| {
-                widgets::primary(ui, "Add source", false).on_disabled_hover_text(
-                    "Source management belongs to the verified-library milestone.",
-                );
-                ui.add_enabled(false, egui::Button::new("Check for updates"))
-                    .on_disabled_hover_text("The source updater is not active in this foundation.");
-            });
-            ui.add_space(4.0);
-            ui.label(
-                RichText::new("Last successful update: no check has run")
-                    .size(12.0)
-                    .color(MUTED),
-            );
-        });
+        if let Some(catalog) = &self.catalog {
+            self.library_view.show(ui, catalog, &self.library);
+        }
     }
 
     fn reports_page(&self, ui: &mut Ui) {
@@ -760,10 +733,7 @@ impl LaborLensApp {
                     "Remember where I left off",
                 )
                 .changed();
-            widgets::muted(
-                ui,
-                "Open the last section you used when LaborLens PH starts.",
-            );
+            widgets::muted(ui, "Open the last section you used when ComplyPH starts.");
             ui.add_space(12.0);
             ui.separator();
             ui.add_space(12.0);
@@ -800,9 +770,9 @@ impl LaborLensApp {
         ui.add_space(18.0);
         widgets::card().show(ui,|ui| {
             ui.set_min_width(ui.available_width());
-            ui.label(RichText::new("LaborLens PH").font(heading(20.0)));
-            widgets::muted(ui,"Review HR documents against Philippine labor law.");
-            ui.label(RichText::new("Version 0.1.0 · Desktop foundation").size(12.5).color(MUTED));
+            ui.label(RichText::new("ComplyPH").font(heading(20.0)));
+            widgets::muted(ui,"A private workspace for Philippine compliance document review.");
+            ui.label(RichText::new("Version 0.2.0 · Official source library").size(12.5).color(MUTED));
             ui.add_space(8.0);
             ui.label(RichText::new("Document extraction, legal checking, and automatic source updates are planned milestones.").size(12.5).color(AMBER));
         });
@@ -853,7 +823,7 @@ impl LaborLensApp {
         egui::Window::new("Remove this workspace entry?").collapsible(false).resizable(false)
             .anchor(Align2::CENTER_CENTER,[0.0,0.0]).default_width(420.0).show(ctx,|ui| {
                 ui.label(RichText::new(&document.name).font(heading(17.0)));
-                ui.label("Only its entry in LaborLens PH will be removed. The original file will stay exactly where it is.");
+                ui.label("Only its entry in ComplyPH will be removed. The original file will stay exactly where it is.");
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
                     remove=widgets::primary(ui,"Remove entry",true).clicked();
@@ -889,7 +859,7 @@ impl LaborLensApp {
     }
 }
 
-impl eframe::App for LaborLensApp {
+impl eframe::App for ComplyApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.messages();
         if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
@@ -945,6 +915,9 @@ impl eframe::App for LaborLensApp {
         });
         self.removal_dialog(ui.ctx());
         self.file_dialog.update(ui.ctx());
+        if let Some(catalog) = &self.catalog {
+            self.library_view.update_dialog(ui.ctx(), catalog);
+        }
         if let Some(files) = self.file_dialog.take_picked_multiple() {
             self.accept_files(files, ui.ctx());
         }

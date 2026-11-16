@@ -1,7 +1,7 @@
 //! A public-catalog status entry point. Network synchronization is not enabled.
-//! Deliberately does not depend on laborlens-core or any HTTP client.
+//! Deliberately does not depend on complyph-core or any HTTP client.
 
-use laborlens_library::{LibraryCatalog, default_library_directory};
+use complyph_library::{LibraryCatalog, default_library_directory};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--status" => {}
             "--help" | "-h" => {
                 println!(
-                    "LaborLens PH updater foundation\n\n--status  Read local public-catalog status\n--library-dir PATH  Use a specific public-library directory\n\nAutomatic downloads are not implemented. This binary makes no network requests."
+                    "ComplyPH updater foundation\n\n--status  Read local public-catalog status\n--library-dir PATH  Use a specific public-library directory\n\nAutomatic downloads are not implemented. This binary makes no network requests."
                 );
                 return Ok(());
             }

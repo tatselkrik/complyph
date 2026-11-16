@@ -1,0 +1,530 @@
+{
+  "schema_version": 1,
+  "bundle_id": "complyph-starter-0.2.0-e7f297da550ac6c6",
+  "verified_at_utc": "2026-11-16T13:00:49+00:00",
+  "verified_at_unix": 1794834049,
+  "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+  "domains": [
+    {
+      "id": "ph.labor",
+      "label": "Labor"
+    },
+    {
+      "id": "ph.osh",
+      "label": "DOLE OSHS"
+    },
+    {
+      "id": "ph.privacy",
+      "label": "Privacy / NPC"
+    },
+    {
+      "id": "ph.tax",
+      "label": "BIR / Tax"
+    },
+    {
+      "id": "ph.sss",
+      "label": "SSS"
+    },
+    {
+      "id": "ph.philhealth",
+      "label": "PhilHealth"
+    },
+    {
+      "id": "ph.pagibig",
+      "label": "Pag-IBIG"
+    }
+  ],
+  "coverage_gaps": [
+    {
+      "domain": "ph.labor",
+      "instrument": "DOLE Labor Code 2022 edition",
+      "source_url": "https://bwc.dole.gov.ph/wp-content/uploads/2025/08/Labor-Code-of-the-Philippines.pdf",
+      "reason": "Official download returned HTTP 403 in this acquisition environment. Not imported or counted as verified."
+    },
+    {
+      "domain": "ph.osh",
+      "instrument": "DOLE D.O. 252-25 and full OSHS technical standards",
+      "source_url": "https://dole.gov.ph/news/department-order-252-25-revised-implementing-rules-and-regulations-of-republic-act-no.-11058/",
+      "reason": "DOLE/BWC/OSHC and the DPWH-hosted attachment were inaccessible here. The existence of D.O. 252-25 was corroborated in official indexed listings; its document bytes are not bundled or counted as verified."
+    },
+    {
+      "domain": "ph.pagibig",
+      "instrument": "Pag-IBIG Circular 460 and later remittance issuances",
+      "source_url": "https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html",
+      "reason": "Agency site presented a browser verification challenge. No attempt was made to bypass it. Circulars 460, 499, and other later requirements still need acquisition and review."
+    },
+    {
+      "domain": "ph.tax",
+      "instrument": "Complete NIRC amendment and implementing-issuance coverage",
+      "source_url": "https://www.bir.gov.ph/Tax-Code",
+      "reason": "This starter contains TRAIN and RR 29-2025, not the full consolidated NIRC or its amendment chain; the BIR landing page alone is not imported as legal text."
+    }
+  ],
+  "sources": [
+    {
+      "key": "labor-code-reference",
+      "title": "Labor Code — Senate reference compilation",
+      "instrument": "P.D. 442",
+      "issuer": "Philippine Government / DOLE",
+      "domains": [
+        "ph.labor",
+        "ph.osh"
+      ],
+      "source_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974",
+      "resolved_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974",
+      "acquired_at_utc": "2026-11-16T12:37:20.615151+00:00",
+      "acquired_at_unix": 1794832640,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/labor-code-reference.html",
+      "raw_mime": "text/html",
+      "raw_bytes": 815574,
+      "raw_sha256": "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0",
+      "text_path": "text/labor-code-reference.txt",
+      "text_sha256": "c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f",
+      "extraction": "HTML legal-text container extracted with BeautifulSoup; no active HTML is rendered in the app",
+      "pages": null,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Senate-published reference compilation with an expressly listed amendment set. It is not the DOLE 2022 edition or a representation of the complete current Labor Code. The catalog approval date differs from statutory history; no absolute effective date is inferred.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Mon, 16 Nov 2026 12:37:19 GMT",
+        "content-type": "text/html; charset=UTF-8"
+      }
+    },
+    {
+      "key": "ra-11210",
+      "title": "Expanded Maternity Leave Law",
+      "instrument": "R.A. 11210",
+      "issuer": "Philippine Congress",
+      "domains": [
+        "ph.labor"
+      ],
+      "source_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011210",
+      "resolved_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011210",
+      "acquired_at_utc": "2026-11-16T12:43:11.989911+00:00",
+      "acquired_at_unix": 1794832991,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-11210.html",
+      "raw_mime": "text/html",
+      "raw_bytes": 147566,
+      "raw_sha256": "d519653f72dfbbc9a12da726d8fc39ac38e5cd58de4529ffad3d901f9563cc48",
+      "text_path": "text/ra-11210.txt",
+      "text_sha256": "5b5fe6b02678a6bb6f9c2d16350caff9690657cc3663f1d844a27277341d16e9",
+      "extraction": "HTML legal-text container extracted with BeautifulSoup; no active HTML is rendered in the app",
+      "pages": null,
+      "issued_on": "2019-02-20",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Statutory reference as published by the Senate. Implementing rules, later amendments, coverage facts, and related benefits must be assessed separately.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Mon, 16 Nov 2026 12:43:11 GMT",
+        "content-type": "text/html; charset=UTF-8"
+      }
+    },
+    {
+      "key": "ra-11058",
+      "title": "Occupational Safety and Health Law",
+      "instrument": "R.A. 11058",
+      "issuer": "Philippine Congress",
+      "domains": [
+        "ph.osh"
+      ],
+      "source_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011058",
+      "resolved_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011058",
+      "acquired_at_utc": "2026-11-16T12:37:20.186608+00:00",
+      "acquired_at_unix": 1794832640,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-11058.html",
+      "raw_mime": "text/html",
+      "raw_bytes": 146691,
+      "raw_sha256": "5f73fc7ce295f1058ce4eecdeeb1d2991e75c9f2afbb1d3c67b0bf3537458432",
+      "text_path": "text/ra-11058.txt",
+      "text_sha256": "1a9324d340b028c17789df9c4ce65011fff7951496fe351451757bffbe00f8c5",
+      "extraction": "HTML legal-text container extracted with BeautifulSoup; no active HTML is rendered in the app",
+      "pages": null,
+      "issued_on": "2018-08-17",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Statutory foundation. D.O. 252-25 and the full OSHS technical standards remain acquisition gaps in this bundle; this Act alone is not the complete applicable OSH framework.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Mon, 16 Nov 2026 12:37:19 GMT",
+        "content-type": "text/html; charset=UTF-8"
+      }
+    },
+    {
+      "key": "ra-10173",
+      "title": "Data Privacy Act of 2012",
+      "instrument": "R.A. 10173",
+      "issuer": "Philippine Congress / NPC publication",
+      "domains": [
+        "ph.privacy"
+      ],
+      "source_url": "https://privacy.gov.ph/data-privacy-act/",
+      "resolved_url": "https://privacy.gov.ph/data-privacy-act/",
+      "acquired_at_utc": "2026-11-16T12:35:51.182148+00:00",
+      "acquired_at_unix": 1794832551,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-10173.html",
+      "raw_mime": "text/html",
+      "raw_bytes": 279077,
+      "raw_sha256": "ba5de9ae5bc3f9eab16c3fa9d2eb000ff4200e7cb97fb9a38141f5605b41f74c",
+      "text_path": "text/ra-10173.txt",
+      "text_sha256": "61ac64e17150e7d48cfbde3fadd6ab83067f699e53b802439bbb5b030d545521",
+      "extraction": "HTML legal-text container extracted with BeautifulSoup; no active HTML is rendered in the app",
+      "pages": null,
+      "issued_on": "2012-08-15",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Act as published by NPC. Read with its IRR and relevant later NPC issuances; the bundle is not an exhaustive privacy corpus.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Mon, 16 Nov 2026 12:24:21 GMT",
+        "content-type": "text/html; charset=UTF-8"
+      }
+    },
+    {
+      "key": "npc-dpa-irr",
+      "title": "Data Privacy Act implementing rules and regulations",
+      "instrument": "IRR of R.A. 10173",
+      "issuer": "National Privacy Commission",
+      "domains": [
+        "ph.privacy"
+      ],
+      "source_url": "https://privacy.gov.ph/wp-content/uploads/2023/06/IRR_RA-10173-as-amended.pdf",
+      "resolved_url": "https://privacy.gov.ph/wp-content/uploads/2023/06/IRR_RA-10173-as-amended.pdf",
+      "acquired_at_utc": "2026-11-16T12:35:53.000573+00:00",
+      "acquired_at_unix": 1794832553,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/npc-dpa-irr.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 505235,
+      "raw_sha256": "1d8218f48661ea7fade72a3dda44de5a1cfc08cac50f857d5eb4248b5a45133d",
+      "text_path": "text/npc-dpa-irr.txt",
+      "text_sha256": "7b12f6f0e7ed538d4ffe1f1339cf7241048c90e380db97119c091a5c4d598745",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 29,
+      "issued_on": "2016-08-24",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "NPC-hosted file named IRR_RA-10173-as-amended.pdf. Preserve this exact publisher version; the filename alone is not a complete amendment history.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Thu, 15 Jun 2023 07:09:40 GMT",
+        "content-type": "application/pdf",
+        "content-length": "505235"
+      }
+    },
+    {
+      "key": "npc-2023-06",
+      "title": "Security of Personal Data in Government and the Private Sector",
+      "instrument": "NPC Circular 2023-06",
+      "issuer": "National Privacy Commission",
+      "domains": [
+        "ph.privacy"
+      ],
+      "source_url": "https://privacy.gov.ph/wp-content/uploads/2024/03/NPC-Circular-Repeal-16-01-Signed.pdf",
+      "resolved_url": "https://privacy.gov.ph/wp-content/uploads/2024/03/NPC-Circular-Repeal-16-01-Signed.pdf",
+      "acquired_at_utc": "2026-11-16T12:40:20.579877+00:00",
+      "acquired_at_unix": 1794832820,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/npc-2023-06.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 473121,
+      "raw_sha256": "d717c2a447765723f004b48abcafeb0dc0376b8c7d44e90fd16021bc1bc6c4bc",
+      "text_path": "text/npc-2023-06.txt",
+      "text_sha256": "b69ad211f9f43ef8bee63efa1f43085c4a6282cdef942e47c1c5b19351380cb2",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 10,
+      "issued_on": "2023-12-01",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Security circular, including its repeal clause. NPC states an effectivity date of 30 March 2024 in its official explanatory publication; full review-period applicability still requires assessment.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Fri, 15 Mar 2024 01:42:00 GMT",
+        "content-type": "application/pdf",
+        "content-length": "473121"
+      }
+    },
+    {
+      "key": "ra-10963",
+      "title": "Tax Reform for Acceleration and Inclusion (TRAIN)",
+      "instrument": "R.A. 10963",
+      "issuer": "Philippine Congress",
+      "domains": [
+        "ph.tax"
+      ],
+      "source_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2010963",
+      "resolved_url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2010963",
+      "acquired_at_utc": "2026-11-16T12:38:44.477848+00:00",
+      "acquired_at_unix": 1794832724,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-10963.html",
+      "raw_mime": "text/html",
+      "raw_bytes": 304845,
+      "raw_sha256": "bb8ccbc22ff9f235a815e18ddcfa31c62c7cd2d3f2a4cebb8eccc5aedd21230f",
+      "text_path": "text/ra-10963.txt",
+      "text_sha256": "ebfb198199c2929c00154b55b66bf050efd76b397ed7a57f832614e40a76aae3",
+      "extraction": "HTML legal-text container extracted with BeautifulSoup; no active HTML is rendered in the app",
+      "pages": null,
+      "issued_on": "2017-12-19",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Amending Act as published by the Senate, not a consolidated NIRC. EOPT, CREATE/CREATE MORE, other amendments, and implementing issuances are not comprehensively covered.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "last-modified": "Mon, 16 Nov 2026 12:38:43 GMT",
+        "content-type": "text/html; charset=UTF-8"
+      }
+    },
+    {
+      "key": "bir-rr-29-2025",
+      "title": "Amended de minimis benefit ceilings",
+      "instrument": "BIR RR 29-2025",
+      "issuer": "Bureau of Internal Revenue / Department of Finance",
+      "domains": [
+        "ph.tax"
+      ],
+      "source_url": "https://bir-cdn.bir.gov.ph/BIR/pdf/RR%20No.%2029-2025.pdf",
+      "resolved_url": "https://bir-cdn.bir.gov.ph/BIR/pdf/RR%20No.%2029-2025.pdf",
+      "acquired_at_utc": "2026-11-16T12:38:44.448009+00:00",
+      "acquired_at_unix": 1794832724,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/bir-rr-29-2025.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 409714,
+      "raw_sha256": "b35cc25bcac4206469385a4dab89a5cc942aab73a55b6637ef323d601a552315",
+      "text_path": "text/bir-rr-29-2025.txt",
+      "text_sha256": "eb73a5e9e12cde5acea5a590418adf2d3df17e3e542b62d5708200d3f2f35fd9",
+      "extraction": "Tesseract 5 OCR, page order; original scan authoritative",
+      "pages": 2,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Original scan bears an October 27, 2025 signature stamp and a December 22, 2025 BIR release stamp. The official digest describes issuance on December 22. No absolute effective date is inferred. Reading text is OCR and must be checked against the original scan.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"5a5cb2ced7e72ce6b03f8224592f94db\"",
+        "last-modified": "Tue, 23 Dec 2025 06:33:58 GMT",
+        "content-type": "application/pdf",
+        "content-length": "409714"
+      }
+    },
+    {
+      "key": "ra-11199",
+      "title": "Social Security Act of 2018",
+      "instrument": "R.A. 11199",
+      "issuer": "Philippine Congress",
+      "domains": [
+        "ph.sss"
+      ],
+      "source_url": "https://issuances-library.senate.gov.ph/sites/default/files/2022-03/ra%2011199.pdf",
+      "resolved_url": "https://issuances-library.senate.gov.ph/sites/default/files/2022-03/ra%2011199.pdf",
+      "acquired_at_utc": "2026-11-16T12:40:20.009633+00:00",
+      "acquired_at_unix": 1794832820,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-11199.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 14873021,
+      "raw_sha256": "45b3cdc826237e7b2288b7e85c2c5d487be4192c0bf1f2fdd945d56515deb60e",
+      "text_path": "text/ra-11199.txt",
+      "text_sha256": "5be06bddfabc1bafc47fd95f9fabcf0673f10d3884c2878369db517f1c7ea0c0",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 44,
+      "issued_on": "2019-02-07",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Original Act scan preserved from the Senate attachment. Its existing text layer contains OCR errors; use the original for exact wording and figures. Later schedules and issuances remain relevant.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"e2f1bd-5d9c37cb70ba4\"",
+        "last-modified": "Wed, 09 Mar 2022 06:48:37 GMT",
+        "content-type": "application/pdf",
+        "content-length": "14873021"
+      }
+    },
+    {
+      "key": "sss-2024-006",
+      "title": "SSS contributions for business employers and employees",
+      "instrument": "SSS Circular 2024-006",
+      "issuer": "Social Security System",
+      "domains": [
+        "ph.sss"
+      ],
+      "source_url": "https://www.sss.gov.ph/wp-content/uploads/2024/12/CI-2024-006-Publication.pdf",
+      "resolved_url": "https://www.sss.gov.ph/wp-content/uploads/2024/12/CI-2024-006-Publication.pdf",
+      "acquired_at_utc": "2026-11-16T12:35:55.073367+00:00",
+      "acquired_at_unix": 1794832555,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/sss-2024-006.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 879092,
+      "raw_sha256": "5edda2ad4cc3c745b9d4e68a40c2309df531a95f032a9966a22877ceea454855",
+      "text_path": "text/sss-2024-006.txt",
+      "text_sha256": "acd60b520e43a15a5ee00f40417378000990ba43fb3cee134b57affcd5fe39eb",
+      "extraction": "Tesseract 5 OCR, page order; original scan authoritative",
+      "pages": 3,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Schedule explicitly effective January 2025 for business employers and employees. Other membership classes have different schedules. The OCR table is a reading aid, not a machine-validated contribution table or a guarantee of current applicability.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"d69f4-629b025207d81\"",
+        "last-modified": "Fri, 20 Dec 2024 09:19:34 GMT",
+        "content-type": "application/pdf",
+        "content-length": "879092"
+      }
+    },
+    {
+      "key": "ra-11223",
+      "title": "Universal Health Care Act",
+      "instrument": "R.A. 11223",
+      "issuer": "Philippine Congress / PhilHealth publication",
+      "domains": [
+        "ph.philhealth"
+      ],
+      "source_url": "https://www.philhealth.gov.ph/about_us/RA11223_UHC.pdf",
+      "resolved_url": "https://www.philhealth.gov.ph/about_us/RA11223_UHC.pdf",
+      "acquired_at_utc": "2026-11-16T12:37:28.518781+00:00",
+      "acquired_at_unix": 1794832648,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-11223.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 3708284,
+      "raw_sha256": "c231a594469203f25357ba8dfa9eeb29e8f2fe77f3ce5f8c60fc8e3386d5cf66",
+      "text_path": "text/ra-11223.txt",
+      "text_sha256": "3ff96575904e7f37353fa770a21f20835136ff00b7db2ea373444c8ce71032a2",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 18,
+      "issued_on": "2019-02-20",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Original Act scan from PhilHealth. Its text layer contains OCR artifacts. Read with applicable implementing rules, circulars, advisories, and review-period facts.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"651575cb-38957c\"",
+        "last-modified": "Thu, 28 Sep 2023 12:47:07 GMT",
+        "content-type": "application/pdf",
+        "content-length": "3708284"
+      }
+    },
+    {
+      "key": "philhealth-2025-0002",
+      "title": "Premium contribution for direct contributors — CY 2025",
+      "instrument": "PhilHealth Advisory 2025-0002",
+      "issuer": "Philippine Health Insurance Corporation",
+      "domains": [
+        "ph.philhealth"
+      ],
+      "source_url": "https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf",
+      "resolved_url": "https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf",
+      "acquired_at_utc": "2026-11-16T12:38:45.155193+00:00",
+      "acquired_at_unix": 1794832725,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/philhealth-2025-0002.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 103991,
+      "raw_sha256": "f760befe41609171d5bf58a2e053f9db8915d5ab5c79badb3c9ebb2888027328",
+      "text_path": "text/philhealth-2025-0002.txt",
+      "text_sha256": "158beb38a9fb2a43ccff488efd1341c6c421c62d28a353638f62cfa172d10a42",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 1,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Explicitly scoped to calendar year 2025. Included as a dated reference; this snapshot does not establish the rate for every later review period.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"677e3eb1-19637\"",
+        "last-modified": "Wed, 08 Jan 2025 09:00:33 GMT",
+        "content-type": "application/pdf",
+        "content-length": "103991"
+      }
+    },
+    {
+      "key": "philhealth-2026-0050",
+      "title": "Electronic Premium Remittance System version 4.9.0",
+      "instrument": "PhilHealth Advisory 2026-0050",
+      "issuer": "Philippine Health Insurance Corporation",
+      "domains": [
+        "ph.philhealth"
+      ],
+      "source_url": "https://www.philhealth.gov.ph/advisories/2026/PA2026-0050_v1.pdf",
+      "resolved_url": "https://www.philhealth.gov.ph/advisories/2026/PA2026-0050_v1.pdf",
+      "acquired_at_utc": "2026-11-16T12:38:48.165442+00:00",
+      "acquired_at_unix": 1794832728,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/philhealth-2026-0050.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 217631,
+      "raw_sha256": "68c5d7883672b711b6286eef5c918340058efe79b7f6aa1de535c68462453882",
+      "text_path": "text/philhealth-2026-0050.txt",
+      "text_sha256": "ca729d8ff766cc47cb67b0e70d0afece98b1f3dfbe2c097d7e36e22ff98af28b",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 1,
+      "issued_on": "2026-09-17",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Operational remittance-system advisory signed 17 September 2026. It is not a contribution-rate schedule or proof that a particular employer remitted payments.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"6ab4d2ac-3521f\"",
+        "last-modified": "Thu, 24 Sep 2026 07:35:08 GMT",
+        "content-type": "application/pdf",
+        "content-length": "217631"
+      }
+    },
+    {
+      "key": "ra-9679",
+      "title": "Home Development Mutual Fund Law of 2009",
+      "instrument": "R.A. 9679",
+      "issuer": "Philippine Congress",
+      "domains": [
+        "ph.pagibig"
+      ],
+      "source_url": "https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf",
+      "resolved_url": "https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf",
+      "acquired_at_utc": "2026-11-16T12:40:19.769979+00:00",
+      "acquired_at_unix": 1794832819,
+      "verified_at_utc": "2026-11-16T13:00:49+00:00",
+      "verified_at_unix": 1794834049,
+      "raw_path": "raw/ra-9679.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 589509,
+      "raw_sha256": "28efca3aac121c25d41e84466baf0bdb8c1f22a4d9e05da4ea62e4b4e4fa324e",
+      "text_path": "text/ra-9679.txt",
+      "text_sha256": "8f93e7bdfaacd8b38ea9f0d6feec0f9236b4c30917e05d6456c6866f55644294",
+      "extraction": "pdftotext -layout; publisher text layer may contain OCR artifacts",
+      "pages": 17,
+      "issued_on": "2009-07-21",
+      "effective_from": null,
+      "effectivity_note": "Consult the instrument effectivity clause, publication record, amendments, and the period under review; no unconditional date is inferred.",
+      "applicability_note": "Original Act scan from the Senate attachment. Pag-IBIG Circular 460 and later employer-remittance issuances are not bundled. This Act alone must not be treated as the current contribution schedule.",
+      "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+      "acquisition_headers": {
+        "etag": "\"8fec5-5f52cf8fb9600\"",
+        "last-modified": "Tue, 21 Feb 2023 02:59:48 GMT",
+        "content-type": "application/pdf",
+        "content-length": "589509"
+      }
+    }
+  ]
+}

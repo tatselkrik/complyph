@@ -1,5 +1,5 @@
 [package]
-name = "laborlens-desktop"
+name = "complyph-desktop"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,12 +7,12 @@ license.workspace = true
 publish.workspace = true
 
 [[bin]]
-name = "laborlens-ph"
+name = "complyph"
 path = "src/main.rs"
 
 [dependencies]
-laborlens-core = { path = "../core" }
-laborlens-library = { path = "../library" }
+complyph-core = { path = "../core" }
+complyph-library = { path = "../library" }
 chrono.workspace = true
 eframe.workspace = true
 egui-file-dialog.workspace = true

@@ -1,0 +1,153 @@
+name: Publish verified release
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Windows checks run ID
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: complyph-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify and publish Windows packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERIFIED_RUN_ID: ${{ inputs.run_id }}
+    steps:
+      - name: Verify the source build
+        id: verified
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$VERIFIED_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN_ID" > verified-run.json
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          run = json.loads(Path('verified-run.json').read_text())
+          assert str(run['repository']['id']) == os.environ['GITHUB_REPOSITORY_ID']
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          assert run['head_branch'] == 'main' and run['event'] == 'push'
+          assert run['path'] == '.github/workflows/ci.yml'
+          assert re.fullmatch('[0-9a-f]{40}', run['head_sha'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write('sha=' + run['head_sha'] + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('EXPECTED_COMMIT=' + run['head_sha'] + '\n')
+          PY
+      - name: Check out the verified source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.verified.outputs.sha }}
+          persist-credentials: false
+      - name: Download Windows packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download "$VERIFIED_RUN_ID" --repo "$GITHUB_REPOSITORY" --name complyph-windows --dir release
+      - name: Verify source, checksums, and upgrade evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, struct, zipfile
+          from pathlib import Path
+          root = Path('release')
+          manifest = json.loads((root / 'release-manifest.json').read_text(encoding='utf-8-sig'))
+          check = json.loads((root / 'windows-install-check.json').read_text(encoding='utf-8-sig'))
+          library = json.loads((root / 'starter-library-manifest.json').read_text())
+          assert manifest['source_commit'] == check['source_commit'] == os.environ['EXPECTED_COMMIT']
+          assert manifest['project'] == 'ComplyPH' and manifest['target'] == 'x86_64-pc-windows-msvc'
+          version = manifest['version']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version)
+          assert manifest['starter_bundle_id'] == library['bundle_id']
+          assert (root / 'starter-library-manifest.json').read_bytes() == Path('library/starter/manifest.json').read_bytes()
+          assert len(library['sources']) == check['starter_source_count'] == manifest['starter_source_count'] == 14
+          assert len(library['domains']) == check['starter_domain_count'] == manifest['starter_domain_count'] == 7
+          for name in ('installed', 'fresh_install_passed', 'legacy_upgrade_passed', 'legacy_branding_replaced', 'legacy_data_root_reused', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
+              assert check[name] is True, name
+          assert check['interactive_windows_ui_tested'] is False
+          for line in (root / 'SHA256SUMS.txt').read_text().splitlines():
+              digest, name = line.split('  ', 1)
+              path = root / name
+              assert path.parent == root
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name
+          for artifact in manifest['artifacts']:
+              path = root / artifact['name']
+              assert path.parent == root and path.stat().st_size == artifact['bytes']
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == artifact['sha256']
+          with zipfile.ZipFile(root / f'ComplyPH-Windows-x64-{version}.zip') as package:
+              assert package.testzip() is None
+              names = [name for name in package.namelist() if name.endswith('/ComplyPH.exe')]
+              assert len(names) == 1
+              data = package.read(names[0])
+              pe = struct.unpack_from('<I', data, 0x3c)[0]
+              assert data[pe:pe+4] == b'PE\0\0'
+              assert struct.unpack_from('<H', data, pe+4)[0] == 0x8664
+              assert struct.unpack_from('<H', data, pe+24+68)[0] == 2
+              for sample in ('Synthetic sample.pdf', 'Synthetic sample.docx'):
+                  matches = [name for name in package.namelist() if name.endswith('/Samples/' + sample)]
+                  assert len(matches) == 1
+                  assert package.read(matches[0]) == (Path('examples') / sample).read_bytes()
+          report = root / 'windows-install-check.json'
+          with (root / 'SHA256SUMS.txt').open('a', encoding='ascii') as output:
+              output.write(hashlib.sha256(report.read_bytes()).hexdigest() + '  ' + report.name + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write('RELEASE_VERSION=' + version + '\n')
+              output.write('RELEASE_TAG=v' + version + '\n')
+          PY
+      - name: Prepare a draft release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft,targetCommitish > existing-release.json 2>/dev/null; then
+            python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          release = json.loads(Path('existing-release.json').read_text())
+          assert release['isDraft'] is True
+          assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
+          PY
+          else
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Official source library" --notes-file "docs/releases/$RELEASE_TAG.md"
+          fi
+      - name: Attach verified packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+            "release/ComplyPH-Setup-$RELEASE_VERSION.exe" \
+            "release/ComplyPH-Windows-x64-$RELEASE_VERSION.zip" \
+            release/SHA256SUMS.txt release/release-manifest.json \
+            release/starter-library-manifest.json release/windows-install-check.json
+      - name: Confirm assets and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > candidate-release.json
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          release = json.loads(Path('candidate-release.json').read_text())
+          assert release['draft'] is True and release['target_commitish'] == os.environ['EXPECTED_COMMIT']
+          expected = {path.name: path for path in Path('release').iterdir() if path.is_file()}
+          assert {asset['name'] for asset in release['assets']} == set(expected)
+          for asset in release['assets']:
+              path = expected[asset['name']]
+              assert asset['state'] == 'uploaded' and asset['size'] == path.stat().st_size
+              if asset.get('digest'):
+                  assert asset['digest'] == 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()
+          PY
+          gh release edit "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,5 @@
 [package]
-name = "laborlens-library"
+name = "complyph-library"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,9 +7,12 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+complyph-paths = { path = "../paths" }
 directories.workspace = true
 rusqlite.workspace = true
 serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
