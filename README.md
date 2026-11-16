@@ -21,6 +21,7 @@
   <a href="#current-version">Current version</a> ·
   <a href="#install">Install</a> ·
   <a href="#how-it-works">How it works</a> ·
+  <a href="#built-to-scale">Future scope</a> ·
   <a href="#developer-setup">Developer setup</a> ·
   <a href="#documentation">Documentation</a>
 </p>
@@ -80,6 +81,14 @@ flowchart LR
 The diagram describes the planned checking and update components. The current release provides the desktop workspace and storage foundation.
 
 The future updater will check approved legal sources daily and automatically preserve new source versions locally. A new legal text does not automatically create a correct checking rule: unsupported legal changes will need rule maintenance and a visible review status. See the [roadmap](docs/ROADMAP.md).
+
+## Built to scale
+
+Labor compliance is the first planned review area. The architecture is intended to support additional Philippine compliance domains: **DOLE Occupational Safety and Health Standards (OSHS), the Data Privacy Act and NPC issuances, BIR requirements, SSS, PhilHealth, and Pag-IBIG**.
+
+One shared local review engine will handle document extraction, review context, findings, and citations. Each domain will supply its own approved sources, applicability conditions, versioned rules, required evidence, and validation cases. A document can be reviewed against several selected domains, with coverage and missing information reported for each.
+
+Some checks will need local payroll data or supporting records alongside the document. These domain capabilities are planned; v0.1.0 remains the desktop foundation. See the [compliance-domain design](docs/COMPLIANCE_DOMAINS.md).
 
 ## Local storage and privacy
 
@@ -152,6 +161,7 @@ GitHub Actions builds on Windows, packages the installer and app ZIP, and tests 
 | Documentation | Reference |
 | --- | --- |
 | Components, privacy boundary, and update design | [Architecture](docs/ARCHITECTURE.md) |
+| Shared review engine and future regulatory domains | [Compliance domains](docs/COMPLIANCE_DOMAINS.md) |
 | Navy-and-cream interface and interaction guidance | [Interface design](docs/DESIGN.md) |
 | Verified sources, rules, extraction, and future milestones | [Roadmap](docs/ROADMAP.md) |
 | Test scope and platform limits | [Verification](docs/VERIFICATION.md) |

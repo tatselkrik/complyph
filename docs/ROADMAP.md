@@ -6,9 +6,15 @@ Implemented: the native Rust interface, local PDF/DOCX file registration, search
 
 The application does not yet perform legal analysis.
 
+## Shared engine and compliance domains
+
+Build the review pipeline around shared document extraction, local evidence, applicability, citations, and reports. Define separate domain metadata and rules for labor compliance, DOLE OSHS, the Data Privacy Act/NPC, BIR, SSS, PhilHealth, and Pag-IBIG. Domain definitions use stable identifiers and keep regulators, source documents, and rules separate.
+
+Begin with one labor review area and validate the full workflow. Add other domains as their source collections, evidence requirements, and rule coverage are validated. Support selecting several domains for a review and report each domain's coverage independently. See the [compliance-domain design](COMPLIANCE_DOMAINS.md).
+
 ## Verified sources and first checking rules
 
-Establish a small official-source collection and one well-defined legal review area. Record issuer, source URL, publication and effective dates, applicability, verification state, and version history. Pair supported requirements with explicit checking rules and representative validation cases.
+Establish a small official-source collection and one well-defined labor review area. Record domain membership, issuer, source URL, publication and effective dates, applicability, verification state, and version history. Allow a source to belong to more than one domain. Pair supported requirements with explicit checking rules and representative validation cases.
 
 Maintain source documents and rule coverage separately. A new source does not automatically establish a correct new checking rule.
 
@@ -18,7 +24,7 @@ Read supported PDF and DOCX content, retain page or paragraph references, and su
 
 ## First complete review
 
-Collect the required context, evaluate supported rules, and present potential issues beside the relevant document passage. Include the exact source provision, effective date, explanation, missing facts, and review status.
+Collect the required context and evidence, evaluate supported rules, and present potential issues beside the relevant document passage. Include the domain, exact source provision, effective date, explanation, missing facts, and review status. Resolve applicability using the period under review and preserve its source and rule versions.
 
 Validate with synthetic or appropriately anonymized documents and qualified legal review. Evaluate both missed issues and incorrect flags. A result with no issue found must state its supported coverage.
 

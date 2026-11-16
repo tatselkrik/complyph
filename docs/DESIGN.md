@@ -18,6 +18,8 @@ Use restrained borders, consistent corners, clear typography, and comfortable sp
 
 The sidebar exposes Review, Documents, Legal library, Reports, and Settings. The document view presents original-file metadata and review status. Planned review screens will pair document passages with findings and source citations. Narrower windows should retain the review state while adapting panel placement.
 
+Future reviews should allow the user to choose compliance domains within the shared Review workspace. Group findings by domain and show missing evidence and evaluated coverage explicitly. The library should support filtering by domain and issuer, with source freshness and rule coverage shown separately. Keep the shared navigation and navy-and-cream visual language as new domains are added.
+
 File selection uses an egui dialog that follows the application theme. Filename rows act as single clickable controls; text inside a row should not intercept activation. Full paths remain optional and can be selected in document details.
 
 The screenshot in the README is an actual running native Linux application window with a synthetic sample. Windows shares the Rust UI implementation but still needs target-device checks for display scaling, assistive technology, and drag-and-drop behavior.

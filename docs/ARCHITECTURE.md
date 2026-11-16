@@ -30,15 +30,27 @@ The interface and application logic are Rust. The file browser is also rendered 
 
 SQLite and operating-system components include native code written in other languages. Rust application code does not imply that every dependency is implemented in Rust.
 
+## Planned compliance domains
+
+Labor compliance is the first review area. The shared review engine should also support occupational safety and health (DOLE OSHS), data privacy (the Data Privacy Act and NPC issuances), tax requirements (BIR), and SSS, PhilHealth, and Pag-IBIG requirements as coverage is developed.
+
+Keep document extraction, private evidence storage, applicability evaluation, finding presentation, and report snapshots shared. Each domain supplies its source mappings, required facts, versioned rules, evaluators, and validation cases. Several domains can apply to one document or review.
+
+The current catalog already stores generic source titles, issuers, URLs, and source versions; it has no Labor Code-specific schema. Domain membership, a rule registry, structured evidence, and rule applicability are not implemented yet. Their future migrations should use stable identifiers, allow one source to support several domains, and keep regulators distinct from domains. DOLE, for example, can issue sources relevant to both labor and occupational safety and health.
+
+The [compliance-domain design](COMPLIANCE_DOMAINS.md) defines these boundaries and the extension points. Domain expansion retains local document processing and the independent public-source updater.
+
 ## Planned review pipeline
 
 1. Extract local PDF/DOCX text with document-location references; use offline OCR for scans where supported.
-2. Collect context that changes applicability, such as region, employment category, industry, and review date.
-3. Evaluate explicit, versioned rules against the supplied facts and the applicable local legal-source versions.
+2. Select the review domains and collect the context and local evidence each requires, such as region, employment category, industry, and the period under review.
+3. Resolve applicable source and rule versions for that period and evaluate explicit, versioned rules against the supplied facts.
 4. Produce findings with the document passage, source provision, explanation, and any missing context.
 5. Preserve the source and rule versions used by each report.
 
 Rules are validated data and Rust logic, not executable instructions downloaded from a website. Money calculations should use exact decimal arithmetic. Unsupported wording and missing facts must produce a review state rather than an unsupported legal conclusion.
+
+Reports must identify the selected domains, evaluated rules, missing evidence, and unsupported coverage. A document review does not establish that an external payment, filing, or workplace activity occurred; checks that depend on those facts need suitable local evidence.
 
 ## Planned automatic source updates
 
