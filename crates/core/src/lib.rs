@@ -455,7 +455,9 @@ mod tests {
     fn schema_one_upgrade_preserves_records_preferences_and_caches_text_privately() {
         let temp = tempfile::TempDir::new().unwrap();
         let paths = WorkspacePaths::under(temp.path().join("data"));
-        fs::create_dir_all(&paths.private_dir).unwrap();
+        // Match app-created ownership even on an elevated Windows test runner.
+        complyph_paths::secure_directory(&paths.root).unwrap();
+        complyph_paths::secure_directory(&paths.private_dir).unwrap();
         let original = temp.path().join("Synthetic.pdf");
         let bytes = include_bytes!("../../../examples/Synthetic employment.pdf");
         fs::write(&original, bytes).unwrap();
@@ -620,7 +622,7 @@ mod tests {
     #[test]
     fn newer_databases_are_rejected_without_modification() {
         let temp = TempDir::new().unwrap();
-        let paths = WorkspacePaths::under(temp.path());
+        let paths = WorkspacePaths::under(temp.path().join("data"));
         drop(Workspace::open(&paths).unwrap());
         let connection = Connection::open(&paths.database).unwrap();
         connection.pragma_update(None, "user_version", 99).unwrap();
@@ -639,7 +641,7 @@ mod tests {
     #[test]
     fn malformed_saved_preferences_are_reported_instead_of_overwritten() {
         let temp = TempDir::new().unwrap();
-        let paths = WorkspacePaths::under(temp.path());
+        let paths = WorkspacePaths::under(temp.path().join("data"));
         let workspace = Workspace::open(&paths).unwrap();
         workspace
             .connection

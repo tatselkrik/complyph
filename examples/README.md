@@ -20,7 +20,7 @@ The two older `Synthetic sample` files remain for foundation compatibility. New 
 
 The development-only [generator](../scripts/generate-synthetic-documents.py) uses Python, ReportLab, Pillow, and pypdf. The installed application uses Rust readers; it needs none of those tools. The encrypted fixture may differ byte for byte when regenerated because encryption uses randomness.
 
-**No legal checking happens in this release.** A successful reading result means that text was extracted, not that a document satisfies any rule.
+A successful reading result means that text was extracted. The separate focused-check fixtures below test three numeric terms; reading alone produces no legal conclusion.
 
 ## Focused labour check fixtures (0.4.0)
 
