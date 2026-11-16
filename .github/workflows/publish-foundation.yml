@@ -1,0 +1,115 @@
+name: Publish desktop foundation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: laborlens-publish-v0.1.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish verified Windows packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_COMMIT: '90c65675920a2fe56973d12d6911904d2594fe32'
+      VERIFIED_RUN_ID: '43796951661'
+      DRAFT_RELEASE_ID: '446574026'
+    steps:
+      - name: Check out the verified source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: '90c65675920a2fe56973d12d6911904d2594fe32'
+          persist-credentials: false
+      - name: Confirm the successful Windows run and draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN_ID" > verified-run.json
+          gh api "repos/$GITHUB_REPOSITORY/releases/$DRAFT_RELEASE_ID" > draft-release.json
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          run = json.loads(Path('verified-run.json').read_text())
+          draft = json.loads(Path('draft-release.json').read_text())
+          assert os.environ['GITHUB_REPOSITORY'] == 'tatselkrik/laborlens-ph'
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          assert run['head_sha'] == os.environ['EXPECTED_COMMIT']
+          assert run['head_branch'] == 'main' and run['event'] == 'push'
+          assert draft['draft'] is True and draft['tag_name'] == 'v0.1.0'
+          assert draft['target_commitish'] == os.environ['EXPECTED_COMMIT']
+          PY
+      - name: Download the verified Windows packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download "$VERIFIED_RUN_ID" --repo "$GITHUB_REPOSITORY" --name laborlens-ph-windows --dir release
+      - name: Verify checksums and installation evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, zipfile
+          from pathlib import Path
+          root = Path('release')
+          manifest = json.loads((root / 'release-manifest.json').read_text(encoding='utf-8-sig'))
+          check = json.loads((root / 'windows-install-check.json').read_text(encoding='utf-8-sig'))
+          assert manifest['source_commit'] == check['source_commit'] == os.environ['EXPECTED_COMMIT']
+          assert manifest['version'] == '0.1.0' and manifest['target'] == 'x86_64-pc-windows-msvc'
+          for name in ('installed', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
+              assert check[name] is True, name
+          assert check['interactive_windows_ui_tested'] is False
+          for line in (root / 'SHA256SUMS.txt').read_text().splitlines():
+              digest, name = line.split('  ', 1)
+              path = root / name
+              assert path.parent == root
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name
+          for artifact in manifest['artifacts']:
+              path = root / artifact['name']
+              assert path.parent == root and path.stat().st_size == artifact['bytes']
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == artifact['sha256']
+          with zipfile.ZipFile(root / 'LaborLensPH-Windows-x64-0.1.0.zip') as package:
+              assert package.testzip() is None
+              for sample in ('Synthetic sample.pdf', 'Synthetic sample.docx'):
+                  names = [name for name in package.namelist() if name.endswith('/Samples/' + sample)]
+                  assert len(names) == 1
+                  assert package.read(names[0]) == (Path('examples') / sample).read_bytes()
+          report = root / 'windows-install-check.json'
+          with (root / 'SHA256SUMS.txt').open('a', encoding='ascii') as output:
+              output.write(hashlib.sha256(report.read_bytes()).hexdigest() + '  ' + report.name + '\n')
+          print('Exact source, packages, checksums, samples, and installation results verified.')
+          PY
+      - name: Attach packages to the draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload v0.1.0 --repo "$GITHUB_REPOSITORY" --clobber \
+            release/LaborLensPH-Setup-0.1.0.exe \
+            release/LaborLensPH-Windows-x64-0.1.0.zip \
+            release/SHA256SUMS.txt \
+            release/release-manifest.json \
+            release/windows-install-check.json
+      - name: Verify uploaded assets and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases/$DRAFT_RELEASE_ID/assets" > uploaded-assets.json
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          expected = {path.name: path for path in Path('release').iterdir() if path.is_file()}
+          assets = json.loads(Path('uploaded-assets.json').read_text())
+          assert {asset['name'] for asset in assets} == set(expected)
+          for asset in assets:
+              path = expected[asset['name']]
+              assert asset['state'] == 'uploaded' and asset['size'] == path.stat().st_size
+              if asset.get('digest'):
+                  assert asset['digest'] == 'sha256:' + hashlib.sha256(path.read_bytes()).hexdigest()
+          PY
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$DRAFT_RELEASE_ID" -F draft=false -f make_latest=true --jq .html_url >> "$GITHUB_STEP_SUMMARY"
