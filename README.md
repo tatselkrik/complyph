@@ -13,7 +13,7 @@
 
 <p align="center">
   <strong>Clarity starts with a document.</strong><br>
-  A native Rust desktop project for reviewing HR documents against Philippine labor law,
+  A native Rust desktop project for reviewing HR documents against Philippine labor laws,
   with documents and the planned legal library kept on your computer.
 </p>
 
