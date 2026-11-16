@@ -2,12 +2,14 @@
 
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i32 = 1;
+const SCHEMA_VERSION: i32 = 2;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -61,6 +63,12 @@ pub enum DocumentKind {
 }
 
 impl DocumentKind {
+    pub fn format(self) -> complyph_extract::Format {
+        match self {
+            Self::Pdf => complyph_extract::Format::Pdf,
+            Self::Docx => complyph_extract::Format::Docx,
+        }
+    }
     pub fn label(self) -> &'static str {
         match self {
             Self::Pdf => "PDF",
@@ -86,6 +94,48 @@ pub struct Document {
     pub bytes: u64,
     pub added_at: i64,
     pub modified_at: Option<i64>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SavedExtraction {
+    pub sha256: String,
+    pub read_at: i64,
+    pub report: complyph_extract::Report,
+}
+
+pub struct DocumentSnapshot {
+    pub bytes: Vec<u8>,
+    pub sha256: String,
+    pub modified_at: Option<i64>,
+}
+
+/// Read a bounded snapshot locally. Hashes and private bytes never go to the updater.
+pub fn document_snapshot(path: &Path) -> Result<DocumentSnapshot> {
+    let file = fs::File::open(path)?;
+    let before = file.metadata()?;
+    if !before.is_file() || before.len() > complyph_extract::MAX_INPUT_BYTES as u64 {
+        return Err(WorkspaceError::InvalidDocument(
+            "Choose a PDF or DOCX file of 32 MiB or less.".into(),
+        ));
+    }
+    let mut bytes = Vec::new();
+    file.take(complyph_extract::MAX_INPUT_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)?;
+    let after = path.metadata()?;
+    if bytes.len() > complyph_extract::MAX_INPUT_BYTES
+        || bytes.len() as u64 != before.len()
+        || after.len() != before.len()
+        || before.modified().ok() != after.modified().ok()
+    {
+        return Err(WorkspaceError::InvalidDocument(
+            "The document changed while being read. Save it and try again.".into(),
+        ));
+    }
+    Ok(DocumentSnapshot {
+        sha256: format!("{:x}", Sha256::digest(&bytes)),
+        bytes,
+        modified_at: after.modified().ok().and_then(unix_seconds),
+    })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -120,12 +170,14 @@ impl Workspace {
         }
         let mut connection = Connection::open(&paths.database)?;
         connection.busy_timeout(Duration::from_secs(5))?;
-        let version: i32 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        // Serialize schema inspection with migrations, including concurrent first opens.
+        let transaction =
+            connection.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let version: i32 = transaction.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version > SCHEMA_VERSION {
             return Err(WorkspaceError::NewerDatabase);
         }
         if version == 0 {
-            let transaction = connection.transaction()?;
             transaction.execute_batch(
                 "CREATE TABLE documents (
                     id INTEGER PRIMARY KEY,
@@ -143,8 +195,17 @@ impl Workspace {
                 CREATE INDEX documents_by_added ON documents(added_at DESC, id DESC);
                 PRAGMA user_version = 1;",
             )?;
-            transaction.commit()?;
         }
+        if version < 2 {
+            transaction.execute_batch(
+                "CREATE TABLE document_extractions (
+                    document_id INTEGER PRIMARY KEY REFERENCES documents(id) ON DELETE CASCADE,
+                    value TEXT NOT NULL
+                );
+                PRAGMA user_version = 2;",
+            )?;
+        }
+        transaction.commit()?;
         connection.pragma_update(None, "journal_mode", "WAL")?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
         #[cfg(unix)]
@@ -156,7 +217,7 @@ impl Workspace {
     }
 
     /// Register a reference to an existing file. Never copy, alter, or upload it.
-    /// Extraction and checking are intentionally separate, later milestones.
+    /// Text extraction is a separate, explicit local operation.
     pub fn register_document(&self, path: &Path) -> Result<Document> {
         let kind = DocumentKind::from_path(path).ok_or_else(|| {
             WorkspaceError::InvalidDocument("Choose a PDF or DOCX document.".to_owned())
@@ -206,7 +267,54 @@ impl Workspace {
             .map_err(Into::into)
     }
 
-    /// Removes only the workspace reference. The original document is untouched.
+    pub fn extraction(&self, id: i64) -> Result<Option<SavedExtraction>> {
+        let value: Option<String> = self
+            .connection
+            .query_row(
+                "SELECT value FROM document_extractions WHERE document_id = ?1",
+                [id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        value
+            .map(|value| serde_json::from_str(&value))
+            .transpose()
+            .map_err(Into::into)
+    }
+
+    /// Call only after confirming that the original still matches the parsed snapshot.
+    pub fn save_extraction(
+        &self,
+        document: &Document,
+        snapshot: &DocumentSnapshot,
+        report: complyph_extract::Report,
+    ) -> Result<SavedExtraction> {
+        let saved = SavedExtraction {
+            sha256: snapshot.sha256.clone(),
+            read_at: now(),
+            report,
+        };
+        let value = serde_json::to_string(&saved)?;
+        let transaction = self.connection.unchecked_transaction()?;
+        transaction.execute(
+            "UPDATE documents SET bytes = ?1, modified_at = ?2 WHERE id = ?3 AND path = ?4",
+            params![
+                snapshot.bytes.len() as i64,
+                snapshot.modified_at,
+                document.id,
+                document.path.to_str()
+            ],
+        )?;
+        transaction.execute(
+            "INSERT INTO document_extractions(document_id, value) VALUES (?1, ?2)
+            ON CONFLICT(document_id) DO UPDATE SET value = excluded.value",
+            params![document.id, value],
+        )?;
+        transaction.commit()?;
+        Ok(saved)
+    }
+
+    /// Removes the reference and cached text. The original document is untouched.
     pub fn remove_document(&self, id: i64) -> Result<()> {
         self.connection
             .execute("DELETE FROM documents WHERE id = ?1", [id])?;
@@ -269,6 +377,76 @@ fn unix_seconds(time: SystemTime) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn schema_one_upgrade_preserves_records_preferences_and_caches_text_privately() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let paths = WorkspacePaths::under(temp.path().join("data"));
+        fs::create_dir_all(&paths.private_dir).unwrap();
+        let original = temp.path().join("Synthetic.pdf");
+        let bytes = include_bytes!("../../../examples/Synthetic employment.pdf");
+        fs::write(&original, bytes).unwrap();
+        let db = Connection::open(&paths.database).unwrap();
+        db.execute_batch("CREATE TABLE documents(id INTEGER PRIMARY KEY,path TEXT UNIQUE,name TEXT,kind TEXT,bytes INTEGER,added_at INTEGER,modified_at INTEGER);
+            CREATE TABLE preferences(id INTEGER PRIMARY KEY,value TEXT); PRAGMA user_version=1;").unwrap();
+        db.execute(
+            "INSERT INTO documents VALUES(7,?1,'Synthetic.pdf','PDF',?2,42,NULL)",
+            params![original.to_str(), bytes.len() as i64],
+        )
+        .unwrap();
+        let preferences = Preferences {
+            last_page: "documents".into(),
+            show_full_paths: true,
+            ..Default::default()
+        };
+        db.execute(
+            "INSERT INTO preferences VALUES(1,?1)",
+            [serde_json::to_string(&preferences).unwrap()],
+        )
+        .unwrap();
+        drop(db);
+        let workspace = Workspace::open(&paths).unwrap();
+        let document = workspace.documents().unwrap().remove(0);
+        assert_eq!(document.id, 7);
+        assert_eq!(document.added_at, 42);
+        assert_eq!(workspace.preferences().unwrap(), preferences);
+        assert!(workspace.extraction(7).unwrap().is_none());
+        let snapshot = document_snapshot(&original).unwrap();
+        let report = complyph_extract::extract(complyph_extract::Format::Pdf, &snapshot.bytes);
+        let saved = workspace
+            .save_extraction(&document, &snapshot, report)
+            .unwrap();
+        drop(workspace);
+        let workspace = Workspace::open(&paths).unwrap();
+        assert_eq!(
+            workspace.extraction(7).unwrap().unwrap().sha256,
+            saved.sha256
+        );
+        assert!(
+            workspace.extraction(7).unwrap().unwrap().report.units[1]
+                .text
+                .contains("PAGE-TWO-TERMS")
+        );
+        assert!(!paths.library_dir.exists());
+        workspace.remove_document(7).unwrap();
+        assert!(workspace.extraction(7).unwrap().is_none());
+        assert_eq!(fs::read(&original).unwrap(), bytes);
+    }
+
+    #[test]
+    fn simultaneous_private_migrations_do_not_duplicate_or_lose_entries() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let paths = WorkspacePaths::under(temp.path().join("data"));
+        let handles: Vec<_> = (0..4)
+            .map(|_| {
+                let paths = paths.clone();
+                std::thread::spawn(move || Workspace::open(&paths).unwrap().documents().unwrap())
+            })
+            .collect();
+        for handle in handles {
+            assert!(handle.join().unwrap().is_empty());
+        }
+    }
 
     #[test]
     fn renamed_app_reopens_legacy_documents_and_preferences() {

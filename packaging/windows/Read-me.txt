@@ -1,42 +1,46 @@
-ComplyPH 0.2.0 — Official source library
+ComplyPH 0.3.0 - Local document reader
 Formerly LaborLens PH
 
-Close LaborLens PH or ComplyPH before installing. Keep the detected installation
+Close ComplyPH or LaborLens PH before installing. Keep the detected installation
 location when upgrading. Open ComplyPH from its desktop/Start menu shortcut,
 or extract the app ZIP and open ComplyPH.exe. Normal use needs no command prompt,
-Rust installation, browser session, AI model, or API key.
+Rust installation, Python, browser session, AI model, API key, or subscription.
 
 Available:
 - Navy-and-cream native Rust workspace.
-- Register local PDF/DOCX references, search metadata, and save preferences.
+- Read supported PDF and DOCX text locally, without changing originals.
+- PDF page references; Word paragraph/table/part references; text search.
+- Private local text cache; content hashes checked when reopening a document.
+- Friendly states for scans, password protection, damaged files, and limits.
+- Seven synthetic reader cases in Samples; PDF/Word/Scan sample buttons in-app.
 - Browse 14 official publication snapshots across seven compliance domains.
-- Filter/search sources, read local text, search within a source, and save originals.
-- Source URLs, provenance, dates, applicability notes, and SHA-256 checks.
+- Source filters, offline reading/search, original export, dates, and SHA-256 checks.
 
-"Verified" concerns official origin, document identity, and preserved-content
-integrity. This is a starter collection with documented gaps, not a complete
-current legal corpus. OCR and table layouts may be imperfect; use originals.
+The reader does not send document content online. It does not run Word fields,
+macros, embedded programs, PDF JavaScript, or external document links. Read text
+can omit images, text boxes, annotations, and deleted text, or lose table/layout
+order. Compare it with the original. OCR is not included. Reader limits: 32 MiB
+input, 300 PDF pages, 4 MiB text, and a 20-second worker timeout.
 
-Open Legal library to inspect the collection. Library-notes.md and
-starter-manifest.json describe the included sources and missing acquisitions.
+Use Review > Try a synthetic sample, or Choose document. Originals stay in place.
+Removing an entry removes its cached text too; it does not delete the original.
+All samples are fictional test data, not legal templates.
 
-Private document text extraction, legal checking, reports, folder monitoring,
-manual source import, and daily downloads are not implemented yet.
-Selecting a private document stores metadata only and does not upload, copy,
-or modify it. Samples contains synthetic files, not legal templates.
+"Verified" sources concern official origin, identity, and content integrity.
+The starter collection has documented gaps. Legal checking, reports, watched
+folders, manual source import, and daily updates are not implemented yet.
 
 New Windows data:
 %LOCALAPPDATA%\ComplyPH\private\workspace.sqlite3
 %LOCALAPPDATA%\ComplyPH\library\catalog.sqlite3
 
-An existing %LOCALAPPDATA%\LaborLens PH data root is reused without moving
-databases. If both branded roots exist, the app preserves both and requires
-explicit workspace selection. Uninstalling preserves data and original documents.
+An existing %LOCALAPPDATA%\LaborLens PH data root is reused without moving live
+databases. Existing references/preferences are retained while the private schema
+upgrades to version 2 for text caches. Uninstall preserves all application data
+and original documents. SQLite storage is not encrypted by the application.
 
-This build is unsigned. Windows source, installation, and legacy-upgrade checks
-are documented at:
-https://github.com/tatselkrik/laborlens-ph/blob/main/docs/VERIFICATION.md
+This build is unsigned. Checks and limitations:
+https://github.com/tatselkrik/complyph/blob/main/docs/VERIFICATION.md
 
-Source: MIT license. Fonts: SIL Open Font License. Additional dependency notices
-are in THIRD_PARTY_NOTICES.txt. Agency names/marks identify publication sources
-and do not imply government endorsement.
+Source: MIT license. Fonts: SIL Open Font License. Dependency notices are in
+THIRD_PARTY_NOTICES.txt. Agency names do not imply government endorsement.

@@ -10,7 +10,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.2.0'
+$version = '0.3.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -20,8 +20,7 @@ Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination (Join-Path $stag
 Copy-Item -LiteralPath (Join-Path $root 'assets/fonts/OFL.txt') -Destination (Join-Path $stage 'Lato-OFL.txt')
 Copy-Item -LiteralPath (Join-Path $root 'packaging/windows/THIRD_PARTY_NOTICES.txt') -Destination $stage
 Copy-Item -LiteralPath (Join-Path $root 'packaging/windows/Read-me.txt') -Destination $stage
-Copy-Item -LiteralPath (Join-Path $root 'examples/Synthetic sample.pdf') -Destination (Join-Path $stage 'Samples')
-Copy-Item -LiteralPath (Join-Path $root 'examples/Synthetic sample.docx') -Destination (Join-Path $stage 'Samples')
+Get-ChildItem -LiteralPath (Join-Path $root 'examples') -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $stage 'Samples') }
 $library = Get-Content -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Raw | ConvertFrom-Json
 Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destination (Join-Path $stage 'starter-manifest.json')
 Copy-Item -LiteralPath (Join-Path $root 'library/README.md') -Destination (Join-Path $stage 'Library-notes.md')
@@ -34,8 +33,10 @@ $zip = Join-Path $output "ComplyPH-Windows-x64-$version.zip"
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force
 $sourceCommit = (git -C $root rev-parse HEAD).Trim()
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Official source library'
+    project = 'ComplyPH'; version = $version; milestone = 'Local document reader'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
+    document_text_reading = 'offline PDF and DOCX'; private_schema = 2
+    synthetic_fixture_count = 7; reader_engine = 'complyph-text-1'
     legal_checking = 'not implemented'; automatic_downloads = 'not implemented'
     starter_source_count = $library.sources.Count; starter_domain_count = $library.domains.Count
     starter_bundle_id = $library.bundle_id; verification_scope = $library.verification_scope

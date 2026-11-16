@@ -2,6 +2,8 @@
 
 mod app;
 mod library_view;
+mod reader;
+mod reader_view;
 mod theme;
 mod widgets;
 
@@ -40,6 +42,26 @@ fn main() -> eframe::Result {
 fn parse_arguments() -> Option<PathBuf> {
     let mut arguments = std::env::args_os().skip(1);
     match arguments.next() {
+        Some(argument) if argument == "--extract-worker" => {
+            let format = match arguments.next().as_deref().and_then(|value| value.to_str()) {
+                Some("pdf") => complyph_extract::Format::Pdf,
+                Some("docx") => complyph_extract::Format::Docx,
+                _ => std::process::exit(2),
+            };
+            if arguments.next().is_some() {
+                std::process::exit(2);
+            }
+            reader::worker_main(format);
+        }
+        Some(argument) if argument == "--read-file" => {
+            // Diagnostic entry point for isolated installer/reader verification.
+            let result = diagnostic_read(arguments.collect());
+            if let Err(error) = result {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--data-dir" => {
             let Some(path) = arguments.next() else {
                 eprintln!("--data-dir requires a path");
@@ -53,7 +75,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen the application normally, or use --data-dir PATH for an isolated test workspace."
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }
@@ -63,4 +85,36 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         None => None,
     }
+}
+
+fn diagnostic_read(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    if !matches!(arguments.len(), 3 | 5)
+        || arguments[1] != "--output"
+        || (arguments.len() == 5 && arguments[3] != "--data-dir")
+    {
+        return Err("Use --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]".into());
+    }
+    // Refuse to overwrite any existing file, including the original document.
+    let output = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&arguments[2])
+        .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
+    let paths = if arguments.len() == 5 {
+        WorkspacePaths::under(PathBuf::from(&arguments[4]))
+    } else {
+        WorkspacePaths::default_location().map_err(|error| error.to_string())?
+    };
+    let workspace = complyph_core::Workspace::open(&paths).map_err(|error| error.to_string())?;
+    let document = workspace
+        .register_document(std::path::Path::new(&arguments[0]))
+        .map_err(|error| error.to_string())?;
+    let saved = reader::read_document(
+        &paths,
+        &document,
+        false,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
+    serde_json::to_writer_pretty(output, &saved)
+        .map_err(|_| "The diagnostic result could not be saved.".into())
 }

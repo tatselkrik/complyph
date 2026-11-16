@@ -1,0 +1,56 @@
+{
+  "Synthetic employment.pdf": {
+    "status": "ready",
+    "units": 3,
+    "contains": [
+      "PAGE-TWO-TERMS",
+      "PAGE-THREE-END",
+      "PHP 12345.67"
+    ]
+  },
+  "Synthetic workplace policy.docx": {
+    "status": "ready",
+    "contains": [
+      "José Example",
+      "₱12,345.67",
+      "kaligtasan & privacy.",
+      "Tab\tseparated\nNext line.",
+      "TOPIC-CELL",
+      "DETAIL-CELL",
+      "SYNTHETIC-HEADER",
+      "SYNTHETIC-FOOTER",
+      "Inserted revision."
+    ],
+    "excludes": [
+      "PRIVATE-FIELD-INSTRUCTION-DO-NOT-READ",
+      "DELETED-TEXT-DO-NOT-READ",
+      "https://example.invalid"
+    ]
+  },
+  "Synthetic scan.pdf": {
+    "status": "needs_ocr",
+    "units": 1,
+    "excludes": [
+      "IMAGE-ONLY-FIXTURE"
+    ]
+  },
+  "Synthetic mixed pages.pdf": {
+    "status": "ready",
+    "units": 2,
+    "contains": [
+      "MIXED-TEXT-PAGE"
+    ],
+    "excludes": [
+      "IMAGE-ONLY-FIXTURE"
+    ]
+  },
+  "Synthetic protected.pdf": {
+    "status": "password_protected"
+  },
+  "Synthetic damaged.pdf": {
+    "status": "unreadable"
+  },
+  "Synthetic damaged.docx": {
+    "status": "unreadable"
+  }
+}

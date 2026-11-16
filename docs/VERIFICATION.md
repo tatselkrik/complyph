@@ -2,34 +2,46 @@
 
 ## Automated Rust checks
 
-Sixteen tests cover:
+The workspace has 27 passing tests and one deliberately ignored stalled-child fixture. The supervisor test invokes and terminates that fixture; it is not an untested feature.
 
-- Seven private-workspace cases: persistence, duplicate paths, unsupported/missing files, original preservation, future schemas, malformed settings, and reopening legacy documents/preferences after the rename.
-- Seven public-catalog cases: real snapshots in seven domains without a fabricated runtime update, idempotent imports and private-file isolation, schema 1 migration, corruption rejection, exact-byte export and overwrite refusal, future-schema protection, and concurrent first opens.
-- Two location-discovery cases: reuse of legacy data without moving it, and explicit handling of two existing branded roots.
+- Nine private-workspace tests cover persistence, duplicate paths, unsupported/missing files, original preservation, future schemas, malformed settings, legacy-data reuse, concurrent initialization, and migration from private schema 1 to 2 with retained documents/preferences and cached-text deletion.
+- Four parser tests check all seven synthetic files against independent expected results, original PDF page and Word table/header references, Unicode/entities/strict Word namespaces, malformed XML/DTD rejection, and file/expanded-XML limits.
+- Three executable integration tests run the shipped GUI-subsystem executable headlessly and invoke its actual child worker: all seven cases, original preservation, no public-catalog initialization, persistent caches, same-size content changes, deletion, and overwrite refusal.
+- Two worker-supervisor tests cover cancellation before process launch and termination of a stalled child.
+- Seven public-catalog tests and two location-discovery tests retain the source-library, provenance/integrity, migration, export, isolation, concurrency, and rename checks from 0.2.0.
 
-Formatting and workspace Clippy run with warnings denied. Bundled originals and reading text are hash checked; raw HTML is marked binary in Git so checkout cannot change its line endings.
+Formatting and workspace Clippy run with warnings denied. Release builds use the lockfile. The test fixtures contain no real people, employers, identifiers, or private documents. See [Samples](../examples/README.md) and [expected results](../examples/expected-results.json).
+
+## Offline reading observation
+
+On Linux, each of the seven files was read through the actual executable and child worker under `strace -f -e trace=network`. All seven runs returned their expected states and produced **zero network system calls**. The Word sample contains an external `example.invalid` hyperlink relationship; the label is extracted and the URL is not fetched.
+
+This observation covers those diagnostic reading runs, not every possible desktop/operating-system action. Source/dependency inspection also confirms no HTTP client/AI integration in the reader and no core/extractor dependency in the public updater. Resource limits are not a full OS security sandbox. Future source networking still requires enforced restrictions and new boundary tests.
 
 ## Native interface
 
-The actual ComplyPH application was run on the Cloud Linux desktop with public legal sources and a synthetic document workspace. Observed checks include seven domain filters, source-title search, an offline source reader, search within a source, original-file export, and reopening the retained document list and catalog.
+The real ComplyPH window is checked on the shared Linux desktop using only synthetic documents and public sources. The README screenshot comes from the actual native reader. Checks include sample selection, automatic extraction, PDF page navigation/search, Word Unicode/table references, scanned-file status, repeated opening, and retained local data.
 
-The exported NPC circular matched the original PDF SHA-256 byte for byte. The reader was adjusted to collapse excessive blank display lines and provide a larger text area; original stored reading text and publication bytes remain unchanged.
-
-The README preview is from this actual native window. It contains no real employee/employer documents. Earlier document intake and preference interactions were also checked in the v0.1.0 foundation.
+The existing seven-domain source filters, source search, offline source reading, and exact original export were also checked for 0.2.0. The exported NPC circular matched the original byte for byte. No private user document was used.
 
 ## Windows workflow
 
-The Windows workflow uses the pinned Rust/MSVC toolchain and a statically linked C runtime. It repeats source checks, builds the desktop and catalog tool, packages an NSIS installer/app ZIP, and runs an isolated installation check.
+GitHub Actions uses the pinned Rust/MSVC toolchain and static C runtime. It repeats formatting, tests, and Clippy, builds the desktop/updater, packages an NSIS installer/app ZIP, and runs an isolated install check.
 
-The check installs the published v0.1.0 fixture after verifying its hash, creates synthetic schema 1 private/public databases, upgrades to ComplyPH using the registered old installation directory, and verifies replacement branding, shortcuts, CLI startup, and discovery of the existing data root. Catalog import must produce 14 verified publication snapshots across seven domains without changing private database bytes.
+The check refuses an existing runner installation/data root and uses synthetic data only. It verifies:
 
-It also checks a fresh ComplyPH installation and verifies that uninstall preserves the private workspace, reference catalog, and original synthetic document. The check refuses an existing runner installation or workspace and does not run on a contributor's personal PC.
+1. Upgrade from the hash-pinned LaborLens PH 0.1.0 installer, registered directory/shortcut replacement, executable startup, and default reuse of the legacy data root.
+2. Import of 14 official snapshots across seven domains without changing private bytes.
+3. All seven installed reader fixtures, including the same child-process resource limits used by the GUI, expected text/states/locations, and original preservation.
+4. Private schema 1 → 2 migration without losing prior document references/preferences, and cache creation.
+5. Reinstall location retention, fresh installation, upgrade from hash-pinned ComplyPH 0.2.0, and data/cache/original preservation through uninstall.
 
-Exact-commit results and machine-readable installation evidence accompany releases. These checks do not establish interactive Windows scaling, assistive-technology behavior, or drag and drop on every device. The build is unsigned.
+Exact-commit results and machine-readable installation evidence accompany releases. The publisher accepts artifacts only from successful `main` push builds and verifies source SHA, sample bytes, manifests, checksums, upgrade evidence, and uploaded asset sizes/digests before publishing.
 
-## Source verification scope
+Interactive Windows display scaling, assistive technology, and every device’s drag/drop behavior remain target-PC checks. The build is unsigned. No claim is made that extraction faithfully reproduces every font, layout, embedded object, revision, or image.
 
-See [Starter library](../library/README.md) for official publication links, source-specific notes, extraction limitations, and blocked acquisitions. Verification concerns provenance, document identity, and hashes; it does not certify legal currency, complete amendment coverage, interpretation, or compliance.
+## Remaining scope
 
-There is no private-document extraction/checking engine, report generator, watched folder, manual source importer, or daily downloader. No runtime update check has run. Future networking still requires operating-system restrictions and boundary verification.
+Source verification means official origin, identity, and preserved-content integrity. It does not certify legal currency, complete amendments, interpretation, or compliance; [known collection gaps](../library/README.md) remain unchanged.
+
+OCR, legal checking rules, reports, watched folders, manual source import, and daily source downloads are not implemented. No runtime legal-source update has run.

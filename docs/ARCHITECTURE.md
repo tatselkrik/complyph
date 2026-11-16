@@ -2,12 +2,13 @@
 
 ## Current implementation
 
-ComplyPH 0.2.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX reference workspace with 14 bundled official-publication snapshots across seven compliance domains. Private-document extraction, legal checking, reports, folder monitoring, manual source import, and runtime source downloads remain future work.
+ComplyPH 0.3.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 14 bundled official-publication snapshots across seven compliance domains. Legal checking, OCR, reports, folder monitoring, manual source import, and runtime source downloads remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
 | `complyph-desktop` | Native workspace, file selection, source filters, reader, and original export | Uses both stores |
-| `complyph-core` | Private document references, settings, paths, and schema protection | Owns private workspace |
+| `complyph-core` | Private references, content snapshots, text cache, settings, and migrations | Owns private workspace |
+| `complyph-extract` | In-memory PDF/DOCX parsing and structured text locations | Receives bytes only; no file/network I/O |
 | `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
 | `complyph-paths` | Shared current/legacy data-root discovery | Directory existence only; no document or database reads |
 | `complyph-updater` | Independent public-catalog status CLI and bundled import | Public catalog only |
@@ -19,13 +20,13 @@ There is no HTTP client, telemetry, AI integration, or runtime downloader. Sourc
 Fresh Windows installations use `%LOCALAPPDATA%\ComplyPH`. If only `%LOCALAPPDATA%\LaborLens PH` exists, both the desktop and catalog status tool reuse it in place. Live SQLite files are not copied or moved. If both roots exist, discovery fails visibly and preserves both; the developer `--data-dir` override can select a workspace explicitly.
 
 ```text
-private/workspace.sqlite3   Private document references and preferences; schema 1
+private/workspace.sqlite3   Private document references, text caches, and preferences; schema 2
 library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 2
 ```
 
 The installer detects a registered LaborLens PH installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
 
-Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry preserves the original file. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
+Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and preserves the original file. Private migration 1 → 2 adds the cache table without replacing existing document records or preferences. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
 
 ## Public source catalog
 
@@ -47,13 +48,31 @@ The Legal library page filters sources by domain, searches titles/instruments/is
 
 ## Planned checking pipeline
 
-1. Extract private PDF/DOCX text locally with original document-location references.
+1. Inspect the locally extracted PDF/DOCX text and original document-location references (implemented).
 2. Select review domains and collect required local context and evidence, including the period under review.
 3. Resolve applicable source and rule versions for that period.
 4. Evaluate explicit, versioned rules and produce findings with passages, source provisions, missing facts, and review status.
 5. Preserve evaluated domains, coverage, evidence, source versions, and rule versions in reports.
 
 The source/domain layer is implemented. Rule definitions, rule-to-provision mappings, structured review evidence, and the checking engine are not implemented. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
+
+## Private document reading
+
+The desktop registers documents and reads them on a background thread. Before parsing, the core reads a bounded local snapshot and computes its SHA-256. A matching cache for the current reader engine can be reused only after this content check. A missing/unreadable original does not silently fall back to old cached text. Changed content is extracted again; an additional hash check before saving rejects a source that changed during parsing. This is a point-in-time read, not a watched folder: an original edited after display requires **Read again** or reopening it.
+
+Untrusted parsing runs in a child process of the same executable, entered before UI/catalog initialization. Arguments carry the format only. Bytes go to stdin and a bounded JSON result returns through stdout; stderr is discarded. The child receives no inherited credentials/proxy configuration. No shell, Python, office installation, downloaded model, HTTP client, or API is used. The public library and updater do not depend on `complyph-core` or `complyph-extract`.
+
+The supervisor cancels obsolete jobs, ignores stale results, terminates a worker after 20 seconds, and bounds output at 12 MiB. Linux workers limit address space to 1 GiB, CPU time to 12 seconds, and core dumps to zero. Windows workers use a Job Object with 512 MiB process memory, 12 seconds of user CPU time, and one active process. Failure to apply limits produces a reader error. These resource guards are not filesystem/network confinement; OS restrictions remain necessary before a future updater is enabled.
+
+Input is limited to 32 MiB. PDFs use pdf-extract/lopdf, keep physical page numbers, reject password protection, and limit pages to 300. Empty text pages are identified; an entirely textless PDF is **Needs OCR**. Columns, font mappings, table layout, images, and reading order can be imperfect. No partial PDF parsing error is reported as fully read text.
+
+DOCX uses ZIP and namespace-aware streaming XML, with no archive extraction to disk. It reads `word/document.xml`, header/footer parts, and foot/endnotes. Locations identify the original part, 1-based paragraph, and table/row/cell where available. Headers/notes are supplementary parts, not inferred page content. Text runs, Unicode, tabs, line breaks, and visible hyperlink labels are preserved. Deleted/moved-from text, text boxes, comments, images, and embedded content are omitted. Field instructions are ignored. Macros, external relationships, and document links are never executed/fetched; DTDs and non-predefined XML entities are rejected.
+
+DOCX limits are 2,048 archive entries, 64 MiB declared expanded bytes, 16 MiB per selected XML part, 128 nesting levels, and 12,000 paragraphs. Both formats stop at 4 MiB of extracted text. Known failures have explicit statuses; a crash or exhausted worker is shown as a local reading failure with the original preserved.
+
+Cache data lives only in `private/workspace.sqlite3`, under a foreign key that deletes it with the document entry. The GUI uses text-only selectable labels, location navigation, search, and bounded display chunks. The legal-check action remains disabled. No compliance result can be inferred from a successful text read.
+
+The developer-only `--read-file PATH --output NEW-JSON-FILE [--data-dir PATH]` route exercises the same worker/cache pipeline without opening a window. It refuses to overwrite an existing file. Installer smoke tests use it only with bundled synthetic data; its JSON output contains private text if a developer deliberately selects a private document.
 
 ## Planned source updates
 

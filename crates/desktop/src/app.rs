@@ -81,6 +81,7 @@ pub struct ComplyApp {
     library: LibrarySummary,
     library_error: Option<String>,
     library_view: LibraryView,
+    reader_view: crate::reader_view::ReaderView,
     startup_error: Option<String>,
     preferences: Preferences,
     page: Page,
@@ -105,6 +106,7 @@ impl ComplyApp {
             library: LibrarySummary::default(),
             library_error: None,
             library_view: LibraryView::default(),
+            reader_view: crate::reader_view::ReaderView::default(),
             startup_error: None,
             preferences: Preferences::default(),
             page: Page::Review,
@@ -214,7 +216,39 @@ impl ComplyApp {
         });
     }
 
-    fn messages(&mut self) {
+    fn try_sample(&mut self, name: &str, ctx: &egui::Context) {
+        let packaged = std::env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().map(|path| path.join("Samples").join(name)));
+        #[cfg(debug_assertions)]
+        let packaged = packaged.filter(|path| path.is_file()).or_else(|| {
+            Some(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../examples")
+                    .join(name),
+            )
+        });
+        if let Some(path) = packaged.filter(|path| path.is_file()) {
+            self.accept_files(vec![path], ctx);
+        } else {
+            self.notice = Some(Notice { text: "The synthetic Samples folder is missing. Reinstall the app or choose a PDF/DOCX file.".into(), error: true });
+        }
+    }
+
+    fn select_document(&mut self, id: i64, ctx: &egui::Context) {
+        self.selected = Some(id);
+        if let Some(paths) = self.paths.clone()
+            && let Some(document) = self
+                .documents
+                .iter()
+                .find(|document| document.id == id)
+                .cloned()
+        {
+            self.reader_view.start(paths, document, false, ctx);
+        }
+    }
+
+    fn messages(&mut self, ctx: &egui::Context) {
         while let Ok(message) = self.receiver.try_recv() {
             self.choosing = false;
             match message {
@@ -231,7 +265,7 @@ impl ComplyApp {
                         }
                     }
                     if let Some(id) = ids.last() {
-                        self.selected = Some(*id);
+                        self.select_document(*id, ctx);
                         self.navigate(Page::Review);
                     }
                     let count = ids.len();
@@ -332,7 +366,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            "LIBRARY  /  0.2.0",
+            "LOCAL READER  /  0.3.0",
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -450,6 +484,22 @@ impl ComplyApp {
                         .size(11.5)
                         .color(MUTED),
                 );
+                ui.add_space(8.0);
+                ui.horizontal_wrapped(|ui| {
+                    widgets::muted(ui, "Try a synthetic sample:");
+                    for (label, name) in [
+                        ("PDF", "Synthetic employment.pdf"),
+                        ("Word", "Synthetic workplace policy.docx"),
+                        ("Scan", "Synthetic scan.pdf"),
+                    ] {
+                        if ui
+                            .add_enabled(!self.choosing, egui::Button::new(label).small())
+                            .clicked()
+                        {
+                            self.try_sample(name, ui.ctx());
+                        }
+                    }
+                });
             });
         });
     }
@@ -461,12 +511,17 @@ impl ComplyApp {
             ui.label(RichText::new("Your review workflow").font(heading(18.0)));
             ui.add_space(10.0);
             for (number, title, subtitle, available) in [
-                ("01", "Add your documents", "Available now", true),
-                ("02", "Establish legal sources", "Next milestone", false),
+                ("01", "Read your documents", "Local PDF and Word text", true),
+                (
+                    "02",
+                    "Browse official sources",
+                    "14 saved references · 7 domains",
+                    true,
+                ),
                 (
                     "03",
                     "Review with citations",
-                    "Follows source verification",
+                    "Checking rules are still planned",
                     false,
                 ),
             ] {
@@ -501,8 +556,10 @@ impl ComplyApp {
             "Clarity starts with a document.",
             "A private space for your contracts, policies, and handbooks.",
         );
-        self.stats(ui);
-        ui.add_space(20.0);
+        if self.selected.is_none() {
+            self.stats(ui);
+            ui.add_space(20.0);
+        }
         let selected = self
             .selected
             .and_then(|id| self.documents.iter().find(|d| d.id == id))
@@ -555,7 +612,7 @@ impl ComplyApp {
                     if document_row(ui, &document, self.selected == Some(document.id), false)
                         .clicked()
                     {
-                        self.selected = Some(document.id);
+                        self.select_document(document.id, ui.ctx());
                     }
                 }
             }
@@ -569,21 +626,12 @@ impl ComplyApp {
                 widgets::icon(ui,Icon::Document,30.0,NAVY);
                 ui.vertical(|ui| {
                     ui.label(RichText::new(&document.name).font(heading(21.0)));
-                    ui.label(RichText::new("Added to your local workspace").size(12.5).color(MUTED));
+                    ui.label(RichText::new(format!("{} · {} · added {}", document.kind.label(), format_size(document.bytes), format_date(document.added_at))).size(12.5).color(MUTED));
                 });
                 ui.with_layout(Layout::right_to_left(Align::Center),|ui| { widgets::pill(ui,"Not reviewed",AMBER,AMBER_TINT,false); });
             });
-            ui.add_space(18.0);
-            ui.columns(3,|columns| {
-                widgets::metadata(&mut columns[0],"FILE TYPE",document.kind.label());
-                widgets::metadata(&mut columns[1],"SIZE",&format_size(document.bytes));
-                widgets::metadata(&mut columns[2],"ADDED",&format_date(document.added_at));
-            });
-            ui.add_space(14.0);
-            ui.separator();
-            ui.add_space(10.0);
-            ui.label(RichText::new("The file is registered. Text extraction and legal checks come next.").font(heading(15.0)));
-            widgets::muted(ui,"No compliance assessment has been made. This foundation keeps a reference to your original file.");
+            ui.add_space(12.0);
+            widgets::muted(ui,"No compliance assessment has been made. Read the extracted text below and compare it with your original.");
             if !document.path.is_file() {
                 ui.label(RichText::new("This file has moved or is no longer available. Add it again from its current location.").color(RED));
             }
@@ -593,11 +641,22 @@ impl ComplyApp {
             }
             ui.add_space(12.0);
             ui.horizontal_wrapped(|ui| {
-                widgets::primary(ui,"Check document",false).on_disabled_hover_text("Available after verified legal sources and checking rules are implemented.");
+                widgets::primary(ui,"Check document",false).on_disabled_hover_text("Available after supported checking rules are implemented.");
                 if widgets::secondary(ui,"Choose another").clicked() { self.choose_documents(ui.ctx()); }
+                if ui.button("Back to overview").clicked() { self.selected = None; self.reader_view.clear(); }
                 if ui.button("Remove entry").clicked() { self.pending_remove=Some(document.id); }
             });
         });
+        if self.selected.is_none() {
+            return;
+        }
+        ui.add_space(14.0);
+        if self.reader_view.show(ui)
+            && let Some(paths) = self.paths.clone()
+        {
+            self.reader_view
+                .start(paths, document.clone(), true, ui.ctx());
+        }
     }
 
     fn documents_page(&mut self, ui: &mut Ui) {
@@ -668,7 +727,7 @@ impl ComplyApp {
                     )
                     .clicked()
                     {
-                        self.selected = Some(document.id);
+                        self.select_document(document.id, ui.ctx());
                         self.navigate(Page::Review);
                     }
                 }
@@ -695,7 +754,12 @@ impl ComplyApp {
 
     fn reports_page(&self, ui: &mut Ui) {
         self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Reports will preserve the document references, legal sources, and rules used for each review.");
-        self.empty_state(ui,Icon::Reports,"Your first report will appear here.","Reporting becomes available after document extraction and supported legal checks are implemented.");
+        self.empty_state(
+            ui,
+            Icon::Reports,
+            "Your first report will appear here.",
+            "Reporting becomes available after supported legal checks are implemented.",
+        );
     }
 
     fn empty_state(&self, ui: &mut Ui, icon: Icon, title: &str, text: &str) {
@@ -772,9 +836,9 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new("Version 0.2.0 · Official source library").size(12.5).color(MUTED));
+            ui.label(RichText::new("Version 0.3.0 · Local document reader").size(12.5).color(MUTED));
             ui.add_space(8.0);
-            ui.label(RichText::new("Document extraction, legal checking, and automatic source updates are planned milestones.").size(12.5).color(AMBER));
+            ui.label(RichText::new("Local text reading is available. Legal checking and automatic source updates are planned.").size(12.5).color(AMBER));
         });
     }
 
@@ -823,7 +887,7 @@ impl ComplyApp {
         egui::Window::new("Remove this workspace entry?").collapsible(false).resizable(false)
             .anchor(Align2::CENTER_CENTER,[0.0,0.0]).default_width(420.0).show(ctx,|ui| {
                 ui.label(RichText::new(&document.name).font(heading(17.0)));
-                ui.label("Only its entry in ComplyPH will be removed. The original file will stay exactly where it is.");
+                ui.label("Its workspace entry and cached text will be removed. The original file will stay exactly where it is.");
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
                     remove=widgets::primary(ui,"Remove entry",true).clicked();
@@ -838,10 +902,11 @@ impl ComplyApp {
                 Ok(documents) => {
                     self.documents = documents;
                     if self.selected == Some(id) {
+                        self.reader_view.clear();
                         self.selected = None;
                     }
                     self.notice = Some(Notice {
-                        text: "Workspace entry removed. The original file is unchanged.".into(),
+                        text: "Workspace entry and cached text removed. The original file is unchanged.".into(),
                         error: false,
                     });
                 }
@@ -861,7 +926,8 @@ impl ComplyApp {
 
 impl eframe::App for ComplyApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.messages();
+        self.messages(ctx);
+        self.reader_view.poll();
         if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
             self.choose_documents(ctx);
         }
@@ -1040,7 +1106,7 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-fn format_date(timestamp: i64) -> String {
+pub(crate) fn format_date(timestamp: i64) -> String {
     DateTime::from_timestamp(timestamp, 0)
         .map(|d| d.with_timezone(&Local).format("%b %-d, %Y").to_string())
         .unwrap_or_else(|| "Unknown date".to_owned())

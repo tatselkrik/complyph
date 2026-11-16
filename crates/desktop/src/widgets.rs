@@ -275,10 +275,3 @@ pub fn navigation(
     response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), text));
     response.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
-
-pub fn metadata(ui: &mut Ui, label: &str, value: &str) {
-    ui.vertical(|ui| {
-        eyebrow(ui, label);
-        ui.label(RichText::new(value).size(15.0));
-    });
-}

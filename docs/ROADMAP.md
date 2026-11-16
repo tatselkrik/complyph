@@ -1,5 +1,9 @@
 # Roadmap
 
+## 0.3.0 — Local document reader
+
+Implemented: offline Rust PDF/DOCX text reading, page/paragraph/table/part references, selectable text and search, private content-hash-validated caches, private schema 1 → 2 migration, cancellation and process resource limits, explicit scan/protected/damaged-file states, and seven synthetic cases with expected results. Originals remain unchanged. This milestone provides reading, not legal assessment.
+
 ## 0.2.0 — ComplyPH and the starter library
 
 Implemented: ComplyPH branding, preserving legacy-data discovery, schema 2 public catalog migration, 14 original official-publication snapshots across seven domains, domain filters, source search, offline reading, search within a source, source-copy export, and integrity checks. Known acquisition gaps remain explicit; source verification is not legal currency or compliance.
@@ -24,7 +28,7 @@ Maintain source documents and rule coverage separately. A new source does not au
 
 ## Local text extraction
 
-Read supported PDF and DOCX content, retain page or paragraph references, and surface extraction failures. Let reviewers inspect extracted text before relying on it. Add offline OCR for scans with clear limits on recognition quality.
+Supported PDF/DOCX text reading and location references shipped in 0.3.0. Future work: broaden layout/font/embedded-content coverage, provide extraction-quality review, and add offline OCR for scans with clear limits on recognition quality.
 
 ## First complete review
 
