@@ -108,6 +108,26 @@ fn docx(xml: &[u8]) -> Vec<u8> {
 }
 
 #[test]
+fn omitted_revisions_do_not_renumber_later_original_locations() {
+    let xml = "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'><w:body>
+        <w:del><w:p><w:r><w:t>Omitted paragraph</w:t></w:r></w:p>
+        <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Omitted table</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:del>
+        <w:p><w:r><w:t>Visible paragraph</w:t></w:r></w:p>
+        <w:tbl><w:tr><w:tc><w:p><w:r><w:t>Visible table</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+        </w:body></w:document>";
+    let report = extract(Format::Docx, &docx(xml.as_bytes()));
+    assert_eq!(report.status, Status::Ready);
+    assert_eq!(report.units.len(), 2);
+    assert!(matches!(
+        report.units[0].location,
+        Location::WordParagraph { paragraph: 3, .. }
+    ));
+    assert!(
+        matches!(&report.units[1].location, Location::WordParagraph { paragraph: 4, table_cell: Some(cell), .. } if cell.table == 2)
+    );
+}
+
+#[test]
 fn malformed_xml_entities_and_excessive_expansion_are_rejected() {
     for xml in [
         "<w:document xmlns:w='http://schemas.openxmlformats.org/wordprocessingml/2006/main'><w:p><w:r><w:t>broken</w:p>",

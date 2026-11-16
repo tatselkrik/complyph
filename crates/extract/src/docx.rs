@@ -156,6 +156,20 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                     }
                     root_seen = true;
                 }
+                // Count original XML elements even when their content is omitted.
+                // Later visible passages must retain their actual part indices.
+                if word {
+                    match tag.local_name().as_ref() {
+                        b"p" => {
+                            paragraph += 1;
+                            if paragraph > MAX_UNITS {
+                                return Err(Failure::Limit);
+                            }
+                        }
+                        b"tbl" => table_count += 1,
+                        _ => (),
+                    }
+                }
                 if skip.is_some() || !word {
                     continue;
                 }
@@ -164,7 +178,6 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                         skip = Some(depth);
                     }
                     b"tbl" => {
-                        table_count += 1;
                         tables.push(TableCell {
                             table: table_count,
                             row: 0,
@@ -185,10 +198,6 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                     b"p" => {
                         if active.is_some() {
                             return Err(Failure::Invalid);
-                        }
-                        paragraph += 1;
-                        if paragraph > MAX_UNITS {
-                            return Err(Failure::Limit);
                         }
                         active = Some(TextUnit {
                             location: Location::WordParagraph {

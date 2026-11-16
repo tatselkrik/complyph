@@ -2,10 +2,10 @@
 
 ## Automated Rust checks
 
-The workspace has 27 passing tests and one deliberately ignored stalled-child fixture. The supervisor test invokes and terminates that fixture; it is not an untested feature.
+The workspace has 28 passing tests and one deliberately ignored stalled-child fixture. The supervisor test invokes and terminates that fixture; it is not an untested feature.
 
 - Nine private-workspace tests cover persistence, duplicate paths, unsupported/missing files, original preservation, future schemas, malformed settings, legacy-data reuse, concurrent initialization, and migration from private schema 1 to 2 with retained documents/preferences and cached-text deletion.
-- Four parser tests check all seven synthetic files against independent expected results, original PDF page and Word table/header references, Unicode/entities/strict Word namespaces, malformed XML/DTD rejection, and file/expanded-XML limits.
+- Five parser tests check all seven synthetic files against independent expected results, original PDF page and Word table/header references, retained XML indices after omitted revisions, Unicode/entities/strict Word namespaces, malformed XML/DTD rejection, and file/expanded-XML limits.
 - Three executable integration tests run the shipped GUI-subsystem executable headlessly and invoke its actual child worker: all seven cases, original preservation, no public-catalog initialization, persistent caches, same-size content changes, deletion, and overwrite refusal.
 - Two worker-supervisor tests cover cancellation before process launch and termination of a stalled child.
 - Seven public-catalog tests and two location-discovery tests retain the source-library, provenance/integrity, migration, export, isolation, concurrency, and rename checks from 0.2.0.
