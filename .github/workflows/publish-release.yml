@@ -135,11 +135,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > candidate-release.json
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases?per_page=100" > candidate-releases.json
           python3 - <<'PY'
           import hashlib, json, os
           from pathlib import Path
-          release = json.loads(Path('candidate-release.json').read_text())
+          releases = [release for page in json.loads(Path('candidate-releases.json').read_text()) for release in page if release['tag_name'] == os.environ['RELEASE_TAG']]
+          assert len(releases) == 1
+          release = releases[0]
           assert release['draft'] is True and release['target_commitish'] == os.environ['EXPECTED_COMMIT']
           expected = {path.name: path for path in Path('release').iterdir() if path.is_file()}
           assert {asset['name'] for asset in release['assets']} == set(expected)
