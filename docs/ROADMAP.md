@@ -1,5 +1,7 @@
 # Roadmap
 
+Shipped in 0.4.0: five added source copies with visible provenance; three focused labour numeric checks with scope gates; saved local reports; ProgramData migration and a workspace folder picker. See [supported scope](VALIDATED_CHECKS.md). Qualified legal review and broader/current-law validation remain outstanding.
+
 ## 0.3.0 — Local document reader
 
 Implemented: offline Rust PDF/DOCX text reading, page/paragraph/table/part references, selectable text and search, private content-hash-validated caches, private schema 1 → 2 migration, cancellation and process resource limits, explicit scan/protected/damaged-file states, and seven synthetic cases with expected results. Originals remain unchanged. This milestone provides reading, not legal assessment.
@@ -30,9 +32,9 @@ Maintain source documents and rule coverage separately. A new source does not au
 
 Supported PDF/DOCX text reading and location references shipped in 0.3.0. Future work: broaden layout/font/embedded-content coverage, provide extraction-quality review, and add offline OCR for scans with clear limits on recognition quality.
 
-## First complete review
+## Broader review coverage
 
-Collect the required context and evidence, evaluate supported rules, and present potential issues beside the relevant document passage. Include the domain, exact source provision, effective date, explanation, missing facts, and review status. Resolve applicability using the period under review and preserve its source and rule versions.
+Expand the first three comparisons to additional validated provisions and supporting evidence. Include the domain, exact source provision, effective date, explanation, missing facts, and review status. Resolve applicability using the period under review and preserve its source and rule versions.
 
 Validate with synthetic or appropriately anonymized documents and qualified legal review. Evaluate both missed issues and incorrect flags. A result with no issue found must state its supported coverage.
 
@@ -42,6 +44,6 @@ Add manual source entry by URL or local file. Check approved official publicatio
 
 Enforce and test the updater's operating-system network and file restrictions before enabling it. Private document data must not become an input to the updater.
 
-## Folder intake and reports
+## Folder intake and richer reports
 
 Monitor a designated local folder, wait for files to finish writing, and avoid repeated reviews of unchanged content. Keep originals unchanged. Export reports that preserve the source and rule versions used.

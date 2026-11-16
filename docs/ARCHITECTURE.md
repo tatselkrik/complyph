@@ -2,31 +2,32 @@
 
 ## Current implementation
 
-ComplyPH 0.3.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 14 bundled official-publication snapshots across seven compliance domains. Legal checking, OCR, reports, folder monitoring, manual source import, and runtime source downloads remain future work.
+ComplyPH 0.4.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. In-app OCR, folder monitoring, manual source import and runtime source downloads remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
 | `complyph-desktop` | Native workspace, file selection, source filters, reader, and original export | Uses both stores |
 | `complyph-core` | Private references, content snapshots, text cache, settings, and migrations | Owns private workspace |
 | `complyph-extract` | In-memory PDF/DOCX parsing and structured text locations | Receives bytes only; no file/network I/O |
+| `complyph-checks` | Pure, source-pinned numeric rules with context gates; no I/O | Receives extraction/context values |
 | `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
-| `complyph-paths` | Shared current/legacy data-root discovery | Directory existence only; no document or database reads |
+| `complyph-paths` | Shared current/legacy data-root discovery | File/directory existence and process-name checks; no document/database content reads |
 | `complyph-updater` | Independent public-catalog status CLI and bundled import | Public catalog only |
 
 There is no HTTP client, telemetry, AI integration, or runtime downloader. Source acquisition for the bundled collection is a maintainer activity involving public publications only.
 
 ## Local storage and the rename
 
-Fresh Windows installations use `%LOCALAPPDATA%\ComplyPH`. If only `%LOCALAPPDATA%\LaborLens PH` exists, both the desktop and catalog status tool reuse it in place. Live SQLite files are not copied or moved. If both roots exist, discovery fails visibly and preserves both; the developer `--data-dir` override can select a workspace explicitly.
+Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running ComplyPH/LaborLens PH processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
 
 ```text
-private/workspace.sqlite3   Private document references, text caches, and preferences; schema 2
+private/workspace.sqlite3   Private document references, text caches, preferences and review runs; schema 3
 library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 2
 ```
 
 The installer detects a registered LaborLens PH installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
 
-Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and preserves the original file. Private migration 1 → 2 adds the cache table without replacing existing document records or preferences. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
+Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and saved reports and preserves the original file. Private migration 1 → 2 adds the cache table; 2 → 3 adds review history without replacing existing document records or preferences. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
 
 ## Public source catalog
 
@@ -54,7 +55,7 @@ The Legal library page filters sources by domain, searches titles/instruments/is
 4. Evaluate explicit, versioned rules and produce findings with passages, source provisions, missing facts, and review status.
 5. Preserve evaluated domains, coverage, evidence, source versions, and rule versions in reports.
 
-The source/domain layer is implemented. Rule definitions, rule-to-provision mappings, structured review evidence, and the checking engine are not implemented. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
+The source/domain layer and the first three labour rules are implemented. Rules use a pinned agency source; the desktop validates raw/text hashes, current document hash, human-confirmed scope and extraction quality before saving a local review. See [rule scope/validation](VALIDATED_CHECKS.md). Additional domain packs and legal-period reconciliation remain planned. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
 
 ## Private document reading
 

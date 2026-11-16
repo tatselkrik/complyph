@@ -6,7 +6,7 @@ Unicode True
   !error "Pass /DAPP_EXE=path-to-complyph.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "ComplyPH-Setup-0.3.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.4.0.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
@@ -21,15 +21,15 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
-BrandingText "ComplyPH - Local document reader"
-VIProductVersion "0.3.0.0"
+BrandingText "ComplyPH - Focused labour checks"
+VIProductVersion "0.4.0.0"
 VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
-VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local document reader installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.3.0"
+VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH focused labour check installer"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.4.0"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
-!define MUI_WELCOMEPAGE_TEXT "Install the local document reader for ComplyPH.$\r$\n$\r$\nRead PDF and Word text locally, with synthetic samples and 14 official source snapshots across seven Philippine compliance domains. Legal checking and automatic source updates are not available yet."
+!define MUI_WELCOMEPAGE_TEXT "Install ComplyPH for private document review.$\r$\n$\r$\nRead PDF and Word text locally, run three focused labour checks, and browse 19 references with visible provenance. Windows workspace data uses ProgramData\ComplyPH; old data is copied safely and retained as backup. Daily source updates remain planned."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\ComplyPH.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Open ComplyPH"
 !insertmacro MUI_PAGE_WELCOME
@@ -82,7 +82,7 @@ Section "ComplyPH" SEC_APP
   CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.3.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.4.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"
@@ -112,6 +112,10 @@ Section "Uninstall"
   Delete "$INSTDIR\Samples\Synthetic protected.pdf"
   Delete "$INSTDIR\Samples\Synthetic damaged.pdf"
   Delete "$INSTDIR\Samples\Synthetic damaged.docx"
+  Delete "$INSTDIR\Samples\Synthetic labour baseline.pdf"
+  Delete "$INSTDIR\Samples\Synthetic labour issues.docx"
+  Delete "$INSTDIR\Samples\Synthetic labour ambiguous.docx"
+  Delete "$INSTDIR\Samples\expected-checks.json"
   Delete "$INSTDIR\Samples\expected-results.json"
   Delete "$INSTDIR\Samples\README.md"
   RMDir "$INSTDIR\Samples"

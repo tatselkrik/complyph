@@ -1,4 +1,4 @@
-//! Bundled official-publication snapshots. Generated from library/starter/manifest.json.
+//! Local reference snapshots; provenance is classified per manifest entry.
 pub struct Payload {
     pub key: &'static str,
     pub raw: &'static [u8],
@@ -74,5 +74,30 @@ pub const PAYLOADS: &[Payload] = &[
         key: "ra-9679",
         raw: include_bytes!("../../../library/starter/raw/ra-9679.pdf"),
         text: include_str!("../../../library/starter/text/ra-9679.txt"),
+    },
+    Payload {
+        key: "labor-code-2022-upload",
+        raw: include_bytes!("../../../library/starter/raw/labor-code-2022-upload.pdf"),
+        text: include_str!("../../../library/starter/text/labor-code-2022-upload.txt"),
+    },
+    Payload {
+        key: "dole-252-25-upload",
+        raw: include_bytes!("../../../library/starter/raw/dole-252-25-upload.pdf"),
+        text: include_str!("../../../library/starter/text/dole-252-25-upload.txt"),
+    },
+    Payload {
+        key: "oshs-2017-upload",
+        raw: include_bytes!("../../../library/starter/raw/oshs-2017-upload.pdf"),
+        text: include_str!("../../../library/starter/text/oshs-2017-upload.txt"),
+    },
+    Payload {
+        key: "pagibig-460-upload",
+        raw: include_bytes!("../../../library/starter/raw/pagibig-460-upload.pdf"),
+        text: include_str!("../../../library/starter/text/pagibig-460-upload.txt"),
+    },
+    Payload {
+        key: "pagibig-499-upload",
+        raw: include_bytes!("../../../library/starter/raw/pagibig-499-upload.pdf"),
+        text: include_str!("../../../library/starter/text/pagibig-499-upload.txt"),
     },
 ];

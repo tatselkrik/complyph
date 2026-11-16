@@ -82,6 +82,9 @@ pub struct ComplyApp {
     library_error: Option<String>,
     library_view: LibraryView,
     reader_view: crate::reader_view::ReaderView,
+    check_view: crate::check_view::CheckView,
+    workspace_picker: FileDialog,
+    import_source: Option<PathBuf>,
     startup_error: Option<String>,
     preferences: Preferences,
     page: Page,
@@ -107,6 +110,11 @@ impl ComplyApp {
             library_error: None,
             library_view: LibraryView::default(),
             reader_view: crate::reader_view::ReaderView::default(),
+            check_view: crate::check_view::CheckView::default(),
+            workspace_picker: FileDialog::new()
+                .title("Choose existing workspace folder")
+                .as_modal(true),
+            import_source: None,
             startup_error: None,
             preferences: Preferences::default(),
             page: Page::Review,
@@ -237,6 +245,7 @@ impl ComplyApp {
 
     fn select_document(&mut self, id: i64, ctx: &egui::Context) {
         self.selected = Some(id);
+        self.check_view.clear();
         if let Some(paths) = self.paths.clone()
             && let Some(document) = self
                 .documents
@@ -366,7 +375,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            "LOCAL READER  /  0.3.0",
+            "FOCUSED CHECKS / 0.4.0",
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -416,7 +425,7 @@ impl ComplyApp {
                     1,
                     "LEGAL SOURCES",
                     self.library.source_count.to_string(),
-                    "Official snapshots saved locally",
+                    "Preserved references saved locally",
                 ),
                 (
                     2,
@@ -514,15 +523,15 @@ impl ComplyApp {
                 ("01", "Read your documents", "Local PDF and Word text", true),
                 (
                     "02",
-                    "Browse official sources",
-                    "14 saved references · 7 domains",
+                    "Browse legal references",
+                    "19 saved references · 7 domains",
                     true,
                 ),
                 (
                     "03",
                     "Review with citations",
-                    "Checking rules are still planned",
-                    false,
+                    "Three focused labour checks",
+                    true,
                 ),
             ] {
                 ui.horizontal(|ui| {
@@ -545,7 +554,13 @@ impl ComplyApp {
                 ui.add_space(6.0);
             }
             ui.add_space(4.0);
-            widgets::pill(ui, "Legal checking comes next", AMBER, AMBER_TINT, false);
+            widgets::pill(
+                ui,
+                "Evidence stays on this computer",
+                GREEN,
+                GREEN_TINT,
+                false,
+            );
         });
     }
 
@@ -628,10 +643,10 @@ impl ComplyApp {
                     ui.label(RichText::new(&document.name).font(heading(21.0)));
                     ui.label(RichText::new(format!("{} · {} · added {}", document.kind.label(), format_size(document.bytes), format_date(document.added_at))).size(12.5).color(MUTED));
                 });
-                ui.with_layout(Layout::right_to_left(Align::Center),|ui| { widgets::pill(ui,"Not reviewed",AMBER,AMBER_TINT,false); });
+                ui.with_layout(Layout::right_to_left(Align::Center),|ui| { widgets::pill(ui,"Local review",AMBER,AMBER_TINT,false); });
             });
             ui.add_space(12.0);
-            widgets::muted(ui,"No compliance assessment has been made. Read the extracted text below and compare it with your original.");
+            widgets::muted(ui,"Read the extracted text and compare it with your original. Three focused checks are available after confirming their applicability.");
             if !document.path.is_file() {
                 ui.label(RichText::new("This file has moved or is no longer available. Add it again from its current location.").color(RED));
             }
@@ -641,7 +656,8 @@ impl ComplyApp {
             }
             ui.add_space(12.0);
             ui.horizontal_wrapped(|ui| {
-                widgets::primary(ui,"Check document",false).on_disabled_hover_text("Available after supported checking rules are implemented.");
+                let ready=self.reader_view.current().is_some_and(|saved|saved.report.status==complyph_extract::Status::Ready) && self.catalog.is_some() && self.library_error.is_none();
+                if widgets::primary(ui,"Check document",ready).on_disabled_hover_text("Read a supported document and resolve library integrity errors first.").clicked() {self.check_view.visible=true;}
                 if widgets::secondary(ui,"Choose another").clicked() { self.choose_documents(ui.ctx()); }
                 if ui.button("Back to overview").clicked() { self.selected = None; self.reader_view.clear(); }
                 if ui.button("Remove entry").clicked() { self.pending_remove=Some(document.id); }
@@ -651,9 +667,17 @@ impl ComplyApp {
             return;
         }
         ui.add_space(14.0);
+        if let (Some(workspace), Some(catalog), Some(saved)) =
+            (&self.workspace, &self.catalog, self.reader_view.current())
+        {
+            self.check_view
+                .show(ui, workspace, catalog, document, saved);
+            ui.add_space(14.0);
+        }
         if self.reader_view.show(ui)
             && let Some(paths) = self.paths.clone()
         {
+            self.check_view.clear();
             self.reader_view
                 .start(paths, document.clone(), true, ui.ctx());
         }
@@ -753,13 +777,38 @@ impl ComplyApp {
     }
 
     fn reports_page(&self, ui: &mut Ui) {
-        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Reports will preserve the document references, legal sources, and rules used for each review.");
-        self.empty_state(
-            ui,
-            Icon::Reports,
-            "Your first report will appear here.",
-            "Reporting becomes available after supported legal checks are implemented.",
-        );
+        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Saved local snapshots of the document, scope, evidence and rules used for each review.");
+        if let Some(workspace) = &self.workspace {
+            match workspace.reviews() {
+                Ok(reviews) if reviews.is_empty() => self.empty_state(
+                    ui,
+                    Icon::Reports,
+                    "Your first report will appear here.",
+                    "Open a document in Review, confirm scope and run the focused labour checks.",
+                ),
+                Ok(reviews) => {
+                    for saved in reviews {
+                        let name = self
+                            .documents
+                            .iter()
+                            .find(|d| d.id == saved.document_id)
+                            .map(|d| d.name.as_str())
+                            .unwrap_or("Document");
+                        egui::CollapsingHeader::new(format!(
+                            "{} · {} · Review #{}",
+                            name,
+                            format_date(saved.created_at),
+                            saved.id
+                        ))
+                        .id_salt(("report", saved.id))
+                        .show(ui, |ui| crate::check_view::show_review(ui, &saved));
+                    }
+                }
+                Err(error) => {
+                    ui.colored_label(RED, error.to_string());
+                }
+            }
+        }
     }
 
     fn empty_state(&self, ui: &mut Ui, icon: Icon, title: &str, text: &str) {
@@ -820,7 +869,9 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.horizontal(|ui| { widgets::icon(ui,Icon::Lock,22.0,NAVY); ui.label(RichText::new("Stored on this computer").font(heading(19.0))); });
             ui.add_space(8.0);
-            widgets::muted(ui,"The workspace stores document references and preferences. It does not copy or upload your document contents.");
+            widgets::muted(ui,"The workspace stores document references, extracted text, preferences and saved findings locally. Original files stay in place; no document content is uploaded.");
+            if widgets::secondary(ui,"Import an existing workspace…").clicked() {self.workspace_picker.pick_directory();}
+            widgets::muted(ui,"For a workspace stored elsewhere: choose the folder containing private and library. Import only into an empty workspace; originals and old databases are preserved.");
             if let Some(paths) = &self.paths {
                 ui.add_space(10.0);
                 widgets::eyebrow(ui,"WORKSPACE LOCATION");
@@ -836,9 +887,9 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new("Version 0.3.0 · Local document reader").size(12.5).color(MUTED));
+            ui.label(RichText::new("Version 0.4.0 · Focused labour checks").size(12.5).color(MUTED));
             ui.add_space(8.0);
-            ui.label(RichText::new("Local text reading is available. Legal checking and automatic source updates are planned.").size(12.5).color(AMBER));
+            ui.label(RichText::new("Three source-cited labour checks are available. Other domains and automatic source updates remain planned.").size(12.5).color(AMBER));
         });
     }
 
@@ -964,7 +1015,8 @@ impl eframe::App for ComplyApp {
                     ui.add_space(15.0);
                     widgets::card().show(ui,|ui| {
                         ui.colored_label(RED,error);
-                        ui.label("Your existing files have been preserved. Resolve the local storage issue before adding documents.");
+                        ui.label("Your existing files have been preserved. Close other ComplyPH / LaborLens PH windows before migration.");
+                        if ui.button("Choose existing workspace folder…").clicked(){self.workspace_picker.pick_directory();}
                     });
                     return;
                 }
@@ -980,6 +1032,36 @@ impl eframe::App for ComplyApp {
             });
         });
         self.removal_dialog(ui.ctx());
+        self.workspace_picker.update(ui.ctx());
+        if let Some(source) = self.workspace_picker.take_picked() {
+            self.import_source = Some(source);
+        }
+        if let Some(source) = self.import_source.clone() {
+            egui::Window::new("Import existing workspace").collapsible(false).resizable(false).show(ui.ctx(),|ui| {
+                ui.label(format!("Copy from: {}",source.display()));
+                let target=self.paths.as_ref().map(|p|p.root.clone()).map(Ok).unwrap_or_else(complyph_core::default_workspace_target);
+                if let Ok(target)=&target {ui.label(format!("Activate at: {}",target.display()));}
+                ui.label("Copy databases only. Original documents and the old workspace remain in place as a backup. A destination with documents or reports cannot be replaced or merged.");
+                ui.horizontal(|ui| {
+                    if ui.button("Copy and activate workspace").clicked() {
+                        self.reader_view.clear();
+                        self.workspace=None;
+                        self.catalog=None;
+                        let result=target.and_then(|target|complyph_core::migration::import_into_empty(&source,&target));
+                        match result {
+                            Ok(paths)=>*self=Self::new(Ok(paths)),
+                            Err(error)=>{
+                                let text=error.to_string();
+                                if let Some(paths)=self.paths.clone(){*self=Self::new(Ok(paths));self.notice=Some(Notice{text,error:true});}
+                                else{self.startup_error=Some(text);}
+                            }
+                        }
+                        self.import_source=None;
+                    }
+                    if ui.button("Cancel").clicked(){self.import_source=None;}
+                });
+            });
+        }
         self.file_dialog.update(ui.ctx());
         if let Some(catalog) = &self.catalog {
             self.library_view.update_dialog(ui.ctx(), catalog);

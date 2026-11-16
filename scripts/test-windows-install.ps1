@@ -7,7 +7,8 @@ $fixtureRoot = Join-Path $env:RUNNER_TEMP 'complyph-install-smoke'
 $installDirectory = Join-Path $fixtureRoot 'upgraded-app'
 $legacyData = Join-Path $env:LOCALAPPDATA 'LaborLens PH'
 $currentData = Join-Path $env:LOCALAPPDATA 'ComplyPH'
-foreach ($path in @($legacyData, $currentData)) {
+$machineData = Join-Path $env:ProgramData 'ComplyPH'
+foreach ($path in @($legacyData, $currentData, $machineData)) {
     if (Test-Path -LiteralPath $path) { throw 'An existing workspace was found; refusing to use it.' }
 }
 $registryBase = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\'
@@ -52,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.3.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.4.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -64,16 +65,37 @@ foreach ($path in @((Join-Path $installDirectory 'LaborLensPH.exe'), (Join-Path 
 }
 $startup = Start-Process -FilePath $application -ArgumentList '--help' -Wait -PassThru
 if ($startup.ExitCode -ne 0) { throw 'Application loader check failed.' }
+# The desktop, not the public updater, copies private SQLite databases before opening.
+$legacyPrivateHash = $privateHash
+$info = [Diagnostics.ProcessStartInfo]::new()
+$info.FileName = $application; $info.UseShellExecute = $false
+foreach ($argument in @('--read-file', $original, '--output', (Join-Path $fixtureRoot 'migrated-original.json'))) { $info.ArgumentList.Add($argument) }
+$migration = [Diagnostics.Process]::Start($info)
+if (!$migration.WaitForExit(45000)) { $migration.Kill($true); throw 'Migration timed out.' }
+if ($migration.ExitCode -ne 0) { throw 'Desktop workspace migration failed.' }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $legacyPrivateHash) { throw 'Migration changed the legacy private database.' }
+if (!(Test-Path -LiteralPath (Join-Path $machineData 'migration.json'))) { throw 'Migration marker missing.' }
+$privateDatabase = Join-Path $machineData 'private/workspace.sqlite3'
+$privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
+$env:COMPLYPH_SMOKE_ACTIVE = $machineData
+$acl = Get-Acl -LiteralPath $machineData
+$ownerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+if (!$acl.AreAccessRulesProtected -or $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $ownerSid) { throw 'Workspace ACL is not protected for its owning account.' }
+$allowed = @($ownerSid,'S-1-5-18','S-1-5-32-544')
+foreach ($rule in $acl.Access) {
+    $sid = $rule.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value
+    if ($sid -notin $allowed -or $rule.AccessControlType -ne 'Allow') { throw "Unexpected workspace access: $sid" }
+}
 $statusJson = & (Join-Path $root 'target/release/complyph-updater.exe') '--status'
 if ($LASTEXITCODE -ne 0) { throw 'Default library discovery or import failed.' }
 $status = $statusJson | ConvertFrom-Json
-if ($status.source_count -ne 14 -or $status.verified_source_count -ne 14 -or $status.domains.Count -ne 7 -or $null -eq $status.bundled_verified_at -or $null -ne $status.last_successful_check -or $status.automatic_updates_available) {
+if ($status.source_count -ne 19 -or $status.verified_source_count -ne 14 -or $status.identity_checked_upload_count -ne 3 -or $status.provisional_source_count -ne 2 -or $status.domains.Count -ne 7 -or $null -eq $status.bundled_verified_at -or $null -ne $status.last_successful_check -or $status.automatic_updates_available) {
     throw 'Unexpected starter-library or update status.'
 }
 if (@($status.domains | Where-Object { $_.source_count -lt 1 }).Count -gt 0) { throw 'A domain has no source snapshots.' }
 if (Test-Path -LiteralPath $currentData) { throw 'Upgrade created a second data root.' }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Public catalog import changed private data.' }
-$catalog = Join-Path $legacyData 'library/catalog.sqlite3'
+$catalog = Join-Path $machineData 'library/catalog.sqlite3'
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 # Exercise the installed GUI-subsystem executable headlessly, including its child worker.
 $expected = Get-Content -LiteralPath (Join-Path $installDirectory 'Samples/expected-results.json') -Raw | ConvertFrom-Json -AsHashtable
@@ -100,17 +122,45 @@ foreach ($name in $expected.Keys | Sort-Object) {
 }
 @'
 import json, os, pathlib, sqlite3
-root = pathlib.Path(os.environ['COMPLYPH_SMOKE_LEGACY'])
+root = pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])
 with sqlite3.connect(root / 'private/workspace.sqlite3') as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0] == 2
+    assert db.execute('PRAGMA user_version').fetchone()[0] == 3
     original = db.execute('SELECT id,path,added_at FROM documents WHERE id=1').fetchone()
     assert original == (1, os.environ['COMPLYPH_SMOKE_ORIGINAL'], 1)
     prefs = json.loads(db.execute('SELECT value FROM preferences WHERE id=1').fetchone()[0])
     assert prefs == {'remember_page':True, 'last_page':'documents', 'show_full_paths':True}
-    assert db.execute('SELECT COUNT(*) FROM document_extractions').fetchone()[0] == 7
+    assert db.execute('SELECT COUNT(*) FROM document_extractions').fetchone()[0] == 8
 '@ | python -
 if ($LASTEXITCODE -ne 0) { throw 'Private schema upgrade lost existing records or extraction caches.' }
 if (Test-Path -LiteralPath $currentData) { throw 'Reader created a duplicate data root.' }
+# Exercise real installed reading, pinned sources, scope gates, comparisons and saved reports.
+$checkCases = Get-Content -LiteralPath (Join-Path $installDirectory 'Samples/expected-checks.json') -Raw | ConvertFrom-Json -AsHashtable
+$contextFile = Join-Path $fixtureRoot 'check-context.json'
+$checkCases.context | ConvertTo-Json | Set-Content -LiteralPath $contextFile -Encoding utf8NoBOM
+$checkResults = @()
+foreach ($name in $checkCases.expected.Keys | Sort-Object) {
+    $sample = Join-Path $installDirectory "Samples/$name"
+    $before = (Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash
+    $output = Join-Path $fixtureRoot ($name + '.check.json')
+    $info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $application; $info.UseShellExecute = $false
+    foreach ($argument in @('--check-file',$sample,'--context',$contextFile,'--output',$output)) { $info.ArgumentList.Add($argument) }
+    $checking = [Diagnostics.Process]::Start($info)
+    if (!$checking.WaitForExit(45000)) { $checking.Kill($true); throw "Installed checking timed out: $name" }
+    if ($checking.ExitCode -ne 0) { throw "Installed checking failed: $name" }
+    $saved = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
+    $outcomes = @($saved.review.findings | ForEach-Object { $_.outcome })
+    if (($outcomes -join ',') -ne ($checkCases.expected[$name] -join ',')) { throw "Incorrect checking outcomes: $name" }
+    if (!$saved.review.context.operative_terms_confirmed -or $saved.review.engine -ne 'complyph-labor-1') { throw 'Review audit context missing.' }
+    if ((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash -ne $before) { throw 'Checking changed an original.' }
+    $checkResults += [ordered]@{ name=$name; outcomes=$outcomes; original_preserved=$true }
+}
+@'
+import os,pathlib,sqlite3
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/workspace.sqlite3') as db:
+ assert db.execute('SELECT COUNT(*) FROM review_runs').fetchone()[0]==3
+ assert db.execute('SELECT COUNT(*) FROM document_extractions').fetchone()[0]==11
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Saved report/extraction persistence failed.' }
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
@@ -135,14 +185,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.2.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.2.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.2.0/ComplyPH-Setup-0.2.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'd61a4a93f2f15562b8e1dabbffe5dafc2b4e59c0c515ba521ce000879e0fed56') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.3.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.3.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.3.0/ComplyPH-Setup-0.3.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a1088b87c832b9f692731ab161f246567ce8a0e1b47cd9ad94127f68cc7e928') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic employment.pdf'))) { throw 'ComplyPH 0.2.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic employment.pdf'))) { throw 'ComplyPH 0.3.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -154,13 +204,14 @@ $result = [ordered]@{
     source_commit = (git -C $root rev-parse HEAD).Trim()
     installed = $true; fresh_install_passed = $true; legacy_upgrade_passed = $true
     reinstall_location_preserved = $true
-    legacy_branding_replaced = $true; legacy_data_root_reused = $true
+    legacy_branding_replaced = $true; legacy_data_migrated = $true; programdata_acl_passed = $true
     shortcuts_verified = $true; cli_startup_passed = $true
     catalog_status_passed = $true; starter_source_count = $status.source_count; starter_domain_count = $status.domains.Count
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
-    private_schema = 2; synthetic_fixture_count = $readerResults.Count; reader_results = $readerResults
+    private_schema = 3; validated_check_count = 3; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    synthetic_fixture_count = $readerResults.Count; reader_results = $readerResults
     interactive_windows_ui_tested = $false
 }
 $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $root 'dist/windows/windows-install-check.json') -Encoding utf8
-Write-Output 'Fresh installation, legacy and ComplyPH upgrades, seven synthetic reader cases, schema migration, shortcuts, and preservation passed.'
+Write-Output 'Install/upgrades, ProgramData copy and ACL, seven reader cases, three check cases, saved reports, and preservation passed.'

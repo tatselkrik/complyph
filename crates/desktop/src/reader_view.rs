@@ -45,6 +45,13 @@ impl Default for ReaderView {
 }
 
 impl ReaderView {
+    pub fn current(&self) -> Option<&SavedExtraction> {
+        match &self.state {
+            State::Finished(saved) => Some(saved),
+            _ => None,
+        }
+    }
+
     pub fn clear(&mut self) {
         if let Some(cancel) = self.cancel.take() {
             cancel.store(true, Ordering::Relaxed);

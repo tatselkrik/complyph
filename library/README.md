@@ -1,12 +1,14 @@
 # ComplyPH starter reference library
 
-Version 0.2.0 bundles **14 official-publication snapshots across seven domains**, checked on **2026-11-16 UTC**. The application installs them into its public SQLite catalog without making network requests.
+Version 0.4.0 includes **19 preserved references across seven domains**: 14 verified agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The app installs them locally without network requests. The collection is a starter library with explicit currency, amendment and interpretation gaps.
 
-## What verified means
+## Provenance and integrity
 
-Verification covers the official publication channel, document identity, preserved source bytes, and SHA-256 integrity. It does not certify a complete amendment chain, present applicability, OCR accuracy, legal interpretation, or employer compliance. No checking rules are bundled.
+- **Verified agency download:** official publication channel and identity checked; preserved bytes and reading text pinned by SHA-256. This is not verification of complete/current law.
+- **Identity-checked uploaded copy:** uploaded document identity/content structure checked and a claimed agency URL recorded; exact agency-byte comparison remains unavailable. Not promoted to a verified agency download.
+- **Provisional third-party copy:** mirror or stitched social-media images. Government references corroborate identity/general content, not every supplied byte or OCR character.
 
-Original PDF/HTML responses are stored under `starter/raw/`; derived reading text is under `starter/text/`. The app renders reading text, never active HTML. Use **Save original copy** in the library reader for the exact publication file. OCR, table layout, and publisher text layers can contain errors; consult the original for exact wording and figures.
+All provenance classes receive preserved-byte/text integrity checks on import, reopen, reading and export. Reading text is displayed offline; active HTML is never rendered. **Save source copy** exports the exact preserved file, which may be a reduced/mirrored/stitched copy, not an agency original. Compare OCR text with page images for figures and matrices.
 
 ## Included snapshots
 
@@ -27,25 +29,26 @@ Original PDF/HTML responses are stored under `starter/raw/`; derived reading tex
 | PhilHealth | PhilHealth Advisory 2026-0050 — Electronic Premium Remittance System version 4.9.0 | [Official publication](https://www.philhealth.gov.ph/advisories/2026/PA2026-0050_v1.pdf) |
 | Pag-IBIG | R.A. 9679 — Home Development Mutual Fund Law of 2009 | [Official publication](https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf) |
 
+## Added uploaded and third-party copies
+
+| Key | Reference | Provenance |
+| --- | --- | --- |
+| labor-code-2022-upload | DOLE 2022 renumbered Labor Code, 136 PDF pages | Identity-checked upload |
+| dole-252-25-upload | D.O. 252-25, reduced upload, 110 PDF pages, OCR reading text | Identity-checked upload |
+| oshs-2017-upload | OSHS compilation through 2017, 431 PDF pages | Identity-checked upload |
+| pagibig-460-upload | Circular 460, 5-page third-party mirror | Provisional third-party copy |
+| pagibig-499-upload | Circular 499, 4 stitched Facebook image pages, OCR reading text | Provisional third-party copy |
+
+See [addition assessment](ADDITIONS.md) for source links, completeness observations, effectivity and limitations. The PwC tax compilation is a dated **external citation only**, not a bundled PDF or a verified source. It ends at 31 January 2020 and does not establish current NIRC coverage.
+
 ## Known gaps
 
-The selection is a starting reference collection. Each source carries its own applicability notes and conditional effectivity information; an unknown effective date stays unknown.
+The uploaded Labor Code and OSHS files add reference material; later amendments, special-sector applicability and amendment reconciliation remain outstanding. Agency originals for the provisional Pag-IBIG circulars still need exact comparison. No OSHS staffing/facilities matrix or contribution/remittance calculator has been validated. BIR/NIRC coverage remains incomplete. The 2025 PhilHealth premium advisory remains a dated reference.
 
-- **DOLE Labor Code 2022 edition:** Official download returned HTTP 403 in this acquisition environment. Not imported or counted as verified. [Publication page](https://bwc.dole.gov.ph/wp-content/uploads/2025/08/Labor-Code-of-the-Philippines.pdf).
-- **DOLE D.O. 252-25 and full OSHS technical standards:** DOLE/BWC/OSHC and the DPWH-hosted attachment were inaccessible here. The existence of D.O. 252-25 was corroborated in official indexed listings; its document bytes are not bundled or counted as verified. [Publication page](https://dole.gov.ph/news/department-order-252-25-revised-implementing-rules-and-regulations-of-republic-act-no.-11058/).
-- **Pag-IBIG Circular 460 and later remittance issuances:** Agency site presented a browser verification challenge. No attempt was made to bypass it. Circulars 460, 499, and other later requirements still need acquisition and review. [Publication page](https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html).
-- **Complete NIRC amendment and implementing-issuance coverage:** This starter contains TRAIN and RR 29-2025, not the full consolidated NIRC or its amendment chain; the BIR landing page alone is not imported as legal text. [Publication page](https://www.bir.gov.ph/Tax-Code).
+Three supported labour rules use the pinned **agency-downloaded Senate P.D. 442** reference, not the provisional or OCR-heavy additions. See [rule scope and validation](../docs/VALIDATED_CHECKS.md). Acquiring a reference does not create a validated checking rule.
 
-The Labor Code entry is a Senate reference compilation with an expressly stated amendment set, not the inaccessible DOLE 2022 edition. The PhilHealth 2025 premium advisory is explicitly a 2025 reference. Dates or rates in these files must not be applied to another period without assessment.
+## Reproducibility
 
-## Provenance and integrity
+`starter/manifest.json` records stable keys, original/resolved URLs, provenance, optional official corroboration links, acquisition/assessment dates, effectivity notes, preserved raw and derived-text hashes, extraction method and coverage gaps. Raw files are in `starter/raw`, reading text in `starter/text`. `support/oshs-original-page-map.csv` records the preparation split's original page mapping. No private document content is included.
 
-[manifest.json](starter/manifest.json) records the requested and resolved official URLs, acquisition and verification timestamps, document identifiers, domains, signed/issued dates where established, conditional effectivity notes, extraction method, raw and reading-text hashes, and available HTTP provenance headers. The bundled snapshot payloads are checked before import, after database reopen, and before export.
-
-The database stores source originals and reading text transactionally. Reopening does not duplicate a bundle. Schema 1 catalogs migrate to schema 2 while retaining existing entries and versions. Damaged snapshots cause an integrity error instead of being displayed as verified.
-
-## Updates and additions
-
-This release does not run daily source checks or provide manual source import yet. Bundled verification is separate from a runtime successful-update timestamp; the latter remains unset. The future updater must keep the public-source/private-workspace boundary and enforce its operating-system restrictions.
-
-Government-issued legal texts and archived official publications are included for reference with attribution. Agency names and marks identify their publishers and do not imply endorsement of ComplyPH.
+Public schema 2 preserves previous entries and snapshots. Bundle import is idempotent and transactional; v0.4.0 adds five sources without deleting the prior 14. Automatic daily updates and manual source import remain planned; the status tool does not claim a successful online check.

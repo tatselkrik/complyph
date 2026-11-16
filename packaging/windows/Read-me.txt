@@ -1,46 +1,44 @@
-ComplyPH 0.3.0 - Local document reader
+ComplyPH 0.4.0 - Focused labour checks
 Formerly LaborLens PH
 
-Close ComplyPH or LaborLens PH before installing. Keep the detected installation
-location when upgrading. Open ComplyPH from its desktop/Start menu shortcut,
-or extract the app ZIP and open ComplyPH.exe. Normal use needs no command prompt,
-Rust installation, Python, browser session, AI model, API key, or subscription.
+Close all ComplyPH and LaborLens PH windows before installing. Open ComplyPH from
+its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
+API key or subscription.
 
-Available:
-- Navy-and-cream native Rust workspace.
-- Read supported PDF and DOCX text locally, without changing originals.
-- PDF page references; Word paragraph/table/part references; text search.
-- Private local text cache; content hashes checked when reopening a document.
-- Friendly states for scans, password protection, damaged files, and limits.
-- Seven synthetic reader cases in Samples; PDF/Word/Scan sample buttons in-app.
-- Browse 14 official publication snapshots across seven compliance domains.
-- Source filters, offline reading/search, original export, dates, and SHA-256 checks.
+Read PDF/DOCX text locally, compare it with the original, then choose Check document.
+Confirm scope for normal daily working hours, ordinary-day overtime additional
+premium and night shift differential. Results include passages, article citations,
+source/document hashes and unresolved states. Saved findings appear in Reports.
+These three numeric comparisons are not legal certification or a compliance verdict.
+No Philippine lawyer has certified the rules. Other legal domains are not checked.
 
-The reader does not send document content online. It does not run Word fields,
-macros, embedded programs, PDF JavaScript, or external document links. Read text
-can omit images, text boxes, annotations, and deleted text, or lose table/layout
-order. Compare it with the original. OCR is not included. Reader limits: 32 MiB
-input, 300 PDF pages, 4 MiB text, and a 20-second worker timeout.
+Samples includes seven fictional reader cases and three focused-check fixtures.
+All are test data, not legal templates. Reader limits: 32 MiB, 300 PDF pages,
+4 MiB text and a 20-second worker timeout. OCR is not built into the app. Images,
+text boxes and some revision/layout information may be missing; compare originals.
 
-Use Review > Try a synthetic sample, or Choose document. Originals stay in place.
-Removing an entry removes its cached text too; it does not delete the original.
-All samples are fictional test data, not legal templates.
+The local library has 19 preserved references: 14 verified agency downloads,
+3 identity-checked uploads and 2 provisional third-party copies. Uploaded DOLE
+files have not been byte-compared with agency originals. Pag-IBIG Circular 499
+comes from stitched third-party images. OCR figures/matrices need page comparison.
+The PwC January 2020 tax compilation is a dated external citation, not bundled.
 
-"Verified" sources concern official origin, identity, and content integrity.
-The starter collection has documented gaps. Legal checking, reports, watched
-folders, manual source import, and daily updates are not implemented yet.
+Windows workspace: C:\ProgramData\ComplyPH (uses the system ProgramData location).
+A single detected LocalAppData LaborLens PH/ComplyPH workspace is copied and
+validated automatically. The old folder remains as backup. References, cached text
+and preferences are retained; original documents stay where they are. For custom
+or ambiguous locations use the workspace folder picker. Settings can import an
+old workspace only into an empty destination; existing data is preserved.
 
-New Windows data:
-%LOCALAPPDATA%\ComplyPH\private\workspace.sqlite3
-%LOCALAPPDATA%\ComplyPH\library\catalog.sqlite3
+This fixed path is restricted to its owning account, SYSTEM and Administrators;
+it is not a shared multi-user store. SQLite is not encrypted by the app. Removing
+a document entry deletes its cache and reports, preserving the original file.
+Uninstall preserves active data, backups and original documents.
 
-An existing %LOCALAPPDATA%\LaborLens PH data root is reused without moving live
-databases. Existing references/preferences are retained while the private schema
-upgrades to version 2 for text caches. Uninstall preserves all application data
-and original documents. SQLite storage is not encrypted by the application.
+The app has no HTTP client, AI or document upload feature. Daily source updates,
+manual legal-source import and watched folders remain planned. Report-copy actions
+place private report text on your clipboard only when requested.
 
-This build is unsigned. Checks and limitations:
-https://github.com/tatselkrik/complyph/blob/main/docs/VERIFICATION.md
-
-Source: MIT license. Fonts: SIL Open Font License. Dependency notices are in
-THIRD_PARTY_NOTICES.txt. Agency names do not imply government endorsement.
+This Windows build is unsigned and may trigger SmartScreen.
+Checks and limitations: https://github.com/tatselkrik/complyph/blob/main/docs/VERIFICATION.md
+Source: MIT. Fonts: SIL OFL. See THIRD_PARTY_NOTICES.txt.

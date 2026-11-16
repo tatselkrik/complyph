@@ -32,7 +32,7 @@ impl Default for LibraryView {
             domain: String::new(),
             reader: None,
             export: FileDialog::new()
-                .title("Save official source copy")
+                .title("Save preserved source copy")
                 .default_size([760.0, 500.0])
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .show_devices(false)
@@ -65,10 +65,10 @@ impl LibraryView {
             return;
         };
         ui.horizontal_wrapped(|ui| {
-            widgets::pill(ui, "Official snapshots", GREEN, GREEN_TINT, true);
+            widgets::pill(ui, "Local references", GREEN, GREEN_TINT, true);
             ui.label(
                 RichText::new(format!(
-                    "{} saved  ·  {} verified for source identity",
+                    "{} saved  ·  {} verified agency downloads",
                     summary.source_count, summary.verified_source_count
                 ))
                 .color(MUTED),
@@ -79,6 +79,13 @@ impl LibraryView {
                     .color(MUTED),
             );
         });
+        ui.label(
+            RichText::new(format!(
+                "{} identity-checked uploaded copies · {} provisional third-party copies",
+                summary.identity_checked_upload_count, summary.provisional_source_count
+            ))
+            .color(AMBER),
+        );
         ui.add_space(10.0);
         widgets::muted(
             ui,
@@ -154,6 +161,14 @@ impl LibraryView {
                     .collect::<Vec<_>>()
                     .join("  /  ");
                 ui.label(RichText::new(labels).size(12.0).color(MUTED));
+                let verified = metadata.provenance == complyph_library::Provenance::AgencyDownload;
+                widgets::pill(
+                    ui,
+                    metadata.provenance.label(),
+                    if verified { GREEN } else { AMBER },
+                    if verified { GREEN_TINT } else { AMBER_TINT },
+                    false,
+                );
                 ui.add_space(5.0);
                 if widgets::secondary(ui, "Read local snapshot").clicked() {
                     selected = Some(source.id);
@@ -201,6 +216,11 @@ impl LibraryView {
                     widgets::muted(ui,&gap.reason);
                     ui.add_space(6.0);
                 }
+                for reference in &manifest.external_references {
+                    ui.label(RichText::new(&reference.title).font(heading(13.0)));
+                    widgets::muted(ui, &reference.note);
+                    ui.add(egui::Label::new(&reference.url).wrap().selectable(true));
+                }
                 ui.label(RichText::new("Daily source checks and manual source import are not available yet. No runtime update check has run.").color(AMBER));
             });
         });
@@ -212,7 +232,7 @@ impl LibraryView {
         let reader = self.reader.as_mut().expect("reader was selected");
         ui.horizontal(|ui| {
             back = widgets::secondary(ui, "Back to library").clicked();
-            if widgets::secondary(ui, "Save original copy…").clicked() {
+            if widgets::secondary(ui, "Save source copy…").clicked() {
                 let name = reader
                     .metadata
                     .raw_path
@@ -233,6 +253,13 @@ impl LibraryView {
             ),
         );
         ui.add_space(8.0);
+        widgets::pill(
+            ui,
+            reader.metadata.provenance.label(),
+            AMBER,
+            AMBER_TINT,
+            false,
+        );
         ui.label(RichText::new(&reader.metadata.applicability_note).color(AMBER));
         ui.add_space(10.0);
         ui.collapsing("Source and verification details", |ui| {
@@ -247,13 +274,20 @@ impl LibraryView {
                     .unwrap_or("See original and notes")
             ));
             widgets::muted(ui, &reader.metadata.effectivity_note);
-            ui.label("Official source URL (saved citation; no online request is made):");
+            ui.label("Recorded source URL (saved citation; no online request is made):");
             ui.add(
                 egui::Label::new(&reader.metadata.source_url)
                     .wrap()
                     .selectable(true),
             );
-            ui.label(format!("Original SHA-256: {}", reader.metadata.raw_sha256));
+            ui.label(format!(
+                "Preserved copy SHA-256: {}",
+                reader.metadata.raw_sha256
+            ));
+            if let Some(url) = &reader.metadata.official_reference_url {
+                ui.label("Official corroboration URL:");
+                ui.add(egui::Label::new(url).wrap().selectable(true));
+            }
             widgets::muted(ui, &reader.metadata.extraction);
             widgets::muted(ui, &reader.metadata.verification_scope);
         });
@@ -305,7 +339,7 @@ impl LibraryView {
         });
         widgets::muted(
             ui,
-            "Reading sections are display chunks, not original page numbers. OCR and table layouts may be imperfect; the saved original is authoritative.",
+            "Reading sections are display chunks, not original page numbers. OCR and table layouts may be imperfect; compare exact wording and figures with the saved page images and provenance notes.",
         );
         if let Some(page) = reader.pages.get(reader.page) {
             widgets::card().show(ui, |ui| {
@@ -325,7 +359,7 @@ impl LibraryView {
         }
         if let Some((id, name)) = export {
             self.export = FileDialog::new()
-                .title("Save official source copy")
+                .title("Save preserved source copy")
                 .default_size([760.0, 500.0])
                 .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
                 .show_devices(false)
@@ -348,7 +382,7 @@ impl LibraryView {
             && let Some(id) = self.export_id.take()
         {
             self.message = Some(match catalog.export_source(id, &output) {
-                Ok(()) => format!("Official source copy saved to {}", output.display()),
+                Ok(()) => format!("Preserved source copy saved to {}", output.display()),
                 Err(error) => format!(
                     "Could not save the copy: {error}. Choose a new filename if one already exists."
                 ),

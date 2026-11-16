@@ -80,7 +80,7 @@ fn read(bytes: &[u8]) -> Result<Report> {
         engine: ENGINE.into(), format: Format::Docx, status: Status::Ready,
         summary: "Word text read locally. Locations identify XML parts and paragraphs; Word page numbers are not inferred.".into(),
         units: vec![],
-        warnings: vec!["Tables are read cell by cell. Headers, footers, and notes appear as separate parts and may not apply to every page. Images, text boxes, comments, deleted/moved-from text, and embedded objects are omitted. Field instructions, macros, and external links are never executed or fetched. Check layout and revision history in the original. No compliance assessment has been made.".into()],
+        warnings: vec![crate::DOCX_LAYOUT_WARNING.into()],
     };
     let mut used = 0;
     for part in parts {

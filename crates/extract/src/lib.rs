@@ -6,6 +6,8 @@ mod docx;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
 
+pub const PDF_LAYOUT_WARNING: &str = "Reading order, columns, tables, handwriting, and unusual fonts may not match the original. Images are not read. No compliance assessment has been made.";
+pub const DOCX_LAYOUT_WARNING: &str = "Tables are read cell by cell. Headers, footers, and notes appear as separate parts and may not apply to every page. Images, text boxes, comments, deleted/moved-from text, and embedded objects are omitted. Field instructions, macros, and external links are never executed or fetched. Check layout and revision history in the original. No compliance assessment has been made.";
 pub const ENGINE: &str = "complyph-text-1";
 pub const MAX_INPUT_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_TEXT_BYTES: usize = 4 * 1024 * 1024;
@@ -188,9 +190,12 @@ fn pdf(bytes: &[u8]) -> Report {
         );
     }
     let mut report = Report {
-        engine: ENGINE.into(), format: Format::Pdf, status: Status::Ready,
+        engine: ENGINE.into(),
+        format: Format::Pdf,
+        status: Status::Ready,
         summary: "PDF text read locally. Page numbers refer to the original PDF.".into(),
-        units: vec![], warnings: vec!["Reading order, columns, tables, handwriting, and unusual fonts may not match the original. Images are not read. No compliance assessment has been made.".into()],
+        units: vec![],
+        warnings: vec![PDF_LAYOUT_WARNING.into()],
     };
     let mut used = 0;
     let mut empty = Vec::new();

@@ -1,6 +1,7 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 mod app;
+mod check_view;
 mod library_view;
 mod reader;
 mod reader_view;
@@ -12,6 +13,11 @@ use std::path::PathBuf;
 
 fn main() -> eframe::Result {
     let data_override = parse_arguments();
+    // Resolve/migrate before creating a desktop window or opening a database.
+    let paths = data_override
+        .map(WorkspacePaths::under)
+        .map(Ok)
+        .unwrap_or_else(WorkspacePaths::default_location);
     let options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("ComplyPH")
@@ -30,10 +36,6 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |creation| {
             theme::install(&creation.egui_ctx);
-            let paths = data_override
-                .map(WorkspacePaths::under)
-                .map(Ok)
-                .unwrap_or_else(WorkspacePaths::default_location);
             Ok(Box::new(app::ComplyApp::new(paths)))
         }),
     )
@@ -52,6 +54,13 @@ fn parse_arguments() -> Option<PathBuf> {
                 std::process::exit(2);
             }
             reader::worker_main(format);
+        }
+        Some(argument) if argument == "--check-file" => {
+            if let Err(error) = diagnostic_check(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
         }
         Some(argument) if argument == "--read-file" => {
             // Diagnostic entry point for isolated installer/reader verification.
@@ -75,7 +84,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }
@@ -117,4 +126,54 @@ fn diagnostic_read(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
     )?;
     serde_json::to_writer_pretty(output, &saved)
         .map_err(|_| "The diagnostic result could not be saved.".into())
+}
+
+fn diagnostic_check(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    if !matches!(arguments.len(), 5 | 7)
+        || arguments[1] != "--context"
+        || arguments[3] != "--output"
+        || (arguments.len() == 7 && arguments[5] != "--data-dir")
+    {
+        return Err(
+            "Use --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]"
+                .into(),
+        );
+    }
+    let context: complyph_checks::Context =
+        serde_json::from_slice(&std::fs::read(&arguments[2]).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    let output = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&arguments[4])
+        .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
+    let paths = if arguments.len() == 7 {
+        WorkspacePaths::under(PathBuf::from(&arguments[6]))
+    } else {
+        WorkspacePaths::default_location().map_err(|e| e.to_string())?
+    };
+    let workspace = complyph_core::Workspace::open(&paths).map_err(|e| e.to_string())?;
+    let catalog =
+        complyph_library::LibraryCatalog::open(&paths.library_dir).map_err(|e| e.to_string())?;
+    check_view::approved_source(&catalog)?;
+    let document = workspace
+        .register_document(std::path::Path::new(&arguments[0]))
+        .map_err(|e| e.to_string())?;
+    let saved = reader::read_document(
+        &paths,
+        &document,
+        false,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
+    let current = complyph_core::document_snapshot(&document.path).map_err(|e| e.to_string())?;
+    if current.sha256 != saved.sha256 {
+        return Err("The original changed; read again before checking.".into());
+    }
+    let review = workspace
+        .save_review(
+            document.id,
+            complyph_checks::review(&saved.report, &saved.sha256, context),
+        )
+        .map_err(|e| e.to_string())?;
+    serde_json::to_writer_pretty(output, &review).map_err(|e| e.to_string())
 }

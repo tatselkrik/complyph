@@ -4,7 +4,7 @@
 
 ComplyPH is intended to grow into a local Philippine compliance document-review application. Labor compliance is the first review area. Future domains can reuse the same desktop workspace, document extraction, evidence handling, rule evaluation, and reporting pipeline.
 
-ComplyPH 0.2.0 implements the source/domain registry and a 14-snapshot starter library. Checking rules and the shared review engine remain planned. See the source inventory for current references and gaps.
+ComplyPH 0.4.0 implements the source/domain registry, 19 preserved snapshots and three focused labour checks. Other domain rules and broader review coverage remain planned. See the source inventory for current references and gaps.
 
 | Planned domain | Examples of future review inputs |
 | --- | --- |
@@ -67,7 +67,7 @@ The updater still requires operating-system file and network restrictions before
 
 Use domain selection inside the common Review workspace. A saved local review profile can select several domains and retain the context needed for that review. Show findings and coverage per domain, with library filters for domain and issuer. The navy-and-cream interface remains the shared visual language.
 
-Keep domain, source, and rule identifiers independent of product branding. Any future product rename must account for the existing data directory, installer identity, and saved workspace. The v0.2.0 rename to ComplyPH retains existing LaborLens PH data in place through shared data-root discovery; new installations use the ComplyPH root.
+Keep domain, source, and rule identifiers independent of product branding. Any future product rename must account for the existing data directory, installer identity, and saved workspace. Version 0.4.0 copies detected legacy Windows data to ProgramData\ComplyPH, preserving the old root and original documents.
 
 ## Delivery
 

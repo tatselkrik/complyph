@@ -1,5 +1,7 @@
 //! Private, local workspace data. This crate has no networking dependencies.
 
+pub mod migration;
+
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -9,7 +11,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i32 = 2;
+const SCHEMA_VERSION: i32 = 3;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -31,6 +33,10 @@ pub enum WorkspaceError {
 
 pub type Result<T> = std::result::Result<T, WorkspaceError>;
 
+pub fn default_workspace_target() -> Result<PathBuf> {
+    Ok(complyph_paths::storage_plan()?.preferred)
+}
+
 #[derive(Clone, Debug)]
 pub struct WorkspacePaths {
     pub root: PathBuf,
@@ -41,7 +47,7 @@ pub struct WorkspacePaths {
 
 impl WorkspacePaths {
     pub fn default_location() -> Result<Self> {
-        Ok(Self::under(complyph_paths::default_data_root()?))
+        migration::prepare(&complyph_paths::storage_plan()?)
     }
 
     pub fn under(root: impl Into<PathBuf>) -> Self {
@@ -103,6 +109,14 @@ pub struct SavedExtraction {
     pub report: complyph_extract::Report,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SavedReview {
+    pub id: i64,
+    pub document_id: i64,
+    pub created_at: i64,
+    pub review: complyph_checks::Review,
+}
+
 pub struct DocumentSnapshot {
     pub bytes: Vec<u8>,
     pub sha256: String,
@@ -162,7 +176,8 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn open(paths: &WorkspacePaths) -> Result<Self> {
-        fs::create_dir_all(&paths.private_dir)?;
+        complyph_paths::secure_directory(&paths.root)?;
+        complyph_paths::secure_directory(&paths.private_dir)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
@@ -203,6 +218,16 @@ impl Workspace {
                     value TEXT NOT NULL
                 );
                 PRAGMA user_version = 2;",
+            )?;
+        }
+        if version < 3 {
+            transaction.execute_batch(
+                "CREATE TABLE review_runs (
+                id INTEGER PRIMARY KEY,
+                document_id INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+                created_at INTEGER NOT NULL,
+                value TEXT NOT NULL
+            ); PRAGMA user_version = 3;",
             )?;
         }
         transaction.commit()?;
@@ -319,6 +344,54 @@ impl Workspace {
         self.connection
             .execute("DELETE FROM documents WHERE id = ?1", [id])?;
         Ok(())
+    }
+
+    pub fn save_review(
+        &self,
+        document_id: i64,
+        review: complyph_checks::Review,
+    ) -> Result<SavedReview> {
+        let saved = SavedReview {
+            id: 0,
+            document_id,
+            created_at: now(),
+            review,
+        };
+        self.connection.execute(
+            "INSERT INTO review_runs(document_id,created_at,value) VALUES (?1,?2,?3)",
+            params![
+                document_id,
+                saved.created_at,
+                serde_json::to_string(&saved.review)?
+            ],
+        )?;
+        Ok(SavedReview {
+            id: self.connection.last_insert_rowid(),
+            ..saved
+        })
+    }
+    pub fn reviews(&self) -> Result<Vec<SavedReview>> {
+        let mut statement = self
+            .connection
+            .prepare("SELECT id,document_id,created_at,value FROM review_runs ORDER BY id DESC")?;
+        let rows = statement.query_map([], |r| {
+            Ok((
+                r.get::<_, i64>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, String>(3)?,
+            ))
+        })?;
+        rows.map(|r| {
+            let (id, document_id, created_at, value) = r?;
+            Ok(SavedReview {
+                id,
+                document_id,
+                created_at,
+                review: serde_json::from_str(&value)?,
+            })
+        })
+        .collect()
     }
 
     pub fn preferences(&self) -> Result<Preferences> {
@@ -581,5 +654,37 @@ mod tests {
             .query_row("SELECT value FROM preferences", [], |r| r.get(0))
             .unwrap();
         assert_eq!(stored, "broken");
+    }
+    #[test]
+    fn reports_persist_evidence_and_cascade_only_after_removing_reference() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = WorkspacePaths::under(temp.path().join("workspace"));
+        let original = temp.path().join("synthetic.pdf");
+        fs::write(&original, b"original unchanged").unwrap();
+        let workspace = Workspace::open(&paths).unwrap();
+        let document = workspace.register_document(&original).unwrap();
+        let report = complyph_extract::Report::failure(
+            complyph_extract::Format::Pdf,
+            complyph_extract::Status::NeedsOcr,
+            "synthetic scan",
+        );
+        let review = complyph_checks::review(
+            &report,
+            "synthetic-hash",
+            complyph_checks::Context::default(),
+        );
+        let saved = workspace.save_review(document.id, review).unwrap();
+        drop(workspace);
+        let workspace = Workspace::open(&paths).unwrap();
+        let reports = workspace.reviews().unwrap();
+        assert_eq!(reports[0].id, saved.id);
+        assert_eq!(reports[0].review.document_sha256, "synthetic-hash");
+        assert_eq!(
+            reports[0].review.findings[0].outcome,
+            complyph_checks::Outcome::NeedsContext
+        );
+        workspace.remove_document(document.id).unwrap();
+        assert!(workspace.reviews().unwrap().is_empty());
+        assert_eq!(fs::read(original).unwrap(), b"original unchanged");
     }
 }

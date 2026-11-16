@@ -21,3 +21,7 @@ The two older `Synthetic sample` files remain for foundation compatibility. New 
 The development-only [generator](../scripts/generate-synthetic-documents.py) uses Python, ReportLab, Pillow, and pypdf. The installed application uses Rust readers; it needs none of those tools. The encrypted fixture may differ byte for byte when regenerated because encryption uses randomness.
 
 **No legal checking happens in this release.** A successful reading result means that text was extracted, not that a document satisfies any rule.
+
+## Focused labour check fixtures (0.4.0)
+
+`Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime and 10% additional night differential for 22:00–06:00. `Synthetic labour issues.docx` states 9 hours / 20% / 5%. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate and incomplete night window. With the separate reviewer-confirmed scope, expected outcomes are three meets / three potential issues / three unresolved. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.

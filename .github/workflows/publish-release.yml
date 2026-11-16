@@ -73,16 +73,21 @@ jobs:
           assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version)
           assert manifest['starter_bundle_id'] == library['bundle_id']
           assert (root / 'starter-library-manifest.json').read_bytes() == Path('library/starter/manifest.json').read_bytes()
-          assert len(library['sources']) == check['starter_source_count'] == manifest['starter_source_count'] == 14
+          assert len(library['sources']) == check['starter_source_count'] == manifest['starter_source_count'] == 19
           assert len(library['domains']) == check['starter_domain_count'] == manifest['starter_domain_count'] == 7
-          for name in ('installed', 'fresh_install_passed', 'legacy_upgrade_passed', 'reinstall_location_preserved', 'legacy_branding_replaced', 'legacy_data_root_reused', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'installed_reader_passed', 'private_schema_upgrade_passed', 'current_version_upgrade_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
+          for name in ('installed', 'fresh_install_passed', 'legacy_upgrade_passed', 'reinstall_location_preserved', 'legacy_branding_replaced', 'legacy_data_migrated', 'programdata_acl_passed', 'installed_checks_passed', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'installed_reader_passed', 'private_schema_upgrade_passed', 'current_version_upgrade_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
               assert check[name] is True, name
           assert check['interactive_windows_ui_tested'] is False
           assert manifest['document_text_reading'] == 'offline PDF and DOCX'
-          assert manifest['private_schema'] == check['private_schema'] == 2
+          assert manifest['private_schema'] == check['private_schema'] == 3
           expected = json.loads(Path('examples/expected-results.json').read_text())
           assert check['synthetic_fixture_count'] == manifest['synthetic_fixture_count'] == len(expected) == 7
           assert {item['name']: item['status'] for item in check['reader_results']} == {name: value['status'] for name, value in expected.items()}
+          checks_expected = json.loads(Path('examples/expected-checks.json').read_text())['expected']
+          assert manifest['validated_check_count'] == check['validated_check_count'] == 3
+          assert manifest['synthetic_check_fixture_count'] == check['synthetic_check_fixture_count'] == len(checks_expected) == 3
+          assert {item['name']: item['outcomes'] for item in check['check_results']} == checks_expected
+          assert manifest['workspace_default'] == r'C:\ProgramData\ComplyPH'
           for line in (root / 'SHA256SUMS.txt').read_text().splitlines():
               digest, name = line.split('  ', 1)
               path = root / name
@@ -125,7 +130,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Local document reader" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Focused labour checks" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

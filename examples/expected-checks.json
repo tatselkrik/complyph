@@ -1,0 +1,26 @@
+{
+  "context": {
+    "operative_terms_confirmed": true,
+    "normal_hours": "covered",
+    "ordinary_overtime": "covered",
+    "night_differential": "covered"
+  },
+  "expected": {
+    "Synthetic labour baseline.pdf": [
+      "stated_term_meets_minimum",
+      "stated_term_meets_minimum",
+      "stated_term_meets_minimum"
+    ],
+    "Synthetic labour issues.docx": [
+      "potential_issue",
+      "potential_issue",
+      "potential_issue"
+    ],
+    "Synthetic labour ambiguous.docx": [
+      "needs_review",
+      "needs_review",
+      "needs_review"
+    ]
+  },
+  "limitation": "Synthetic fixtures only. Reviewer-confirmed coverage, net hours and operative statements; no legal certification."
+}

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "bundle_id": "complyph-starter-0.2.0-e7f297da550ac6c6",
-  "verified_at_utc": "2026-11-16T13:00:49+00:00",
-  "verified_at_unix": 1794834049,
-  "verification_scope": "Official publication origin and document identity checked; original bytes and derived reading text pinned by SHA-256. This does not certify amendment completeness, current applicability, OCR accuracy, or compliance.",
+  "bundle_id": "complyph-starter-2026-11-17-v2",
+  "verified_at_utc": "2026-11-16T16:00:00Z",
+  "verified_at_unix": 1794844800,
+  "verification_scope": "Preserved-content integrity is checked for every snapshot. Provenance is classified per source: agency download, identity-checked uploaded copy, or provisional third-party copy. This does not certify legal currency, complete amendment coverage, or compliance.",
   "domains": [
     {
       "id": "ph.labor",
@@ -37,27 +37,27 @@
   "coverage_gaps": [
     {
       "domain": "ph.labor",
-      "instrument": "DOLE Labor Code 2022 edition",
-      "source_url": "https://bwc.dole.gov.ph/wp-content/uploads/2025/08/Labor-Code-of-the-Philippines.pdf",
-      "reason": "Official download returned HTTP 403 in this acquisition environment. Not imported or counted as verified."
+      "instrument": "Later Labor Code amendments, implementing rules and review-period coverage",
+      "source_url": "https://bwc.dole.gov.ph/",
+      "reason": "The uploaded 2022 edition is included with its provenance limits. It is not a consolidated statement of every later amendment, special law or sector-specific rule."
     },
     {
       "domain": "ph.osh",
-      "instrument": "DOLE D.O. 252-25 and full OSHS technical standards",
-      "source_url": "https://dole.gov.ph/news/department-order-252-25-revised-implementing-rules-and-regulations-of-republic-act-no.-11058/",
-      "reason": "DOLE/BWC/OSHC and the DPWH-hosted attachment were inaccessible here. The existence of D.O. 252-25 was corroborated in official indexed listings; its document bytes are not bundled or counted as verified."
+      "instrument": "OSHS amendment reconciliation and matrix validation",
+      "source_url": "https://oshc.dole.gov.ph/department-orders/",
+      "reason": "The 431-page historical OSHS compilation and D.O. 252-25 reduced upload are included. Agency-byte comparison, later amendments and structured validation of personnel/facilities matrices remain outstanding."
     },
     {
       "domain": "ph.pagibig",
-      "instrument": "Pag-IBIG Circular 460 and later remittance issuances",
+      "instrument": "Agency-original verification and later remittance issuances",
       "source_url": "https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html",
-      "reason": "Agency site presented a browser verification challenge. No attempt was made to bypass it. Circulars 460, 499, and other later requirements still need acquisition and review."
+      "reason": "Circulars 460 and 499 are included as provisional third-party copies. Their identity is corroborated, but agency originals, later amendments and validated contribution/remittance rules remain outstanding."
     },
     {
       "domain": "ph.tax",
-      "instrument": "Complete NIRC amendment and implementing-issuance coverage",
+      "instrument": "Complete current NIRC and implementing-issuance coverage",
       "source_url": "https://www.bir.gov.ph/Tax-Code",
-      "reason": "This starter contains TRAIN and RR 29-2025, not the full consolidated NIRC or its amendment chain; the BIR landing page alone is not imported as legal text."
+      "reason": "TRAIN and RR 29-2025 remain a starter collection. The supplied PwC compilation ends at 31 January 2020 and is a historical secondary reference, not a current official NIRC; its PDF is not redistributed in this public bundle."
     }
   ],
   "sources": [
@@ -525,6 +525,169 @@
         "content-type": "application/pdf",
         "content-length": "589509"
       }
+    },
+    {
+      "key": "labor-code-2022-upload",
+      "title": "Labor Code — DOLE renumbered 2022 edition",
+      "instrument": "P.D. 442 — DOLE edition 2022",
+      "issuer": "Department of Labor and Employment / Bureau of Working Conditions",
+      "domains": [
+        "ph.labor",
+        "ph.osh"
+      ],
+      "source_url": "https://dole.gov.ph/php_assets/uploads/2026/04/Labor-Code-of-the-Philippines-Renumbered-2022-2.pdf",
+      "resolved_url": "https://dole.gov.ph/php_assets/uploads/2026/04/Labor-Code-of-the-Philippines-Renumbered-2022-2.pdf",
+      "acquired_at_utc": "2026-11-17T00:00:00+08:00",
+      "acquired_at_unix": 1794844800,
+      "verified_at_utc": "2026-11-17T00:00:00+08:00",
+      "verified_at_unix": 1794844800,
+      "raw_path": "raw/labor-code-2022-upload.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 1532508,
+      "raw_sha256": "d9abd6f8eb3fb329456e926aa46ce05fbfe75f562f8aa6a60e7f421de97295c6",
+      "text_path": "text/labor-code-2022-upload.txt",
+      "text_sha256": "4d83193b8f2839623730cb39af1218b88459f2720942c3743f7bd632c3bea76c",
+      "extraction": "PDF publisher text layer extracted locally with pdftotext -layout; all original PDF pages retained.",
+      "pages": 136,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
+      "applicability_note": "User-provided official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
+      "verification_scope": "User-provided official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
+      "acquisition_headers": {},
+      "provenance": "uploaded_identity",
+      "official_reference_url": "https://dole.gov.ph/labor-code-of-the-philippines-2/"
+    },
+    {
+      "key": "dole-252-25-upload",
+      "title": "Revised implementing rules of the Occupational Safety and Health Law",
+      "instrument": "DOLE D.O. 252-25",
+      "issuer": "Department of Labor and Employment",
+      "domains": [
+        "ph.osh"
+      ],
+      "source_url": "https://dole.gov.ph/php_assets/uploads/2025/05/Department-Order-252-25.pdf",
+      "resolved_url": "https://dole.gov.ph/php_assets/uploads/2025/05/Department-Order-252-25.pdf",
+      "acquired_at_utc": "2026-11-17T00:00:00+08:00",
+      "acquired_at_unix": 1794844800,
+      "verified_at_utc": "2026-11-17T00:00:00+08:00",
+      "verified_at_unix": 1794844800,
+      "raw_path": "raw/dole-252-25-upload.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 16182675,
+      "raw_sha256": "9d12499ff26a4a560a56cc22312cb8462a97ed3a02052c34ca6db30af4733828",
+      "text_path": "text/dole-252-25-upload.txt",
+      "text_sha256": "678582589bac55c9dd720e2d1b8b6a170726130b9c820dba31f2c1c04e3241f5",
+      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI, six-page batches; reading derivative retains all 110 PDF pages and sampled visible images match the upload.",
+      "pages": 110,
+      "issued_on": "2025-04-28",
+      "effective_from": "2025-05-16",
+      "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
+      "applicability_note": "User-provided reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
+      "verification_scope": "User-provided reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
+      "acquisition_headers": {},
+      "provenance": "uploaded_identity",
+      "official_reference_url": "https://bwc.dole.gov.ph/3063-2/"
+    },
+    {
+      "key": "oshs-2017-upload",
+      "title": "Occupational Safety and Health Standards — 2017-era compilation",
+      "instrument": "OSHS — technical standards compilation",
+      "issuer": "DOLE / Occupational Safety and Health Center",
+      "domains": [
+        "ph.osh"
+      ],
+      "source_url": "https://www.dole.gov.ph/php_assets/uploads/2019/04/OSH-Standards-2017-2.pdf",
+      "resolved_url": "https://www.dole.gov.ph/php_assets/uploads/2019/04/OSH-Standards-2017-2.pdf",
+      "acquired_at_utc": "2026-11-17T00:00:00+08:00",
+      "acquired_at_unix": 1794844800,
+      "verified_at_utc": "2026-11-17T00:00:00+08:00",
+      "verified_at_unix": 1794844800,
+      "raw_path": "raw/oshs-2017-upload.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 7053470,
+      "raw_sha256": "536cb26291612fb250ef518353b07b3c1a1167d8ba68ce0a7b2982b84f0e99d4",
+      "text_path": "text/oshs-2017-upload.txt",
+      "text_sha256": "0e15e0d7a4ac8e83870a30341300590a40243dc54f605c1ea2f5d9ad2c8b7c24",
+      "extraction": "Existing PDF text layer extracted locally with pdftotext -layout. Original physical page separators preserved; image-only covers remain in the saved source copy.",
+      "pages": 431,
+      "issued_on": null,
+      "effective_from": null,
+      "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
+      "applicability_note": "User-provided DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page upload is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
+      "verification_scope": "User-provided DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page upload is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
+      "acquisition_headers": {},
+      "provenance": "uploaded_identity",
+      "official_reference_url": "https://oshc.dole.gov.ph/department-orders/"
+    },
+    {
+      "key": "pagibig-460-upload",
+      "title": "Increase in maximum fund salary effective February 2024",
+      "instrument": "Pag-IBIG Fund Circular 460",
+      "issuer": "Home Development Mutual Fund / Pag-IBIG",
+      "domains": [
+        "ph.pagibig"
+      ],
+      "source_url": "https://mpm.ph/wp-content/uploads/2024/01/HDMF-Circular-No.-460-Pag-ibig-HDMF-Table-2024.pdf",
+      "resolved_url": "https://mpm.ph/wp-content/uploads/2024/01/HDMF-Circular-No.-460-Pag-ibig-HDMF-Table-2024.pdf",
+      "acquired_at_utc": "2026-11-17T00:00:00+08:00",
+      "acquired_at_unix": 1794844800,
+      "verified_at_utc": "2026-11-17T00:00:00+08:00",
+      "verified_at_unix": 1794844800,
+      "raw_path": "raw/pagibig-460-upload.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 2041060,
+      "raw_sha256": "2db8f14946e132712a0eb838c36c69ebef48353fa3815b30ded3a788f5565af8",
+      "text_path": "text/pagibig-460-upload.txt",
+      "text_sha256": "1f2254d5bebd6ffeef691dc7d182baf928e20cb90687b5846cb70df7e52c69b0",
+      "extraction": "Existing PDF text layer extracted locally with pdftotext -layout; tables require comparison with the saved scan.",
+      "pages": 5,
+      "issued_on": "2024-01-15",
+      "effective_from": "2024-02-01",
+      "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
+      "applicability_note": "Provisional third-party mirror copy. Five pages and instrument identity/date checked; title and effective date corroborated in the agency index. Direct agency publication bytes have not been compared. Do not treat this reading table as a validated contribution calculator.",
+      "verification_scope": "Provisional third-party mirror copy. Five pages and instrument identity/date checked; title and effective date corroborated in the agency index. Direct agency publication bytes have not been compared. Do not treat this reading table as a validated contribution calculator.",
+      "acquisition_headers": {},
+      "provenance": "third_party",
+      "official_reference_url": "https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html"
+    },
+    {
+      "key": "pagibig-499-upload",
+      "title": "Digitalization of employer transactions and remittances through eSRS",
+      "instrument": "Pag-IBIG Fund Circular 499 (2026)",
+      "issuer": "Home Development Mutual Fund / Pag-IBIG",
+      "domains": [
+        "ph.pagibig"
+      ],
+      "source_url": "https://www.facebook.com/pnscpas/posts/pag-ibig-update-pag-ibig-circular-no-499-2026digitalization-of-employer-transact/1461593219322189/",
+      "resolved_url": "https://www.facebook.com/pnscpas/posts/pag-ibig-update-pag-ibig-circular-no-499-2026digitalization-of-employer-transact/1461593219322189/",
+      "acquired_at_utc": "2026-11-17T00:00:00+08:00",
+      "acquired_at_unix": 1794844800,
+      "verified_at_utc": "2026-11-17T00:00:00+08:00",
+      "verified_at_unix": 1794844800,
+      "raw_path": "raw/pagibig-499-upload.pdf",
+      "raw_mime": "application/pdf",
+      "raw_bytes": 585820,
+      "raw_sha256": "0ba8abd5811ba18c29ab9e7d5ab3ee4f79314a72ee61c723fbd34ef35070ed45",
+      "text_path": "text/pagibig-499-upload.txt",
+      "text_sha256": "1026e2a651d8ed7d0b5da9b4c14ba5dd4d92f0ac0838817968725ef85b975f28",
+      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI; four-page reading derivative, sampled visible pages identical to uploaded images.",
+      "pages": 4,
+      "issued_on": "2026-08-04",
+      "effective_from": "2026-08-21",
+      "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
+      "applicability_note": "Provisional user-stitched copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
+      "verification_scope": "Provisional user-stitched copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
+      "acquisition_headers": {},
+      "provenance": "third_party",
+      "official_reference_url": "https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html"
+    }
+  ],
+  "external_references": [
+    {
+      "title": "PwC / Isla Lipana NIRC compilation — historical reference",
+      "url": "https://www.pwc.com/ph/en/publications/pdf/pwc-ph-tax-code-feb-2020.pdf",
+      "note": "Publisher copy matches the user upload; legislation through 31 January 2020 only. Third-party compilation, not current official law. External citation only; PDF not redistributed."
     }
   ]
 }

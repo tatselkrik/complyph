@@ -11,6 +11,7 @@ name = "complyph"
 path = "src/main.rs"
 
 [dependencies]
+complyph-checks = { path = "../checks" }
 complyph-core = { path = "../core" }
 complyph-extract = { path = "../extract" }
 complyph-library = { path = "../library" }

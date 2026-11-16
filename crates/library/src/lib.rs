@@ -44,8 +44,46 @@ pub struct CoverageGap {
     pub source_url: String,
     pub reason: String,
 }
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Provenance {
+    #[default]
+    AgencyDownload,
+    UploadedIdentity,
+    ThirdParty,
+}
+
+impl Provenance {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::AgencyDownload => "Verified agency download",
+            Self::UploadedIdentity => "Identity checked · uploaded copy",
+            Self::ThirdParty => "Provisional · third-party copy",
+        }
+    }
+
+    fn database_status(self) -> &'static str {
+        match self {
+            Self::AgencyDownload => "verified",
+            Self::UploadedIdentity => "needs_review",
+            Self::ThirdParty => "unverified",
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ExternalReference {
+    pub title: String,
+    pub url: String,
+    pub note: String,
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SourceMetadata {
+    #[serde(default)]
+    pub provenance: Provenance,
+    #[serde(default)]
+    pub official_reference_url: Option<String>,
     pub key: String,
     pub title: String,
     pub instrument: String,
@@ -82,6 +120,8 @@ pub struct StarterManifest {
     pub domains: Vec<Domain>,
     pub coverage_gaps: Vec<CoverageGap>,
     pub sources: Vec<SourceMetadata>,
+    #[serde(default)]
+    pub external_references: Vec<ExternalReference>,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct DomainSummary {
@@ -93,6 +133,8 @@ pub struct DomainSummary {
 pub struct LibrarySummary {
     pub source_count: u64,
     pub verified_source_count: u64,
+    pub identity_checked_upload_count: u64,
+    pub provisional_source_count: u64,
     pub bundled_verified_at: Option<i64>,
     pub last_successful_check: Option<i64>,
     pub automatic_updates_available: bool,
@@ -233,12 +275,13 @@ impl LibraryCatalog {
                 .ok_or_else(|| LibraryError::Integrity(metadata.key.clone()))?;
             transaction.execute(
                 "INSERT INTO sources(stable_key,title,issuer,source_url,verification_status)
-                 VALUES(?1,?2,?3,?4,'verified') ON CONFLICT(stable_key) DO NOTHING",
+                 VALUES(?1,?2,?3,?4,?5) ON CONFLICT(stable_key) DO NOTHING",
                 params![
                     metadata.key,
                     metadata.title,
                     metadata.issuer,
-                    metadata.source_url
+                    metadata.source_url,
+                    metadata.provenance.database_status()
                 ],
             )?;
             let source_id: i64 = transaction.query_row(
@@ -291,8 +334,7 @@ impl LibraryCatalog {
     fn validate_saved_snapshots(&self) -> Result<()> {
         let mut statement = self.connection.prepare(
             "SELECT p.metadata_json,p.raw_bytes,p.reading_text FROM source_snapshots p
-             JOIN source_versions v ON v.id=p.version_id JOIN sources s ON s.id=v.source_id
-             WHERE s.verification_status='verified'",
+             JOIN source_versions v ON v.id=p.version_id JOIN sources s ON s.id=v.source_id",
         )?;
         let rows = statement.query_map([], |r| {
             Ok((
@@ -322,10 +364,18 @@ impl LibraryCatalog {
             [],
             |r| r.get(0),
         )?;
+        let identity_checked_upload_count: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM sources WHERE verification_status='needs_review'",
+            [],
+            |r| r.get(0),
+        )?;
+        let provisional_source_count: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM sources s WHERE verification_status='unverified' AND EXISTS(
+             SELECT 1 FROM source_versions v JOIN source_snapshots p ON p.version_id=v.id WHERE v.source_id=s.id)", [], |r| r.get(0))?;
         let mut statement = self.connection.prepare(
             "SELECT d.id,d.label,COUNT(s.id) FROM domains d
              LEFT JOIN source_domains sd ON sd.domain_id=d.id
-             LEFT JOIN sources s ON s.id=sd.source_id AND s.verification_status='verified'
+             LEFT JOIN sources s ON s.id=sd.source_id
              GROUP BY d.id,d.label ORDER BY d.rowid",
         )?;
         let domains = statement
@@ -340,6 +390,8 @@ impl LibraryCatalog {
         Ok(LibrarySummary {
             source_count: source_count as u64,
             verified_source_count: verified_source_count as u64,
+            identity_checked_upload_count: identity_checked_upload_count as u64,
+            provisional_source_count: provisional_source_count as u64,
             bundled_verified_at,
             last_successful_check: None,
             automatic_updates_available: false,
@@ -387,6 +439,15 @@ impl LibraryCatalog {
         })
     }
 
+    pub fn snapshot_by_key(&self, key: &str) -> Result<SourceSnapshot> {
+        let id: i64 = self.connection.query_row(
+            "SELECT id FROM sources WHERE stable_key=?1",
+            [key],
+            |r| r.get(0),
+        )?;
+        self.snapshot(id)
+    }
+
     /// Export a public original only, without overwriting existing files.
     pub fn export_source(&self, source_id: i64, output: &Path) -> Result<()> {
         let snapshot = self.snapshot(source_id)?;
@@ -431,7 +492,7 @@ mod tests {
                 .summary()
                 .unwrap()
                 .source_count,
-            14
+            19
         );
     }
 
@@ -440,7 +501,7 @@ mod tests {
         let temp = tempfile::TempDir::new().unwrap();
         let catalog = LibraryCatalog::open(temp.path()).unwrap();
         let summary = catalog.summary().unwrap();
-        assert_eq!(summary.source_count, 14);
+        assert_eq!(summary.source_count, 19);
         assert_eq!(summary.verified_source_count, 14);
         assert_eq!(summary.domains.len(), 7);
         assert!(summary.domains.iter().all(|d| d.source_count > 0));
@@ -461,12 +522,12 @@ mod tests {
         let public = temp.path().join("library");
         drop(LibraryCatalog::open(&public).unwrap());
         let catalog = LibraryCatalog::open(&public).unwrap();
-        assert_eq!(catalog.summary().unwrap().source_count, 14);
+        assert_eq!(catalog.summary().unwrap().source_count, 19);
         let versions: i64 = catalog
             .connection
             .query_row("SELECT COUNT(*) FROM source_versions", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(versions, 14);
+        assert_eq!(versions, 19);
         assert_eq!(
             fs::read(private.join("workspace.sqlite3")).unwrap(),
             b"private sentinel"
@@ -479,7 +540,7 @@ mod tests {
         db.execute_batch("CREATE TABLE sources(id INTEGER PRIMARY KEY,title TEXT NOT NULL,issuer TEXT NOT NULL,source_url TEXT NOT NULL UNIQUE,verification_status TEXT NOT NULL DEFAULT 'unverified');CREATE TABLE source_versions(id INTEGER PRIMARY KEY,source_id INTEGER NOT NULL REFERENCES sources(id),content_sha256 TEXT NOT NULL,local_path TEXT NOT NULL,retrieved_at INTEGER NOT NULL,published_at INTEGER,effective_from INTEGER,UNIQUE(source_id,content_sha256));INSERT INTO sources VALUES(99,'Existing reference','Existing issuer','https://example.gov.ph/reference','unverified');INSERT INTO source_versions VALUES(99,99,'legacy-hash','original-location',123,NULL,NULL);PRAGMA user_version=1;").unwrap();
         drop(db);
         let catalog = LibraryCatalog::open(temp.path()).unwrap();
-        assert_eq!(catalog.summary().unwrap().source_count, 15);
+        assert_eq!(catalog.summary().unwrap().source_count, 20);
         let old: String = catalog
             .connection
             .query_row(
@@ -534,5 +595,34 @@ mod tests {
                 .unwrap(),
             99
         );
+    }
+    #[test]
+    fn provenance_is_not_promoted_by_adding_uploaded_copies() {
+        let temp = tempfile::tempdir().unwrap();
+        let catalog = LibraryCatalog::open(temp.path()).unwrap();
+        let summary = catalog.summary().unwrap();
+        assert_eq!(summary.source_count, 19);
+        assert_eq!(summary.verified_source_count, 14);
+        assert_eq!(summary.identity_checked_upload_count, 3);
+        assert_eq!(summary.provisional_source_count, 2);
+        let upload = catalog.snapshot_by_key("dole-252-25-upload").unwrap();
+        assert_eq!(upload.metadata.provenance, Provenance::UploadedIdentity);
+        assert_eq!(upload.metadata.pages, Some(110));
+        assert_eq!(
+            catalog
+                .snapshot_by_key("pagibig-499-upload")
+                .unwrap()
+                .metadata
+                .provenance,
+            Provenance::ThirdParty
+        );
+        assert!(
+            starter_manifest().unwrap().external_references[0]
+                .title
+                .contains("PwC")
+        );
+        catalog.connection.execute("UPDATE source_snapshots SET reading_text='tampered' WHERE version_id=(SELECT v.id FROM source_versions v JOIN sources s ON s.id=v.source_id WHERE s.stable_key='pagibig-499-upload')",[]).unwrap();
+        drop(catalog);
+        assert!(LibraryCatalog::open(temp.path()).is_err());
     }
 }
