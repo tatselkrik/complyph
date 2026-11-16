@@ -75,6 +75,9 @@ if (Test-Path -LiteralPath $currentData) { throw 'Upgrade created a second data 
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Public catalog import changed private data.' }
 $catalog = Join-Path $legacyData 'library/catalog.sqlite3'
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
+$reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
+if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
+if (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs/ComplyPH/ComplyPH.exe')) { throw 'Reinstallation created a duplicate app installation.' }
 $uninstall = Start-Process -FilePath (Join-Path $installDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($uninstall.ExitCode -ne 0) { throw 'Uninstallation failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -98,6 +101,7 @@ foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'C
 $result = [ordered]@{
     source_commit = (git -C $root rev-parse HEAD).Trim()
     installed = $true; fresh_install_passed = $true; legacy_upgrade_passed = $true
+    reinstall_location_preserved = $true
     legacy_branding_replaced = $true; legacy_data_root_reused = $true
     shortcuts_verified = $true; cli_startup_passed = $true
     catalog_status_passed = $true; starter_source_count = $status.source_count; starter_domain_count = $status.domains.Count

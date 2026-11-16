@@ -75,7 +75,7 @@ jobs:
           assert (root / 'starter-library-manifest.json').read_bytes() == Path('library/starter/manifest.json').read_bytes()
           assert len(library['sources']) == check['starter_source_count'] == manifest['starter_source_count'] == 14
           assert len(library['domains']) == check['starter_domain_count'] == manifest['starter_domain_count'] == 7
-          for name in ('installed', 'fresh_install_passed', 'legacy_upgrade_passed', 'legacy_branding_replaced', 'legacy_data_root_reused', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
+          for name in ('installed', 'fresh_install_passed', 'legacy_upgrade_passed', 'reinstall_location_preserved', 'legacy_branding_replaced', 'legacy_data_root_reused', 'shortcuts_verified', 'cli_startup_passed', 'catalog_status_passed', 'uninstalled', 'private_fixture_preserved', 'catalog_preserved', 'original_preserved'):
               assert check[name] is True, name
           assert check['interactive_windows_ui_tested'] is False
           for line in (root / 'SHA256SUMS.txt').read_text().splitlines():

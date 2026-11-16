@@ -15,6 +15,7 @@ Unicode True
 Name "ComplyPH"
 OutFile "${OUTPUT_FILE}"
 InstallDir "$LOCALAPPDATA\Programs\ComplyPH"
+InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation"
 Var LegacyInstallDir
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
