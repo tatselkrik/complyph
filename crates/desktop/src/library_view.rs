@@ -22,6 +22,7 @@ pub struct LibraryView {
     export: FileDialog,
     export_id: Option<i64>,
     message: Option<String>,
+    import: crate::source_import::SourceImportView,
 }
 
 impl Default for LibraryView {
@@ -41,6 +42,7 @@ impl Default for LibraryView {
                 .as_modal(true),
             export_id: None,
             message: None,
+            import: crate::source_import::SourceImportView::default(),
         }
     }
 }
@@ -65,6 +67,9 @@ impl LibraryView {
             return;
         };
         ui.horizontal_wrapped(|ui| {
+            if widgets::primary(ui, "Add legal source", true).clicked() {
+                self.import.start();
+            }
             widgets::pill(ui, "Local references", GREEN, GREEN_TINT, true);
             ui.label(
                 RichText::new(format!(
@@ -86,6 +91,17 @@ impl LibraryView {
             ))
             .color(AMBER),
         );
+        if summary.manually_imported_source_count > 0 {
+            ui.label(
+                RichText::new(format!(
+                    "{} manual imports · {} awaiting verification · {} identity checked by user",
+                    summary.manually_imported_source_count,
+                    summary.awaiting_verification_count,
+                    summary.user_checked_source_count
+                ))
+                .color(AMBER),
+            );
+        }
         ui.add_space(10.0);
         widgets::muted(
             ui,
@@ -221,7 +237,7 @@ impl LibraryView {
                     widgets::muted(ui, &reference.note);
                     ui.add(egui::Label::new(&reference.url).wrap().selectable(true));
                 }
-                ui.label(RichText::new("Daily source checks and manual source import are not available yet. No runtime update check has run.").color(AMBER));
+                ui.label(RichText::new("Daily source checks are not available yet. No runtime update check has run. Manually imported references do not automatically resolve coverage gaps or add checking rules.").color(AMBER));
             });
         });
     }
@@ -263,7 +279,14 @@ impl LibraryView {
         ui.label(RichText::new(&reader.metadata.applicability_note).color(AMBER));
         ui.add_space(10.0);
         ui.collapsing("Source and verification details", |ui| {
-            ui.label(format!("Checked: {}", reader.metadata.verified_at_utc));
+            ui.label(format!(
+                "Checked: {}",
+                if reader.metadata.verified_at_utc.is_empty() {
+                    "Awaiting verification"
+                } else {
+                    &reader.metadata.verified_at_utc
+                }
+            ));
             ui.label(format!("Acquired: {}", reader.metadata.acquired_at_utc));
             ui.label(format!(
                 "Issued/signed: {}",
@@ -273,7 +296,17 @@ impl LibraryView {
                     .as_deref()
                     .unwrap_or("See original and notes")
             ));
-            widgets::muted(ui, &reader.metadata.effectivity_note);
+            if !reader.metadata.effectivity_note.is_empty() {
+                widgets::muted(ui, &reader.metadata.effectivity_note);
+            }
+            ui.label(format!(
+                "Effective from: {}",
+                reader
+                    .metadata
+                    .effective_from
+                    .as_deref()
+                    .unwrap_or("Not established; see notes")
+            ));
             ui.label("Recorded source URL (saved citation; no online request is made):");
             ui.add(
                 egui::Label::new(&reader.metadata.source_url)
@@ -284,7 +317,9 @@ impl LibraryView {
                 "Preserved copy SHA-256: {}",
                 reader.metadata.raw_sha256
             ));
-            if let Some(url) = &reader.metadata.official_reference_url {
+            if !reader.metadata.provenance.is_manual()
+                && let Some(url) = &reader.metadata.official_reference_url
+            {
                 ui.label("Official corroboration URL:");
                 ui.add(egui::Label::new(url).wrap().selectable(true));
             }
@@ -376,7 +411,12 @@ impl LibraryView {
         }
     }
 
-    pub fn update_dialog(&mut self, ctx: &egui::Context, catalog: &LibraryCatalog) {
+    pub fn update_dialog(
+        &mut self,
+        ctx: &egui::Context,
+        catalog: &LibraryCatalog,
+        directory: &std::path::Path,
+    ) -> bool {
         self.export.update(ctx);
         if let Some(output) = self.export.take_picked()
             && let Some(id) = self.export_id.take()
@@ -389,5 +429,26 @@ impl LibraryView {
             });
             ctx.request_repaint();
         }
+        if let Some(outcome) = self.import.show(ctx, directory) {
+            let action = if !outcome.added {
+                "Already saved; original metadata kept"
+            } else if outcome.new_version {
+                "Added new version; earlier snapshot retained"
+            } else {
+                "Added legal source"
+            };
+            self.message = Some(format!(
+                "{action}: {}. {}.",
+                outcome.metadata.title,
+                outcome.metadata.provenance.label()
+            ));
+            if let Err(error) = self.load(catalog) {
+                self.message = Some(error.to_string());
+            }
+            self.reader = None;
+            ctx.request_repaint();
+            return true;
+        }
+        false
     }
 }

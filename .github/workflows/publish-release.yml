@@ -80,6 +80,9 @@ jobs:
           assert check['interactive_windows_ui_tested'] is False
           assert manifest['document_text_reading'] == 'offline PDF and DOCX'
           assert manifest['connected_review'] is True and manifest['offline_exact_provisions'] is True
+          assert manifest['manual_legal_source_import'] is True and check['installed_source_import_passed'] is True
+          assert manifest['public_schema'] == check['public_schema'] == 3
+          assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
           assert manifest['private_schema'] == check['private_schema'] == 3
           expected = json.loads(Path('examples/expected-results.json').read_text())
           assert check['synthetic_fixture_count'] == manifest['synthetic_fixture_count'] == len(expected) == 7
@@ -131,7 +134,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Connected review" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Local legal sources" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

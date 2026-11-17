@@ -55,7 +55,11 @@ fn check_cancel(cancel: &AtomicBool) -> Result<(), String> {
     }
 }
 
-fn run_worker(format: Format, bytes: Vec<u8>, cancel: &AtomicBool) -> Result<Report, String> {
+pub(crate) fn run_worker(
+    format: Format,
+    bytes: Vec<u8>,
+    cancel: &AtomicBool,
+) -> Result<Report, String> {
     let executable =
         std::env::current_exe().map_err(|_| "The local reader could not be located.")?;
     let mut command = Command::new(executable);

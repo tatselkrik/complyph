@@ -1,0 +1,13 @@
+{
+  "title": "Synthetic reference — test data, not law",
+  "instrument": "TEST-ONLY 2026-01",
+  "issuer": "Fictional agency (test fixture)",
+  "official_url": "https://example.invalid/complyph/synthetic-reference.pdf",
+  "domains": ["ph.labor"],
+  "issued_on": "2026-01-01",
+  "effective_from": null,
+  "effectivity_note": "Fictional example. No legal effect.",
+  "applicability_note": "Use with Synthetic employment.pdf to test local reference import. Not a legal publication or compliance template.",
+  "verification": "awaiting_verification",
+  "verification_note": "Reserved example.invalid citation; deliberately not an official source. Must never be fetched."
+}

@@ -6,6 +6,7 @@ mod library_view;
 mod provision_view;
 mod reader;
 mod reader_view;
+mod source_import;
 mod text_navigation;
 mod theme;
 mod widgets;
@@ -73,6 +74,13 @@ fn parse_arguments() -> Option<PathBuf> {
             }
             std::process::exit(0);
         }
+        Some(argument) if argument == "--import-legal-source" => {
+            if let Err(error) = diagnostic_import(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--data-dir" => {
             let Some(path) = arguments.next() else {
                 eprintln!("--data-dir requires a path");
@@ -86,7 +94,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH"
             );
             std::process::exit(0);
         }
@@ -96,6 +104,44 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         None => None,
     }
+}
+
+fn diagnostic_import(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    use std::io::Read;
+    if arguments.len() != 7
+        || arguments[1] != "--metadata"
+        || arguments[3] != "--output"
+        || arguments[5] != "--library-dir"
+    {
+        return Err("Use --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH".into());
+    }
+    let mut bytes = Vec::new();
+    std::fs::File::open(&arguments[2])
+        .map_err(|e| e.to_string())?
+        .take(32 * 1024 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    if bytes.len() > 32 * 1024 {
+        return Err("The source metadata exceeds its size limit.".into());
+    }
+    let input: complyph_library::ManualSourceInput =
+        serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    let input = input.validated().map_err(|e| e.to_string())?;
+    let output = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&arguments[4])
+        .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
+    let file = source_import::prepare_reference(
+        std::path::Path::new(&arguments[0]),
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
+    let mut catalog = complyph_library::LibraryCatalog::open(std::path::Path::new(&arguments[6]))
+        .map_err(|e| e.to_string())?;
+    let outcome = catalog
+        .import_manual(&input, file)
+        .map_err(|e| e.to_string())?;
+    serde_json::to_writer_pretty(output, &outcome).map_err(|e| e.to_string())
 }
 
 fn diagnostic_read(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {

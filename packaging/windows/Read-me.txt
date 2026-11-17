@@ -1,4 +1,4 @@
-ComplyPH 0.4.1 - Connected document review
+ComplyPH 0.5.0 - Local legal sources
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -37,6 +37,14 @@ files have not been byte-compared with agency originals. Pag-IBIG Circular 499
 comes from stitched third-party images. OCR figures/matrices need page comparison.
 The PwC January 2020 tax compilation is a dated external citation, not bundled.
 
+Legal library > Add legal source imports a local PDF/DOCX reference with its title,
+number, agency, official HTTPS citation, domains, dates and verification notes.
+Leave unknown dates blank. Imports default to Awaiting verification. Identity
+checked by me requires a recorded comparison with the official publication and
+does not mean verified agency download. URLs are not fetched. Adding a reference
+does not add checking rules. Changed files under the same URL retain earlier
+snapshots; identical files retain their original metadata. Scans need external OCR.
+
 Windows workspace: C:\ProgramData\ComplyPH (uses the system ProgramData location).
 A single detected earlier LocalAppData workspace is copied and
 validated automatically. The old folder remains as backup. References, cached text
@@ -50,7 +58,7 @@ a document entry deletes its cache and reports, preserving the original file.
 Uninstall preserves active data, backups and original documents.
 
 The app has no HTTP client, AI or document upload feature. Daily source updates,
-manual legal-source import and watched folders remain planned. Report-copy actions
+watched folders and in-app OCR remain planned. Report-copy actions
 place private report text on your clipboard only when requested.
 
 This Windows build is unsigned and may trigger SmartScreen.

@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.4.1 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. In-app OCR, folder monitoring, manual source import and runtime source downloads remain future work.
+ComplyPH 0.5.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. Local PDF/DOCX legal-source import is implemented. In-app OCR, folder monitoring and runtime source downloads remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -22,7 +22,7 @@ Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with 
 
 ```text
 private/workspace.sqlite3   Private document references, text caches, preferences and review runs; schema 3
-library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 2
+library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 3
 ```
 
 The installer detects a registered earlier installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
@@ -83,7 +83,7 @@ The updater must receive no private document contents, filenames, paths, hashes,
 
 Before networking is enabled, enforce operating-system file/network restrictions and verify the boundary at runtime. A crate boundary alone is insufficient. Source acquisition, verification, applicability, and rule coverage remain distinct. A new source version does not silently activate a new legal interpretation.
 
-Manual source import remains planned and must preserve provenance, dates, unresolved verification, and domain assignments.
+Manual source import uses the same bounded child parser as private reading, without registering a private document. Source metadata validation and transactional writes live in `complyph-library`, which has no private-store, parser or HTTP dependency. Public schema 3 adds explicit manual-pending/user-checked provenance. The selected public bytes and location-labelled reading text are saved with their hashes, domains, dates and verification notes; absolute local source paths are omitted. Manual URLs cannot replace bundled entries. New same-URL file hashes append immutable versions; duplicates retain their recorded metadata. User checks never become agency-download verification or activate a rule. See [legal sources](LEGAL_SOURCES.md).
 
 ## Connected review
 

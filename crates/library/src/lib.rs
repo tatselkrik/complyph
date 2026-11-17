@@ -1,5 +1,8 @@
 //! Public official-source snapshots only. No private-workspace or HTTP dependency.
 mod bundled;
+mod manual;
+
+pub use manual::{ImportOutcome, ManualSourceFile, ManualSourceInput, ManualVerification};
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
@@ -11,7 +14,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 const MANIFEST: &str = include_str!("../../../library/starter/manifest.json");
-const SCHEMA_VERSION: i32 = 2;
+const SCHEMA_VERSION: i32 = 3;
 
 #[derive(Debug, Error)]
 pub enum LibraryError {
@@ -29,6 +32,8 @@ pub enum LibraryError {
     Integrity(String),
     #[error("No local snapshot is available for this source.")]
     MissingSnapshot,
+    #[error("{0}")]
+    InvalidImport(String),
 }
 type Result<T> = std::result::Result<T, LibraryError>;
 
@@ -52,6 +57,8 @@ pub enum Provenance {
     AgencyDownload,
     UploadedIdentity,
     ThirdParty,
+    ManualPending,
+    ManualIdentityChecked,
 }
 
 impl Provenance {
@@ -60,15 +67,21 @@ impl Provenance {
             Self::AgencyDownload => "Verified agency download",
             Self::UploadedIdentity => "Identity checked · imported copy",
             Self::ThirdParty => "Provisional · third-party copy",
+            Self::ManualPending => "Awaiting verification · manual import",
+            Self::ManualIdentityChecked => "Identity checked · user reviewed",
         }
     }
 
     fn database_status(self) -> &'static str {
         match self {
             Self::AgencyDownload => "verified",
-            Self::UploadedIdentity => "needs_review",
-            Self::ThirdParty => "unverified",
+            Self::UploadedIdentity | Self::ManualIdentityChecked => "needs_review",
+            Self::ThirdParty | Self::ManualPending => "unverified",
         }
+    }
+
+    pub fn is_manual(self) -> bool {
+        matches!(self, Self::ManualPending | Self::ManualIdentityChecked)
     }
 }
 
@@ -135,6 +148,9 @@ pub struct LibrarySummary {
     pub verified_source_count: u64,
     pub identity_checked_upload_count: u64,
     pub provisional_source_count: u64,
+    pub manually_imported_source_count: u64,
+    pub awaiting_verification_count: u64,
+    pub user_checked_source_count: u64,
     pub bundled_verified_at: Option<i64>,
     pub last_successful_check: Option<i64>,
     pub automatic_updates_available: bool,
@@ -220,6 +236,11 @@ impl LibraryCatalog {
                  );
                  PRAGMA user_version=2;",
             )?;
+        }
+        // Schema 3 adds manual-import provenance to snapshot metadata. Older apps
+        // must refuse it rather than misread the verification status.
+        if version < 3 {
+            transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         }
         transaction.commit()?;
         let mut catalog = Self { connection };
@@ -377,18 +398,22 @@ impl LibraryCatalog {
             [],|r|r.get(0),
         )?;
         let bundled_verified_at = self.connection.query_row(
-            "SELECT MAX(verified_at) FROM source_snapshots",
+            "SELECT MAX(p.verified_at) FROM source_snapshots p JOIN source_versions v ON v.id=p.version_id
+             JOIN sources s ON s.id=v.source_id WHERE s.stable_key NOT LIKE 'manual-%'",
             [],
             |r| r.get(0),
         )?;
-        let identity_checked_upload_count: i64 = self.connection.query_row(
-            "SELECT COUNT(*) FROM sources WHERE verification_status='needs_review'",
-            [],
-            |r| r.get(0),
-        )?;
-        let provisional_source_count: i64 = self.connection.query_row(
-            "SELECT COUNT(*) FROM sources s WHERE verification_status='unverified' AND EXISTS(
-             SELECT 1 FROM source_versions v JOIN source_snapshots p ON p.version_id=v.id WHERE v.source_id=s.id)", [], |r| r.get(0))?;
+        let records = self.sources()?;
+        let count = |provenance| {
+            records
+                .iter()
+                .filter(|s| s.metadata.provenance == provenance)
+                .count() as u64
+        };
+        let identity_checked_upload_count = count(Provenance::UploadedIdentity);
+        let provisional_source_count = count(Provenance::ThirdParty);
+        let awaiting_verification_count = count(Provenance::ManualPending);
+        let user_checked_source_count = count(Provenance::ManualIdentityChecked);
         let mut statement = self.connection.prepare(
             "SELECT d.id,d.label,COUNT(s.id) FROM domains d
              LEFT JOIN source_domains sd ON sd.domain_id=d.id
@@ -407,8 +432,11 @@ impl LibraryCatalog {
         Ok(LibrarySummary {
             source_count: source_count as u64,
             verified_source_count: verified_source_count as u64,
-            identity_checked_upload_count: identity_checked_upload_count as u64,
-            provisional_source_count: provisional_source_count as u64,
+            identity_checked_upload_count,
+            provisional_source_count,
+            manually_imported_source_count: awaiting_verification_count + user_checked_source_count,
+            awaiting_verification_count,
+            user_checked_source_count,
             bundled_verified_at,
             last_successful_check: None,
             automatic_updates_available: false,

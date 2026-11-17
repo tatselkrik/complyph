@@ -23,3 +23,7 @@ A successful reading result means that text was extracted. The separate focused-
 ## Focused labour check fixtures (0.4.0)
 
 `Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime and 10% additional night differential for 22:00–06:00. `Synthetic labour issues.docx` states 9 hours / 20% / 5%. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate and incomplete night window. With the separate reviewer-confirmed scope, expected outcomes are three meets / three potential issues / three unresolved. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.
+
+## Legal-source intake fixture (0.5.0)
+
+`synthetic-source.json` contains fictional citation metadata for use with `Synthetic employment.pdf`. Its `example.invalid` URL is reserved test data and must not be fetched. This intentionally fictional source starts awaiting verification and tests local intake, duplicate handling and source history. Importing it does not create a legal checking rule. No sample is an authoritative legal publication.

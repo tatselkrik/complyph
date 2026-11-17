@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.4.1.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.5.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -162,6 +162,34 @@ with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/
 '@ | python -
 if ($LASTEXITCODE -ne 0) { throw 'Saved report/extraction persistence failed.' }
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
+# Import a fictional public reference through the installed bounded reader.
+$sourceSample = Join-Path $installDirectory 'Samples/Synthetic employment.pdf'
+$sourceMetadata = Join-Path $installDirectory 'Samples/synthetic-source.json'
+$sourceHash = (Get-FileHash -LiteralPath $sourceSample -Algorithm SHA256).Hash
+$importResults = @()
+foreach ($name in @('source-import.json','source-duplicate.json')) {
+    $output = Join-Path $fixtureRoot $name
+    $info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $application; $info.UseShellExecute = $false
+    foreach ($argument in @('--import-legal-source',$sourceSample,'--metadata',$sourceMetadata,'--output',$output,'--library-dir',(Join-Path $machineData 'library'))) { $info.ArgumentList.Add($argument) }
+    $intake = [Diagnostics.Process]::Start($info)
+    if (!$intake.WaitForExit(45000)) { $intake.Kill($true); throw 'Installed source import timed out.' }
+    if ($intake.ExitCode -ne 0) { throw 'Installed source import failed.' }
+    $importResults += Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
+}
+if (!$importResults[0].added -or $importResults[1].added -or $importResults[0].source_id -ne $importResults[1].source_id) { throw 'Source duplicate handling failed.' }
+if ($importResults[0].metadata.provenance -ne 'manual_pending' -or $importResults[0].metadata.verified_at_unix -ne 0) { throw 'Manual import was incorrectly promoted to verified.' }
+$manualStatus = (& (Join-Path $root 'target/release/complyph-updater.exe') '--status') | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0 -or $manualStatus.source_count -ne 20 -or $manualStatus.verified_source_count -ne 14 -or $manualStatus.manually_imported_source_count -ne 1 -or $manualStatus.awaiting_verification_count -ne 1 -or $manualStatus.user_checked_source_count -ne 0 -or $null -ne $manualStatus.last_successful_check) { throw 'Imported source status was not retained.' }
+@'
+import os,pathlib,sqlite3
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'library/catalog.sqlite3') as db:
+ assert db.execute('PRAGMA user_version').fetchone()[0]==3
+ assert db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0]==20
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Public source migration or duplicate persistence failed.' }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Reference import changed the private workspace.' }
+if ((Get-FileHash -LiteralPath $sourceSample -Algorithm SHA256).Hash -ne $sourceHash) { throw 'Reference import changed the original.' }
+$catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
 if (Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Programs/ComplyPH/ComplyPH.exe')) { throw 'Reinstallation created a duplicate app installation.' }
@@ -185,14 +213,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.4.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.4.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.4.0/ComplyPH-Setup-0.4.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e27f038ab34b452e4c5f0a4ae9938a25f0933817ecc8c2f24447fa061d877d06') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.4.1 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.4.1.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.4.1/ComplyPH-Setup-0.4.1.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'af2795394e6e8c5edb79316b8e46217efef209892589f449b5daaa9a53aed3de') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic employment.pdf'))) { throw 'ComplyPH 0.4.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.4.1 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -210,8 +238,9 @@ $result = [ordered]@{
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
     private_schema = 3; validated_check_count = 3; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    public_schema = 3; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
     synthetic_fixture_count = $readerResults.Count; reader_results = $readerResults
     interactive_windows_ui_tested = $false
 }
 $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $root 'dist/windows/windows-install-check.json') -Encoding utf8
-Write-Output 'Install/upgrades, ProgramData copy and ACL, seven reader cases, three check cases, saved reports, and preservation passed.'
+Write-Output 'Install/upgrades, ProgramData copy and ACL, reader/check cases, public source import, saved reports, and preservation passed.'

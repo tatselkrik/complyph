@@ -4,7 +4,7 @@
 
 ComplyPH is intended to grow into a local Philippine compliance document-review application. Labor compliance is the first review area. Future domains can reuse the same desktop workspace, document extraction, evidence handling, rule evaluation, and reporting pipeline.
 
-ComplyPH 0.4.0 implements the source/domain registry, 19 preserved snapshots and three focused labour checks. Other domain rules and broader review coverage remain planned. See the source inventory for current references and gaps.
+ComplyPH 0.5.0 implements the source/domain registry, 19 preserved snapshots, manual reference intake and three focused labour checks. Other domain rules and broader review coverage remain planned. See the source inventory for current references and gaps.
 
 | Planned domain | Examples of future review inputs |
 | --- | --- |
@@ -45,7 +45,7 @@ Keep the following relationships explicit in future storage migrations:
 - A rule version can cite several specific source versions and provisions.
 - A review can select several domains and evaluate only the rules applicable to its facts and review period.
 
-The current catalog implements sources, source versions, domain membership, original snapshots, provenance, and reading text. Rule definitions, rule-to-provision references, and structured review evidence still need schema design and migrations.
+The current catalog implements sources, source versions, domain membership, original snapshots, provenance, and reading text. The three implemented labour checks retain rule-to-provision pins and structured evidence in private review history; broader domain packs remain planned.
 
 ## Applicability and evidence
 

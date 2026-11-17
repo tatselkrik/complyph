@@ -1,6 +1,6 @@
 # ComplyPH starter reference library
 
-ComplyPH 0.4.1 includes **19 preserved references across seven domains**: 14 verified agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The app installs them locally without network requests. The collection is a starter library with explicit currency, amendment and interpretation gaps.
+ComplyPH 0.5.0 includes **19 preserved references across seven domains**: 14 verified agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The app installs them locally without network requests. The collection is a starter library with explicit currency, amendment and interpretation gaps.
 
 ## Provenance and integrity
 
@@ -51,4 +51,4 @@ Three supported labour rules use the pinned **agency-downloaded Senate P.D. 442*
 
 `starter/manifest.json` records stable keys, original/resolved URLs, provenance, optional official corroboration links, acquisition/assessment dates, effectivity notes, preserved raw and derived-text hashes, extraction method and coverage gaps. Raw files are in `starter/raw`, reading text in `starter/text`. `support/oshs-original-page-map.csv` records the preparation split's original page mapping. No private document content is included.
 
-Public schema 2 preserves previous entries and snapshots. Bundle import is idempotent and transactional; Bundle updates preserve earlier source versions. Automatic daily updates and manual source import remain planned; the status tool does not claim a successful online check.
+Public schema 3 preserves previous entries and snapshots and distinguishes manual pending/user-checked provenance. Bundle import is idempotent and transactional; Bundle updates preserve earlier source versions. Manual PDF/DOCX import is available from Legal library → Add legal source. It records citations locally and preserves earlier versions; see [intake instructions](../docs/LEGAL_SOURCES.md). Automatic daily updates remain planned; the status tool does not claim a successful online check.

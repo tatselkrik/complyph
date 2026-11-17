@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/version-0.4.1-142B49?style=flat-square" alt="Version 0.4.1"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.5.0"><img src="https://img.shields.io/badge/version-0.5.0-142B49?style=flat-square" alt="Version 0.5.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -29,6 +29,7 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 - **Offline legal provisions:** open the complete supporting article, related provisions or full preserved source from the exact version used by a saved review.
 - **Private document reader:** local extraction, text search, location navigation and content-hash-validated caching. Original files remain in place.
 - **Saved reports:** retain the confirmed scope, matched passages, outcomes, rule versions and document/source hashes; reopen a report beside its document.
+- **Add legal source:** import local PDF/DOCX references with an official URL, issuing agency, compliance domains, issue/effective dates and verification notes. Retain original bytes and earlier versions.
 - **Traceable reference library:** 19 preserved references across seven domains, with source URLs, dates, integrity hashes, provenance labels and visible coverage gaps.
 - **Safe workspace storage:** Windows data at `C:\ProgramData\ComplyPH`, automatic migration from detected earlier workspaces and a folder picker for custom locations.
 - **Native interface:** navy blue and cream, with locally bundled fonts and no browser required for ordinary use.
@@ -39,9 +40,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.4.1/ComplyPH-Setup-0.4.1.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.4.1/ComplyPH-Windows-x64-0.4.1.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.4.1/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.5.0/ComplyPH-Setup-0.5.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.5.0/ComplyPH-Windows-x64-0.5.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.5.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -69,6 +70,18 @@ A matching numeric term is not a complete compliance verdict. Unclear applicabil
 
 The collection contains **14 verified agency downloads, 3 identity-checked imported copies and 2 provisional third-party copies**. Preserved-byte and reading-text integrity is checked for all 19. Verification does not certify amendment completeness, present applicability or OCR accuracy. The dated PwC tax compilation is an external citation; its PDF is not redistributed.
 
+### Add a legal source
+
+1. Open **Legal library → Add legal source** and choose a local PDF or DOCX reference.
+2. Enter its title, instrument/number, issuing agency and official HTTPS URL. Choose one or more compliance domains.
+3. Record issue/effective dates as `YYYY-MM-DD`, or leave them blank when unknown. Add effectivity, scope and verification notes as needed.
+4. Keep **Awaiting verification**, or choose **Identity checked by me** after comparing the copy with the official publication and recording your comparison.
+5. Select **Save legal source**, then find it in the library and **Read local snapshot**. The source URL is a saved citation; importing makes no online request.
+
+Manual imports are stored in `library/catalog.sqlite3`, alongside the starter collection and separately from private reviews. Identical files under the same URL keep their original metadata; changed files under that URL create new snapshots and preserve earlier versions. Bundled references cannot be replaced through manual intake. Scans need external OCR before import; the existing reader limits apply.
+
+A user-recorded identity check is distinct from a verified agency download. Importing a reference does not add checking rules or resolve the application's curated coverage gaps automatically. See [source intake and verification](docs/LEGAL_SOURCES.md).
+
 Source documents and checking rules are maintained separately. See the [inventory](library/README.md), [source assessment](library/ADDITIONS.md) and [provenance manifest](library/starter/manifest.json).
 
 ## Privacy and limitations
@@ -79,7 +92,7 @@ Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The d
 
 Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. Scans need external OCR; images, text boxes, layout and revisions can affect coverage. The three numeric checks are technically tested, not qualified legal certification.
 
-Automatic daily source updates, manual legal-source import, watched folders, in-app OCR and additional-domain checking are planned. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
+Automatic daily source updates, watched folders, in-app OCR and additional-domain checking are planned. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Build from source
 

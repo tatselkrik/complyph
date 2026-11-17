@@ -383,7 +383,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            "CONNECTED REVIEW / 0.4.1",
+            concat!("LOCAL LEGAL SOURCES / ", env!("CARGO_PKG_VERSION")),
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -977,7 +977,7 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new("Version 0.4.1 · Connected review").size(12.5).color(MUTED));
+            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Local legal sources")).size(12.5).color(MUTED));
             ui.add_space(8.0);
             ui.label(RichText::new("Three source-cited labour checks are available. Other domains and automatic source updates remain planned.").size(12.5).color(AMBER));
         });
@@ -1157,8 +1157,15 @@ impl eframe::App for ComplyApp {
             });
         }
         self.file_dialog.update(ui.ctx());
-        if let Some(catalog) = &self.catalog {
-            self.library_view.update_dialog(ui.ctx(), catalog);
+        if let (Some(catalog), Some(paths)) = (&self.catalog, &self.paths)
+            && self
+                .library_view
+                .update_dialog(ui.ctx(), catalog, &paths.library_dir)
+        {
+            match catalog.summary() {
+                Ok(summary) => self.library = summary,
+                Err(error) => self.library_error = Some(error.to_string()),
+            }
         }
         if let Some(files) = self.file_dialog.take_picked_multiple() {
             self.accept_files(files, ui.ctx());
