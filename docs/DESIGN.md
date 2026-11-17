@@ -25,3 +25,7 @@ File selection uses an egui dialog that follows the application theme. Filename 
 Interface previews use the native Linux app with synthetic documents and public reference material. Windows shares the Rust UI implementation but still needs target-device checks for display scaling, assistive technology, and drag-and-drop behavior.
 
 The current library supports seven domain filters, metadata search, a bounded source reader, text search within a source, and original export. Source verification details are collapsible; applicability and OCR limits remain visible.
+
+## Offline provision viewer
+
+![Complete supporting provision from the preserved local source](screenshots/complyph-provision.jpg)
