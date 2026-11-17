@@ -9,3 +9,9 @@
 *.zip binary
 library/starter/raw/** binary
 library/starter/text/** -whitespace
+
+# Preserved reference publications are data for the offline legal library.
+library/starter/** linguist-vendored=true
+
+# Third-party dependency sources are maintained separately from the app.
+vendor/** linguist-vendored=true
