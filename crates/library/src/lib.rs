@@ -178,7 +178,8 @@ impl LibraryCatalog {
     pub fn open(directory: &Path) -> Result<Self> {
         fs::create_dir_all(directory)?;
         let mut connection = Connection::open(directory.join("catalog.sqlite3"))?;
-        connection.busy_timeout(Duration::from_secs(5))?;
+        // First import writes a substantial local bundle; allow another process to finish.
+        connection.busy_timeout(Duration::from_secs(30))?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
         let transaction = connection.transaction_with_behavior(TransactionBehavior::Immediate)?;
         let version: i32 = transaction.query_row("PRAGMA user_version", [], |r| r.get(0))?;
@@ -265,6 +266,22 @@ impl LibraryCatalog {
         let transaction = self
             .connection
             .transaction_with_behavior(TransactionBehavior::Immediate)?;
+        // Another opener may have installed this bundle while we validated payloads
+        // or waited for the write lock. Recheck under that lock before binding BLOBs.
+        let installed: Option<String> = transaction
+            .query_row(
+                "SELECT manifest_sha256 FROM imported_bundles WHERE id=?1",
+                [&manifest.bundle_id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if let Some(installed) = installed {
+            if installed != manifest_hash {
+                return Err(LibraryError::Integrity("bundle identity changed".into()));
+            }
+            transaction.commit()?;
+            return Ok(());
+        }
         for domain in &manifest.domains {
             transaction.execute("INSERT INTO domains(id,label) VALUES(?1,?2) ON CONFLICT(id) DO UPDATE SET label=excluded.label", params![domain.id,domain.label])?;
         }
