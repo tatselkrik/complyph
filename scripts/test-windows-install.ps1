@@ -26,7 +26,7 @@ $desktop = [Environment]::GetFolderPath('DesktopDirectory')
 $programs = [Environment]::GetFolderPath('Programs')
 New-Item -ItemType Directory -Force -Path $desktop, $programs | Out-Null
 $original = Join-Path $fixtureRoot 'Synthetic original.docx'
-Copy-Item -LiteralPath (Join-Path $root 'examples/Synthetic sample.docx') -Destination $original
+Copy-Item -LiteralPath (Join-Path $root 'examples/Synthetic workplace policy.docx') -Destination $original
 $originalHash = (Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash
 $legacyInstaller = Join-Path $fixtureRoot 'LaborLensPH-Setup-0.1.0.exe'
 Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.1.0/LaborLensPH-Setup-0.1.0.exe' -OutFile $legacyInstaller
@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.4.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.4.1.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -185,14 +185,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.3.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.3.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.3.0/ComplyPH-Setup-0.3.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4a1088b87c832b9f692731ab161f246567ce8a0e1b47cd9ad94127f68cc7e928') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.4.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.4.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.4.0/ComplyPH-Setup-0.4.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e27f038ab34b452e4c5f0a4ae9938a25f0933817ecc8c2f24447fa061d877d06') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic employment.pdf'))) { throw 'ComplyPH 0.3.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic employment.pdf'))) { throw 'ComplyPH 0.4.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)

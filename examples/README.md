@@ -16,8 +16,6 @@ Open ComplyPH and use **Try a synthetic sample: PDF / Word / Scan**, or choose a
 
 `expected-results.json` defines statuses, required text, and content that must not be extracted. The Word external relationship targets `example.invalid` and must never be fetched. Deleted text and field instructions must not appear as document text. Word references identify XML parts, paragraph numbers, and table cells; they do not invent page numbers.
 
-The two older `Synthetic sample` files remain for foundation compatibility. New tests use the seven cases above.
-
 The development-only [generator](../scripts/generate-synthetic-documents.py) uses Python, ReportLab, Pillow, and pypdf. The installed application uses Rust readers; it needs none of those tools. The encrypted fixture may differ byte for byte when regenerated because encryption uses randomness.
 
 A successful reading result means that text was extracted. The separate focused-check fixtures below test three numeric terms; reading alone produces no legal conclusion.

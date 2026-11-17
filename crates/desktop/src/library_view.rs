@@ -81,7 +81,7 @@ impl LibraryView {
         });
         ui.label(
             RichText::new(format!(
-                "{} identity-checked uploaded copies · {} provisional third-party copies",
+                "{} identity-checked imported copies · {} provisional third-party copies",
                 summary.identity_checked_upload_count, summary.provisional_source_count
             ))
             .color(AMBER),

@@ -3,8 +3,10 @@
 mod app;
 mod check_view;
 mod library_view;
+mod provision_view;
 mod reader;
 mod reader_view;
+mod text_navigation;
 mod theme;
 mod widgets;
 

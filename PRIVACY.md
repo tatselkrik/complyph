@@ -1,6 +1,6 @@
 # Privacy
 
-## ComplyPH 0.4.0
+## ComplyPH 0.4.1
 
 ComplyPH runs locally. Selecting a PDF/DOCX registers its filename, canonical path, size, and modification time, then reads supported text in a local child process. Extracted text, paragraph/page/table locations, the original’s SHA-256 hash, reading state, and read date are saved in the private SQLite workspace. Preferences use the same workspace. The private workspace also stores human-confirmed scope and review reports containing passages, outcomes, source/rule identifiers and hashes. The three numeric checks are local and do not certify compliance.
 
@@ -10,7 +10,7 @@ The application and catalog-status tool contain no HTTP client, telemetry, adver
 
 ## Public reference library
 
-The separate public catalog stores 19 preserved references: 14 agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. These include public PDFs supplied by the user; the catalog stores their original bytes, derived reading text, domains, citations, dates, integrity hashes, and provenance. Provenance is classified individually; mirrors and stitched social-media images are not agency-original verification. No private documents or document-derived queries were used for acquisition.
+The separate public catalog stores 19 preserved references: 14 agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The catalog stores their original bytes, derived reading text, domains, citations, dates, integrity hashes, and provenance. Provenance is classified individually; mirrors and stitched social-media images are not agency-original verification. No private documents or document-derived queries were used for acquisition.
 
 The app renders reading text only. Archived source HTML is not executed or rendered as a webpage. Saving an original exports that public source locally without overwriting an existing file. Other software used to open exported originals operates independently.
 

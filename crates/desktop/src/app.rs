@@ -83,6 +83,7 @@ pub struct ComplyApp {
     library_view: LibraryView,
     reader_view: crate::reader_view::ReaderView,
     check_view: crate::check_view::CheckView,
+    provision_view: crate::provision_view::ProvisionView,
     workspace_picker: FileDialog,
     import_source: Option<PathBuf>,
     startup_error: Option<String>,
@@ -111,6 +112,7 @@ impl ComplyApp {
             library_view: LibraryView::default(),
             reader_view: crate::reader_view::ReaderView::default(),
             check_view: crate::check_view::CheckView::default(),
+            provision_view: crate::provision_view::ProvisionView::default(),
             workspace_picker: FileDialog::new()
                 .title("Choose existing workspace folder")
                 .as_modal(true),
@@ -246,6 +248,12 @@ impl ComplyApp {
     fn select_document(&mut self, id: i64, ctx: &egui::Context) {
         self.selected = Some(id);
         self.check_view.clear();
+        if let Some(workspace) = &self.workspace
+            && let Ok(reviews) = workspace.reviews()
+            && let Some(review) = reviews.into_iter().find(|r| r.document_id == id)
+        {
+            self.check_view.set_review(review);
+        }
         if let Some(paths) = self.paths.clone()
             && let Some(document) = self
                 .documents
@@ -375,7 +383,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            "FOCUSED CHECKS / 0.4.0",
+            "CONNECTED REVIEW / 0.4.1",
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -565,6 +573,14 @@ impl ComplyApp {
     }
 
     fn review(&mut self, ui: &mut Ui) {
+        if let Some(document) = self
+            .selected
+            .and_then(|id| self.documents.iter().find(|d| d.id == id))
+            .cloned()
+        {
+            self.document_details(ui, &document);
+            return;
+        }
         self.page_header(
             ui,
             "DOCUMENT REVIEW",
@@ -635,51 +651,108 @@ impl ComplyApp {
     }
 
     fn document_details(&mut self, ui: &mut Ui, document: &Document) {
-        widgets::card().show(ui,|ui| {
+        widgets::card().show(ui, |ui| {
             ui.set_min_width(ui.available_width());
-            ui.horizontal(|ui| {
-                widgets::icon(ui,Icon::Document,30.0,NAVY);
-                ui.vertical(|ui| {
-                    ui.label(RichText::new(&document.name).font(heading(21.0)));
-                    ui.label(RichText::new(format!("{} · {} · added {}", document.kind.label(), format_size(document.bytes), format_date(document.added_at))).size(12.5).color(MUTED));
-                });
-                ui.with_layout(Layout::right_to_left(Align::Center),|ui| { widgets::pill(ui,"Local review",AMBER,AMBER_TINT,false); });
-            });
-            ui.add_space(12.0);
-            widgets::muted(ui,"Read the extracted text and compare it with your original. Three focused checks are available after confirming their applicability.");
-            if !document.path.is_file() {
-                ui.label(RichText::new("This file has moved or is no longer available. Add it again from its current location.").color(RED));
-            }
-            if self.preferences.show_full_paths {
-                ui.add_space(8.0);
-                ui.add(egui::Label::new(RichText::new(document.path.display().to_string()).size(12.0).color(MUTED)).wrap().selectable(true));
-            }
-            ui.add_space(12.0);
             ui.horizontal_wrapped(|ui| {
-                let ready=self.reader_view.current().is_some_and(|saved|saved.report.status==complyph_extract::Status::Ready) && self.catalog.is_some() && self.library_error.is_none();
-                if widgets::primary(ui,"Check document",ready).on_disabled_hover_text("Read a supported document and resolve library integrity errors first.").clicked() {self.check_view.visible=true;}
-                if widgets::secondary(ui,"Choose another").clicked() { self.choose_documents(ui.ctx()); }
-                if ui.button("Back to overview").clicked() { self.selected = None; self.reader_view.clear(); }
-                if ui.button("Remove entry").clicked() { self.pending_remove=Some(document.id); }
+                widgets::icon(ui, Icon::Document, 22.0, NAVY);
+                ui.label(RichText::new(&document.name).font(heading(19.0)));
+                widgets::pill(ui, "Connected review · local", GREEN, GREEN_TINT, false);
             });
+            ui.horizontal_wrapped(|ui| {
+                if widgets::primary(
+                    ui,
+                    "Check document",
+                    self.reader_view
+                        .current()
+                        .is_some_and(|s| s.report.status == complyph_extract::Status::Ready)
+                        && self.catalog.is_some()
+                        && self.library_error.is_none(),
+                )
+                .clicked()
+                {
+                    self.check_view.edit_scope();
+                }
+                if widgets::secondary(ui, "Choose another").clicked() {
+                    self.choose_documents(ui.ctx());
+                }
+                if ui.button("Back to overview").clicked() {
+                    self.selected = None;
+                    self.reader_view.clear();
+                    self.check_view.clear();
+                }
+                if ui.button("Remove entry").clicked() {
+                    self.pending_remove = Some(document.id);
+                }
+            });
+            if self.preferences.show_full_paths {
+                ui.add(
+                    egui::Label::new(RichText::new(document.path.display().to_string()).small())
+                        .wrap()
+                        .selectable(true),
+                );
+            }
         });
         if self.selected.is_none() {
             return;
         }
-        ui.add_space(14.0);
-        if let (Some(workspace), Some(catalog), Some(saved)) =
-            (&self.workspace, &self.catalog, self.reader_view.current())
-        {
-            self.check_view
-                .show(ui, workspace, catalog, document, saved);
-            ui.add_space(14.0);
+        ui.add_space(12.0);
+        let pane_height = ui.available_height().max(240.0);
+        let mut reread = false;
+        let mut action = None;
+        ui.columns(2, |columns| {
+            ScrollArea::vertical()
+                .id_salt(("document-pane", document.id))
+                .max_height(pane_height)
+                .auto_shrink([false, false])
+                .show(&mut columns[0], |ui| {
+                    reread = self.reader_view.show(ui, pane_height);
+                });
+            ScrollArea::vertical()
+                .id_salt(("findings-pane", document.id))
+                .max_height(pane_height)
+                .auto_shrink([false, false])
+                .show(&mut columns[1], |ui| {
+                    if let (Some(workspace), Some(catalog)) = (&self.workspace, &self.catalog) {
+                        action = self.check_view.show(
+                            ui,
+                            workspace,
+                            catalog,
+                            document,
+                            self.reader_view.current(),
+                        );
+                    } else {
+                        widgets::muted(
+                            ui,
+                            "Resolve the local library/workspace error before reviewing.",
+                        );
+                    }
+                });
+        });
+        if let Some(action) = action {
+            self.review_action(action);
         }
-        if self.reader_view.show(ui)
-            && let Some(paths) = self.paths.clone()
-        {
+        if reread && let Some(paths) = self.paths.clone() {
             self.check_view.clear();
             self.reader_view
                 .start(paths, document.clone(), true, ui.ctx());
+        }
+    }
+    fn review_action(&mut self, action: crate::check_view::ReviewAction) {
+        match action {
+            crate::check_view::ReviewAction::Passage { hash, evidence } => {
+                self.reader_view.jump_to(&hash, &evidence)
+            }
+            crate::check_view::ReviewAction::Provision { review, finding } => {
+                if let Some(catalog) = &self.catalog {
+                    self.provision_view.open(catalog, &review, finding);
+                } else {
+                    self.notice = Some(Notice {
+                        text: "The local library is unavailable. No online request was made."
+                            .into(),
+                        error: true,
+                    });
+                }
+            }
         }
     }
 
@@ -776,8 +849,10 @@ impl ComplyApp {
         }
     }
 
-    fn reports_page(&self, ui: &mut Ui) {
-        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Saved local snapshots of the document, scope, evidence and rules used for each review.");
+    fn reports_page(&mut self, ui: &mut Ui) {
+        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Open a saved review beside its document and inspect the supporting provisions offline.");
+        let mut open = None;
+        let mut action = None;
         if let Some(workspace) = &self.workspace {
             match workspace.reviews() {
                 Ok(reviews) if reviews.is_empty() => self.empty_state(
@@ -801,13 +876,28 @@ impl ComplyApp {
                             saved.id
                         ))
                         .id_salt(("report", saved.id))
-                        .show(ui, |ui| crate::check_view::show_review(ui, &saved));
+                        .show(ui, |ui| {
+                            if ui.button("Open connected review").clicked() {
+                                open = Some(saved.clone());
+                            }
+                            if let Some(event) = crate::check_view::show_review(ui, &saved, None) {
+                                action = Some(event);
+                            }
+                        });
                     }
                 }
                 Err(error) => {
                     ui.colored_label(RED, error.to_string());
                 }
             }
+        }
+        if let Some(action) = action {
+            self.review_action(action);
+        }
+        if let Some(review) = open {
+            self.select_document(review.document_id, ui.ctx());
+            self.check_view.set_review(review);
+            self.navigate(Page::Review);
         }
     }
 
@@ -887,7 +977,7 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new("Version 0.4.0 · Focused labour checks").size(12.5).color(MUTED));
+            ui.label(RichText::new("Version 0.4.1 · Connected review").size(12.5).color(MUTED));
             ui.add_space(8.0);
             ui.label(RichText::new("Three source-cited labour checks are available. Other domains and automatic source updates remain planned.").size(12.5).color(AMBER));
         });
@@ -1009,13 +1099,16 @@ impl eframe::App for ComplyApp {
             pos2(rect.right() - 30.0, rect.bottom() - 20.0),
         );
         ui.scope_builder(UiBuilder::new().max_rect(content_rect).layout(Layout::top_down(Align::Min)),|ui| {
+            if self.page==Page::Review && self.selected.is_some() && self.startup_error.is_none() {
+                self.show_notice(ui);self.review(ui);return;
+            }
             ScrollArea::vertical().id_salt(("main",self.page.key())).auto_shrink([false,false]).show(ui,|ui| {
                 if let Some(error) = &self.startup_error {
                     widgets::title(ui,"Your workspace needs attention.");
                     ui.add_space(15.0);
                     widgets::card().show(ui,|ui| {
                         ui.colored_label(RED,error);
-                        ui.label("Your existing files have been preserved. Close other ComplyPH / LaborLens PH windows before migration.");
+                        ui.label("Your existing files have been preserved. Close all other review-app windows before migration.");
                         if ui.button("Choose existing workspace folder…").clicked(){self.workspace_picker.pick_directory();}
                     });
                     return;
@@ -1031,6 +1124,7 @@ impl eframe::App for ComplyApp {
                 ui.add_space(18.0);
             });
         });
+        self.provision_view.show(ui.ctx());
         self.removal_dialog(ui.ctx());
         self.workspace_picker.update(ui.ctx());
         if let Some(source) = self.workspace_picker.take_picked() {

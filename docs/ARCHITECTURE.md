@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.4.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. In-app OCR, folder monitoring, manual source import and runtime source downloads remain future work.
+ComplyPH 0.4.1 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. In-app OCR, folder monitoring, manual source import and runtime source downloads remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -16,16 +16,16 @@ ComplyPH 0.4.0 is a native Rust desktop application using egui/eframe. It combin
 
 There is no HTTP client, telemetry, AI integration, or runtime downloader. Source acquisition for the bundled collection is a maintainer activity involving public publications only.
 
-## Local storage and the rename
+## Local storage and upgrades
 
-Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running ComplyPH/LaborLens PH processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
+Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running review-app processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
 
 ```text
 private/workspace.sqlite3   Private document references, text caches, preferences and review runs; schema 3
 library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 2
 ```
 
-The installer detects a registered LaborLens PH installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
+The installer detects a registered earlier installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
 
 Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and saved reports and preserves the original file. Private migration 1 → 2 adds the cache table; 2 → 3 adds review history without replacing existing document records or preferences. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
 
@@ -84,3 +84,15 @@ The updater must receive no private document contents, filenames, paths, hashes,
 Before networking is enabled, enforce operating-system file/network restrictions and verify the boundary at runtime. A crate boundary alone is insufficient. Source acquisition, verification, applicability, and rule coverage remain distinct. A new source version does not silently activate a new legal interpretation.
 
 Manual source import remains planned and must preserve provenance, dates, unresolved verification, and domain assignments.
+
+## Connected review
+
+The document reader and findings use independent scroll areas. Evidence navigation checks the document hash and exact original location before locating a whitespace-normalized passage. Original UTF-8 byte spans drive highlighting and display-chunk selection; unrelated or changed content is never guessed. Repeated matches are explicit.
+
+Supporting provisions are resolved from the report's source key, raw hash and reading-text hash. The library returns the exact stored version, then the viewer opens the full mapped article or related implementing rule. A later source cannot silently replace a historical citation. The viewer renders preserved text without browser or network access.
+
+## Connected review navigation
+
+The Review workspace presents the local reader and findings in separate scrolling panes. Evidence actions resolve the exact structured location and whitespace-normalized text against the saved document hash. Matching ranges retain original UTF-8 byte offsets, select the appropriate display chunk and drive highlight/scroll positioning. A different document hash, missing location or unmatched passage disables navigation rather than guessing. Repeated matches are explicit.
+
+Supporting provisions are read by source key, raw hash and reading-text hash from preserved catalog snapshots. Rule mappings select complete article boundaries and related implementing rules; quotation checks prevent opening the wrong provision. The offline viewer also exposes the full saved source. It does not follow an external agency link or replace a historical source with the latest version. Reports can reopen this connected view while retaining their recorded scope and evidence.

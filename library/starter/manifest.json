@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "bundle_id": "complyph-starter-2026-11-17-v2",
+  "bundle_id": "complyph-starter-2026-11-17-v3",
   "verified_at_utc": "2026-11-16T16:00:00Z",
   "verified_at_unix": 1794844800,
   "verification_scope": "Preserved-content integrity is checked for every snapshot. Provenance is classified per source: agency download, identity-checked uploaded copy, or provisional third-party copy. This does not certify legal currency, complete amendment coverage, or compliance.",
@@ -57,7 +57,7 @@
       "domain": "ph.tax",
       "instrument": "Complete current NIRC and implementing-issuance coverage",
       "source_url": "https://www.bir.gov.ph/Tax-Code",
-      "reason": "TRAIN and RR 29-2025 remain a starter collection. The supplied PwC compilation ends at 31 January 2020 and is a historical secondary reference, not a current official NIRC; its PDF is not redistributed in this public bundle."
+      "reason": "TRAIN and RR 29-2025 remain a starter collection. The PwC compilation ends at 31 January 2020 and is a historical secondary reference, not a current official NIRC; its PDF is not redistributed in this public bundle."
     }
   ],
   "sources": [
@@ -552,8 +552,8 @@
       "issued_on": null,
       "effective_from": null,
       "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
-      "applicability_note": "User-provided official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
-      "verification_scope": "User-provided official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
+      "applicability_note": "Imported official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
+      "verification_scope": "Imported official-edition copy. Title, publisher, 136 PDF pages, and printed pages 1–123 checked; agency publication listing corroborated. Official download was blocked, so no byte-for-byte agency comparison was possible. This 2022 edition does not establish all later amendments.",
       "acquisition_headers": {},
       "provenance": "uploaded_identity",
       "official_reference_url": "https://dole.gov.ph/labor-code-of-the-philippines-2/"
@@ -578,13 +578,13 @@
       "raw_sha256": "9d12499ff26a4a560a56cc22312cb8462a97ed3a02052c34ca6db30af4733828",
       "text_path": "text/dole-252-25-upload.txt",
       "text_sha256": "678582589bac55c9dd720e2d1b8b6a170726130b9c820dba31f2c1c04e3241f5",
-      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI, six-page batches; reading derivative retains all 110 PDF pages and sampled visible images match the upload.",
+      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI, six-page batches; reading derivative retains all 110 PDF pages and sampled visible images match the preserved copy.",
       "pages": 110,
       "issued_on": "2025-04-28",
       "effective_from": "2025-05-16",
       "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
-      "applicability_note": "User-provided reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
-      "verification_scope": "User-provided reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
+      "applicability_note": "Imported reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
+      "verification_scope": "Imported reduced scan, not agency-original bytes. Number and signature date checked visually against DOLE/BWC publication; 56 main-order pages and 54 annex pages retained. Section headings 1–50 and annex index A–E checked. OCR tables and handwritten text are not machine-validated legal rules.",
       "acquisition_headers": {},
       "provenance": "uploaded_identity",
       "official_reference_url": "https://bwc.dole.gov.ph/3063-2/"
@@ -614,8 +614,8 @@
       "issued_on": null,
       "effective_from": null,
       "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
-      "applicability_note": "User-provided DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page upload is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
-      "verification_scope": "User-provided DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page upload is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
+      "applicability_note": "Imported DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page copy is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
+      "verification_scope": "Imported DOLE/OSHC compilation, with technical rules and supplements through 2017. Original 431-page copy is preserved; the app library reader does not require splitting it. Later issuances, including D.O. 252-25, require provision-specific review. No fresh agency-byte comparison was available.",
       "acquisition_headers": {},
       "provenance": "uploaded_identity",
       "official_reference_url": "https://oshc.dole.gov.ph/department-orders/"
@@ -671,13 +671,13 @@
       "raw_sha256": "0ba8abd5811ba18c29ab9e7d5ab3ee4f79314a72ee61c723fbd34ef35070ed45",
       "text_path": "text/pagibig-499-upload.txt",
       "text_sha256": "1026e2a651d8ed7d0b5da9b4c14ba5dd4d92f0ac0838817968725ef85b975f28",
-      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI; four-page reading derivative, sampled visible pages identical to uploaded images.",
+      "extraction": "OCRmyPDF 16.7.0 / Tesseract, minimum 300 DPI; four-page reading derivative, sampled visible pages identical to the preserved images.",
       "pages": 4,
       "issued_on": "2026-08-04",
       "effective_from": "2026-08-21",
       "effectivity_note": "Effective date, where recorded, is corroborated by the official publication/index for this instrument; evaluate later changes and the review period separately.",
-      "applicability_note": "Provisional user-stitched copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
-      "verification_scope": "Provisional user-stitched copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
+      "applicability_note": "Provisional image-assembled copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
+      "verification_scope": "Provisional image-assembled copy of images from a third-party CPA Facebook repost. Four pages, sections A–H, and signed date checked; identity and principal subject corroborated by the agency index and government reporting. The post could not be retrieved directly; no agency-original byte comparison. OCR ordinals, dates and tables require visual review.",
       "acquisition_headers": {},
       "provenance": "third_party",
       "official_reference_url": "https://www.pagibigfund.gov.ph/about_publication_circulars_memberservices.html"
@@ -687,7 +687,7 @@
     {
       "title": "PwC / Isla Lipana NIRC compilation — historical reference",
       "url": "https://www.pwc.com/ph/en/publications/pdf/pwc-ph-tax-code-feb-2020.pdf",
-      "note": "Publisher copy matches the user upload; legislation through 31 January 2020 only. Third-party compilation, not current official law. External citation only; PDF not redistributed."
+      "note": "Publisher compilation of legislation through 31 January 2020 only. Third-party compilation, not current official law. External citation only; PDF not redistributed."
     }
   ]
 }

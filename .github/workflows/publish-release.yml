@@ -79,6 +79,7 @@ jobs:
               assert check[name] is True, name
           assert check['interactive_windows_ui_tested'] is False
           assert manifest['document_text_reading'] == 'offline PDF and DOCX'
+          assert manifest['connected_review'] is True and manifest['offline_exact_provisions'] is True
           assert manifest['private_schema'] == check['private_schema'] == 3
           expected = json.loads(Path('examples/expected-results.json').read_text())
           assert check['synthetic_fixture_count'] == manifest['synthetic_fixture_count'] == len(expected) == 7
@@ -130,7 +131,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Focused labour checks" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Connected review" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

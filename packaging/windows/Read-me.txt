@@ -1,9 +1,23 @@
-ComplyPH 0.4.0 - Focused labour checks
-Formerly LaborLens PH
+ComplyPH 0.4.1 - Connected document review
 
-Close all ComplyPH and LaborLens PH windows before installing. Open ComplyPH from
+Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
 API key or subscription.
+
+Inspect document text and findings side by side with independent scrolling.
+Click a finding title or Show passage to jump to its saved PDF page or Word
+paragraph/table location and highlight its text. Search filters are cleared on a
+passage jump. Identical matches are identified rather than silently guessed.
+
+Open supporting provision offline opens the complete article from the exact local
+source snapshot recorded by the review, with its quoted text highlighted. Related
+provisions and the full saved source are available in the same offline viewer.
+These controls do not open a browser or request an online source.
+
+Reports > Open connected review restores a saved review beside its document.
+If the original differs from that review, passage navigation is disabled; saved
+quotes and the matching historical legal source remain available. A missing or
+mismatched legal snapshot is reported without substituting the latest version.
 
 Read PDF/DOCX text locally, compare it with the original, then choose Check document.
 Confirm scope for normal daily working hours, ordinary-day overtime additional
@@ -24,7 +38,7 @@ comes from stitched third-party images. OCR figures/matrices need page compariso
 The PwC January 2020 tax compilation is a dated external citation, not bundled.
 
 Windows workspace: C:\ProgramData\ComplyPH (uses the system ProgramData location).
-A single detected LocalAppData LaborLens PH/ComplyPH workspace is copied and
+A single detected earlier LocalAppData workspace is copied and
 validated automatically. The old folder remains as backup. References, cached text
 and preferences are retained; original documents stay where they are. For custom
 or ambiguous locations use the workspace folder picker. Settings can import an

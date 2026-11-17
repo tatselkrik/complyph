@@ -58,7 +58,7 @@ impl Provenance {
     pub fn label(self) -> &'static str {
         match self {
             Self::AgencyDownload => "Verified agency download",
-            Self::UploadedIdentity => "Identity checked · uploaded copy",
+            Self::UploadedIdentity => "Identity checked · imported copy",
             Self::ThirdParty => "Provisional · third-party copy",
         }
     }
@@ -448,6 +448,33 @@ impl LibraryCatalog {
         self.snapshot(id)
     }
 
+    /// Read the exact historical source used by a report; never substitute the latest version.
+    pub fn snapshot_for_review(
+        &self,
+        key: &str,
+        raw_sha256: &str,
+        text_sha256: &str,
+    ) -> Result<SourceSnapshot> {
+        let (metadata,raw,text):(String,Vec<u8>,String)=self.connection.query_row(
+            "SELECT p.metadata_json,p.raw_bytes,p.reading_text FROM sources s JOIN source_versions v ON v.source_id=s.id JOIN source_snapshots p ON p.version_id=v.id WHERE s.stable_key=?1 AND v.content_sha256=?2",
+            params![key,raw_sha256],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).optional()?.ok_or(LibraryError::MissingSnapshot)?;
+        let metadata: SourceMetadata = serde_json::from_str(&metadata)?;
+        validate_payload(&metadata, &raw, &text)?;
+        if metadata.key != key
+            || metadata.raw_sha256 != raw_sha256
+            || metadata.text_sha256 != text_sha256
+        {
+            return Err(LibraryError::Integrity(
+                "The report's exact saved source/text version is unavailable".into(),
+            ));
+        }
+        Ok(SourceSnapshot {
+            metadata,
+            raw,
+            text,
+        })
+    }
+
     /// Export a public original only, without overwriting existing files.
     pub fn export_source(&self, source_id: i64, output: &Path) -> Result<()> {
         let snapshot = self.snapshot(source_id)?;
@@ -624,5 +651,113 @@ mod tests {
         catalog.connection.execute("UPDATE source_snapshots SET reading_text='tampered' WHERE version_id=(SELECT v.id FROM source_versions v JOIN sources s ON s.id=v.source_id WHERE s.stable_key='pagibig-499-upload')",[]).unwrap();
         drop(catalog);
         assert!(LibraryCatalog::open(temp.path()).is_err());
+    }
+    #[test]
+    fn review_citations_open_the_exact_snapshot_even_when_a_newer_version_exists() {
+        let temp = tempfile::tempdir().unwrap();
+        let catalog = LibraryCatalog::open(temp.path()).unwrap();
+        let old = catalog.snapshot_by_key("labor-code-reference").unwrap();
+        let mut new = old.metadata.clone();
+        let raw = b"synthetic newer source";
+        let text = "Synthetic later source; deliberately no old provisions.";
+        new.raw_bytes = raw.len() as u64;
+        new.raw_sha256 = sha256(raw);
+        new.text_sha256 = sha256(text.as_bytes());
+        let id: i64 = catalog
+            .connection
+            .query_row(
+                "SELECT id FROM sources WHERE stable_key='labor-code-reference'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        catalog.connection.execute("INSERT INTO source_versions(source_id,content_sha256,local_path,retrieved_at) VALUES (?1,?2,'synthetic',?3)",params![id,new.raw_sha256,new.acquired_at_unix+10000]).unwrap();
+        let version = catalog.connection.last_insert_rowid();
+        catalog.connection.execute("INSERT INTO source_snapshots(version_id,raw_bytes,reading_text,metadata_json,verified_at) VALUES (?1,?2,?3,?4,?5)",params![version,raw,text,serde_json::to_string(&new).unwrap(),new.verified_at_unix]).unwrap();
+        assert_eq!(
+            catalog
+                .snapshot_by_key("labor-code-reference")
+                .unwrap()
+                .text,
+            text
+        );
+        let exact = catalog
+            .snapshot_for_review(
+                &old.metadata.key,
+                &old.metadata.raw_sha256,
+                &old.metadata.text_sha256,
+            )
+            .unwrap();
+        assert_eq!(exact.text, old.text);
+        assert_eq!(exact.raw, old.raw);
+        assert!(
+            catalog
+                .snapshot_for_review(
+                    &old.metadata.key,
+                    &old.metadata.raw_sha256,
+                    "incorrect-text-hash"
+                )
+                .is_err()
+        );
+        assert!(
+            catalog
+                .snapshot_for_review(
+                    &old.metadata.key,
+                    "missing-version",
+                    &old.metadata.text_sha256
+                )
+                .is_err()
+        );
+    }
+    #[test]
+    fn editorial_bundle_upgrade_retains_previous_snapshots_and_bundle_identity() {
+        let temp = tempfile::tempdir().unwrap();
+        let catalog = LibraryCatalog::open(temp.path()).unwrap();
+        let source = catalog.snapshot_by_key("labor-code-reference").unwrap();
+        catalog
+            .connection
+            .execute("DELETE FROM imported_bundles", [])
+            .unwrap();
+        catalog
+            .connection
+            .execute(
+                "INSERT INTO imported_bundles(id,manifest_sha256,imported_at) VALUES (?1,?2,1)",
+                params![
+                    "complyph-starter-2026-11-17-v2",
+                    "92d6979422a8778cbf343f8a1f00b9f272d289c5613697fab5909f68bb82b386"
+                ],
+            )
+            .unwrap();
+        drop(catalog);
+        let catalog = LibraryCatalog::open(temp.path()).unwrap();
+        assert_eq!(catalog.summary().unwrap().source_count, 19);
+        assert_eq!(
+            catalog
+                .connection
+                .query_row("SELECT COUNT(*) FROM imported_bundles", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            catalog
+                .connection
+                .query_row(
+                    "SELECT manifest_sha256 FROM imported_bundles WHERE id=?1",
+                    ["complyph-starter-2026-11-17-v2"],
+                    |r| r.get::<_, String>(0)
+                )
+                .unwrap(),
+            "92d6979422a8778cbf343f8a1f00b9f272d289c5613697fab5909f68bb82b386"
+        );
+        let restored = catalog
+            .snapshot_for_review(
+                &source.metadata.key,
+                &source.metadata.raw_sha256,
+                &source.metadata.text_sha256,
+            )
+            .unwrap();
+        assert_eq!(restored.raw, source.raw);
+        assert_eq!(restored.text, source.text);
     }
 }

@@ -1,49 +1,26 @@
 # Roadmap
 
-Shipped in 0.4.0: five added source copies with visible provenance; three focused labour numeric checks with scope gates; saved local reports; ProgramData migration and a workspace folder picker. See [supported scope](VALIDATED_CHECKS.md). Qualified legal review and broader/current-law validation remain outstanding.
+## Available in 0.4.1
 
-## 0.3.0 — Local document reader
+- Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
+- Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
+- Complete supporting provisions and related rules from the exact historical local source.
+- Three focused labour numeric checks with explicit applicability and evidence requirements.
+- Nineteen preserved references across seven compliance domains, with provenance and coverage gaps.
+- Windows installation, workspace migration, protected ProgramData storage and preserving uninstall.
 
-Implemented: offline Rust PDF/DOCX text reading, page/paragraph/table/part references, selectable text and search, private content-hash-validated caches, private schema 1 → 2 migration, cancellation and process resource limits, explicit scan/protected/damaged-file states, and seven synthetic cases with expected results. Originals remain unchanged. This milestone provides reading, not legal assessment.
+## Legal coverage
 
-## 0.2.0 — ComplyPH and the starter library
+Expand supported labour provisions and add validated domain packs for OSHS, privacy/NPC, BIR, SSS, PhilHealth and Pag-IBIG. Each pack requires reviewed sources, applicability conditions, effective-period handling, evidence requirements and independent validation cases. Source acquisition and checking-rule coverage remain separate.
 
-Implemented: ComplyPH branding, preserving legacy-data discovery, schema 2 public catalog migration, 14 original official-publication snapshots across seven domains, domain filters, source search, offline reading, search within a source, source-copy export, and integrity checks. Known acquisition gaps remain explicit; source verification is not legal currency or compliance.
+## Library maintenance
 
-## 0.1.0 — LaborLens PH desktop foundation
+Add manual source entry by URL or local file. Implement daily checks against approved official publication pages, retain valid new versions and record failed/missed checks. Flag legal changes that require rule maintenance. Enforce operating-system file/network restrictions before enabling a downloader; private document data must never become updater inputs.
 
-Implemented: the native Rust interface, local PDF/DOCX file registration, searchable document history, metadata, saved preferences, private SQLite storage, an independent public legal-source catalog, and Windows packaging.
+## Reading and workflow
 
-The application does not yet perform legal analysis.
+Improve layout/font/embedded-content coverage and add offline OCR with visible quality limits. Add watched-folder intake that waits for completed writes, preserves originals and avoids rechecking unchanged content. Extend local report exports and document comparison while retaining source/rule versions.
 
-## Shared engine and compliance domains
+## Validation
 
-Build the review pipeline around shared document extraction, local evidence, applicability, citations, and reports. Define separate domain metadata and rules for labor compliance, DOLE OSHS, the Data Privacy Act/NPC, BIR, SSS, PhilHealth, and Pag-IBIG. Domain definitions use stable identifiers and keep regulators, source documents, and rules separate.
-
-Begin with one labor review area and validate the full workflow. Add other domains as their source collections, evidence requirements, and rule coverage are validated. Support selecting several domains for a review and report each domain's coverage independently. See the [compliance-domain design](COMPLIANCE_DOMAINS.md).
-
-## Verified sources and first checking rules
-
-Extend the initial official-source collection, close acquisition gaps, and establish one well-defined labor review area. Record domain membership, issuer, source URL, publication and effective dates, applicability, verification state, and version history. Allow a source to belong to more than one domain. Pair supported requirements with explicit checking rules and representative validation cases.
-
-Maintain source documents and rule coverage separately. A new source does not automatically establish a correct new checking rule.
-
-## Local text extraction
-
-Supported PDF/DOCX text reading and location references shipped in 0.3.0. Future work: broaden layout/font/embedded-content coverage, provide extraction-quality review, and add offline OCR for scans with clear limits on recognition quality.
-
-## Broader review coverage
-
-Expand the first three comparisons to additional validated provisions and supporting evidence. Include the domain, exact source provision, effective date, explanation, missing facts, and review status. Resolve applicability using the period under review and preserve its source and rule versions.
-
-Validate with synthetic or appropriately anonymized documents and qualified legal review. Evaluate both missed issues and incorrect flags. A result with no issue found must state its supported coverage.
-
-## Library management and daily updates
-
-Add manual source entry by URL or local file. Check approved official publication pages daily and automatically preserve valid new source versions. Record failures and missed checks visibly. Apply rule updates automatically only through validated transformations; flag unsupported legal changes for maintenance.
-
-Enforce and test the updater's operating-system network and file restrictions before enabling it. Private document data must not become an input to the updater.
-
-## Folder intake and richer reports
-
-Monitor a designated local folder, wait for files to finish writing, and avoid repeated reviews of unchanged content. Keep originals unchanged. Export reports that preserve the source and rule versions used.
+Broaden representative synthetic cases, investigate missed issues and false flags, and obtain qualified legal review. Continue target-device checks for Windows scaling, accessibility and document drag/drop.

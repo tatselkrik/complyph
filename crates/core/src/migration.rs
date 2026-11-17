@@ -99,7 +99,9 @@ pub fn import(source: &Path, target: &Path) -> Result<WorkspacePaths> {
         ));
     }
     if complyph_paths::another_desktop_running()? {
-        return Err(WorkspaceError::InvalidDocument("Close other ComplyPH and LaborLens PH windows, then reopen ComplyPH to migrate safely.".into()));
+        return Err(WorkspaceError::InvalidDocument(
+            "Close all other review-app windows, then reopen ComplyPH to migrate safely.".into(),
+        ));
     }
     // Refuse unknown target contents. A previous successful activation always wins.
     if target.exists() && fs::read_dir(target)?.next().is_some() {
