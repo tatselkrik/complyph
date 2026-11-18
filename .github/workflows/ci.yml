@@ -24,6 +24,8 @@ jobs:
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
       - name: Check formatting
         run: cargo fmt --all --check
+      - name: Verify downloader isolation
+        run: cargo test -p complyph-updater --test isolation --locked
       - name: Test local storage and boundaries
         run: cargo test --workspace --locked
       - name: Check Rust warnings

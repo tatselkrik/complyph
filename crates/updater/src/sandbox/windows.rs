@@ -21,9 +21,9 @@ const SE_GROUP_ENABLED: u32 = 0x00000004;
 fn wide(value: impl AsRef<std::ffi::OsStr>) -> Vec<u16> {
     value.as_ref().encode_wide().chain(Some(0)).collect()
 }
-fn error() -> String {
+fn error(stage: &str) -> String {
     format!(
-        "The isolated downloader could not start (Windows error {}).",
+        "The isolated downloader could not {stage} (Windows error {}).",
         unsafe { GetLastError() }
     )
 }
@@ -47,19 +47,20 @@ fn text_sid(sid: PSID) -> Result<String, String> {
     let mut text = std::ptr::null_mut();
     // SAFETY: sid is a valid OS-provided SID. The returned allocation is released by Local.
     if unsafe { ConvertSidToStringSidW(sid, &mut text) } == 0 {
-        return Err(error());
+        return Err(error("format its security identity"));
     }
     let _guard = Local(text.cast());
     let mut length = 0;
     while unsafe { *text.add(length) } != 0 {
         length += 1;
     }
-    String::from_utf16(unsafe { std::slice::from_raw_parts(text, length) }).map_err(|_| error())
+    String::from_utf16(unsafe { std::slice::from_raw_parts(text, length) })
+        .map_err(|_| "The downloader security identity was invalid UTF-16.".into())
 }
 fn token() -> Result<OwnedHandle, String> {
     let mut raw = std::ptr::null_mut();
     if unsafe { OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut raw) } == 0 {
-        return Err(error());
+        return Err(error("open its security token"));
     }
     Ok(unsafe { OwnedHandle::from_raw_handle(raw) })
 }
@@ -86,7 +87,7 @@ fn owner_sid() -> Result<String, String> {
         )
     } == 0
     {
-        return Err(error());
+        return Err(error("read its owner identity"));
     }
     let user = unsafe { &*buffer.as_ptr().cast::<TOKEN_USER>() };
     text_sid(user.User.Sid)
@@ -107,13 +108,13 @@ fn grant_runtime(path: &Path, container: PSID) -> Result<(), String> {
         )
     } == 0
     {
-        return Err(error());
+        return Err(error("prepare its access policy"));
     }
     let guard = Local(descriptor);
     let (mut present, mut defaulted) = (0, 0);
     let mut dacl = std::ptr::null_mut();
     if unsafe { GetSecurityDescriptorDacl(guard.0, &mut present, &mut dacl, &mut defaulted) } == 0 {
-        return Err(error());
+        return Err(error("read its access policy"));
     }
     let result = unsafe {
         SetNamedSecurityInfoW(
@@ -174,7 +175,7 @@ impl Launcher {
             }
         }
         if sid.is_null() {
-            return Err(error());
+            return Err("Windows returned an empty AppContainer identity.".into());
         }
         let container = Sid(sid);
         let mut capability = vec![0u64; 9];
@@ -188,7 +189,7 @@ impl Launcher {
             )
         } == 0
         {
-            return Err(error());
+            return Err(error("create its InternetClient identity"));
         }
         let unique = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -203,14 +204,17 @@ impl Launcher {
         let executable = directory.join("ComplyPH-downloader.exe");
         let result = (|| {
             grant_runtime(&directory, container.0)?;
-            fs::copy(std::env::current_exe().map_err(|_| error())?, &executable)
-                .map_err(|_| "The downloader executable could not be prepared.".to_string())?;
+            let original_path = std::env::current_exe()
+                .map_err(|e| format!("The updater executable could not be located: {e}"))?;
+            fs::copy(&original_path, &executable)
+                .map_err(|e| format!("The downloader executable could not be prepared: {e}"))?;
             grant_runtime(&executable, container.0)?;
             // Verify the runtime copy before granting it execution in the lowbox.
             use sha2::{Digest, Sha256};
-            let original =
-                fs::read(std::env::current_exe().map_err(|_| error())?).map_err(|_| error())?;
-            let copy = fs::read(&executable).map_err(|_| error())?;
+            let original = fs::read(&original_path)
+                .map_err(|e| format!("The updater executable could not be verified: {e}"))?;
+            let copy = fs::read(&executable)
+                .map_err(|e| format!("The downloader executable could not be verified: {e}"))?;
             if Sha256::digest(original) != Sha256::digest(copy) {
                 return Err("The downloader executable failed its integrity check.".into());
             }
@@ -264,10 +268,10 @@ impl Launcher {
         let stderr = fs::OpenOptions::new()
             .write(true)
             .open("NUL")
-            .map_err(|_| error())?;
+            .map_err(|e| format!("The downloader error stream could not be opened: {e}"))?;
         let inheritable = |h: HANDLE, value| {
             if unsafe { SetHandleInformation(h, HANDLE_FLAG_INHERIT, value) } == 0 {
-                Err(error())
+                Err(error("limit pipe inheritance"))
             } else {
                 Ok(())
             }
@@ -292,7 +296,7 @@ impl Launcher {
         let mut storage = vec![0usize; size.div_ceil(std::mem::size_of::<usize>())];
         let list = storage.as_mut_ptr().cast();
         if unsafe { InitializeProcThreadAttributeList(list, 2, 0, &mut size) } == 0 {
-            return Err(error());
+            return Err(error("initialize its process attributes"));
         }
         struct Attributes(LPPROC_THREAD_ATTRIBUTE_LIST);
         impl Drop for Attributes {
@@ -332,7 +336,7 @@ impl Launcher {
                 )
             } == 0
         {
-            return Err(error());
+            return Err(error("set its process attributes"));
         }
         let mut startup: STARTUPINFOEXW = unsafe { std::mem::zeroed() };
         startup.StartupInfo.cb = std::mem::size_of_val(&startup) as u32;
@@ -373,18 +377,19 @@ impl Launcher {
             )
         };
         if created == 0 {
-            return Err(error());
+            return Err(error("create its AppContainer process"));
         }
         let child = unsafe { OwnedHandle::from_raw_handle(process.hProcess) };
         let thread = unsafe { OwnedHandle::from_raw_handle(process.hThread) };
         if unsafe { AssignProcessToJobObject(job.as_raw_handle(), child.as_raw_handle()) } == 0 {
+            let error = error("attach its process limits");
             unsafe {
                 TerminateProcess(child.as_raw_handle(), 1);
             }
-            return Err(error());
+            return Err(error);
         }
         if unsafe { ResumeThread(thread.as_raw_handle()) } == u32::MAX {
-            return Err(error());
+            return Err(error("start its AppContainer process"));
         }
         drop(read_in);
         drop(write_out);
@@ -444,7 +449,7 @@ fn pipe() -> Result<(fs::File, fs::File), String> {
     };
     let (mut read, mut write) = (std::ptr::null_mut(), std::ptr::null_mut());
     if unsafe { CreatePipe(&mut read, &mut write, &sa, 0) } == 0 {
-        return Err(error());
+        return Err(error("create its pipes"));
     }
     Ok(unsafe {
         (
@@ -456,7 +461,7 @@ fn pipe() -> Result<(fs::File, fs::File), String> {
 fn job() -> Result<OwnedHandle, String> {
     let raw = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
     if raw.is_null() {
-        return Err(error());
+        return Err(error("create its process limits"));
     }
     let handle = unsafe { OwnedHandle::from_raw_handle(raw) };
     let mut limits: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = unsafe { std::mem::zeroed() };
@@ -476,7 +481,7 @@ fn job() -> Result<OwnedHandle, String> {
         )
     } == 0
     {
-        return Err(error());
+        return Err(error("configure its process limits"));
     }
     Ok(handle)
 }
