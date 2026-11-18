@@ -159,13 +159,19 @@ impl Launcher {
                 &mut sid,
             )
         };
-        if result < 0
-            && unsafe { DeriveAppContainerSidFromAppContainerName(profile.as_ptr(), &mut sid) } < 0
-        {
-            return Err(
-                "Windows could not create the source-check AppContainer. No online check was made."
-                    .into(),
-            );
+        if result < 0 {
+            if result as u32 != 0x800700B7 {
+                return Err(format!(
+                    "Windows could not create the source-check AppContainer (HRESULT 0x{:08X}). No online check was made.",
+                    result as u32
+                ));
+            }
+            if unsafe { DeriveAppContainerSidFromAppContainerName(profile.as_ptr(), &mut sid) } < 0
+            {
+                return Err(
+                    "Windows could not resolve the existing source-check AppContainer.".into(),
+                );
+            }
         }
         if sid.is_null() {
             return Err(error());
@@ -237,6 +243,9 @@ impl Launcher {
                 },
                 _,
             ) => Ok(launcher),
+            (Reply::Failed { message }, _) => {
+                Err(format!("The downloader isolation check failed: {message}"))
+            }
             _ => Err(
                 "The downloader failed its runtime file-denial check. No source was contacted."
                     .into(),

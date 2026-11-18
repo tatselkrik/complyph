@@ -60,7 +60,15 @@ fn appcontainer_cannot_open_the_catalog_private_store_or_original_document() {
     }
     let mut command = Command::new(env!("CARGO_BIN_EXE_complyph-updater"));
     command.arg("--self-test-isolation").env_clear();
-    for name in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
+    for name in [
+        "SystemRoot",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "LOCALAPPDATA",
+        "APPDATA",
+    ] {
         if let Some(value) = std::env::var_os(name) {
             command.env(name, value);
         }

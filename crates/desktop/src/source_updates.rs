@@ -241,7 +241,17 @@ fn run_checker(directory: PathBuf, due: bool, cancel: &AtomicBool) -> Result<Str
         command.arg("--due");
     }
     command.env_clear();
-    for name in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
+    // Userenv needs these coordinator-local profile locations for AppContainer
+    // setup. They are never fields of a source HTTP request.
+    for name in [
+        "SystemRoot",
+        "WINDIR",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "LOCALAPPDATA",
+        "APPDATA",
+    ] {
         if let Some(value) = std::env::var_os(name) {
             command.env(name, value);
         }

@@ -98,7 +98,7 @@ if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $pri
 $catalog = Join-Path $machineData 'library/catalog.sqlite3'
 function Set-SourceWorkerEnvironment($processInfo) {
     $processInfo.Environment.Clear()
-    foreach ($name in @('SystemRoot','WINDIR','TEMP','TMP')) {
+    foreach ($name in @('SystemRoot','WINDIR','TEMP','TMP','USERPROFILE','LOCALAPPDATA','APPDATA')) {
         $value = [Environment]::GetEnvironmentVariable($name)
         if ($null -ne $value) { $processInfo.Environment[$name] = $value }
     }
