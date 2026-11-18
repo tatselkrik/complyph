@@ -99,7 +99,7 @@ Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The d
 
 Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. Scans need external OCR; images, text boxes, layout and revisions can affect coverage. The three numeric checks are technically tested, not qualified legal certification.
 
-Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. Watched folders, in-app OCR and additional-domain checking remain planned. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
+Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, PDF reports and review tracking, local OCR, watched folders and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
 
 ## Build from source
 
