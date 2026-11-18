@@ -1,8 +1,13 @@
 //! Public official-source snapshots only. No private-workspace or HTTP dependency.
 mod bundled;
 mod manual;
+mod updates;
 
 pub use manual::{ImportOutcome, ManualSourceFile, ManualSourceInput, ManualVerification};
+pub use updates::{
+    CheckReceipt, DownloadedChange, MAX_DOWNLOAD_BYTES, UpdateReply, UpdateTarget, UpdateWatch,
+    approved_update_url, download_mime, same_origin,
+};
 
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
@@ -14,7 +19,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 const MANIFEST: &str = include_str!("../../../library/starter/manifest.json");
-const SCHEMA_VERSION: i32 = 3;
+const SCHEMA_VERSION: i32 = 4;
 
 #[derive(Debug, Error)]
 pub enum LibraryError {
@@ -151,6 +156,8 @@ pub struct LibrarySummary {
     pub manually_imported_source_count: u64,
     pub awaiting_verification_count: u64,
     pub user_checked_source_count: u64,
+    pub approved_update_count: u64,
+    pub pending_update_count: u64,
     pub bundled_verified_at: Option<i64>,
     pub last_successful_check: Option<i64>,
     pub automatic_updates_available: bool,
@@ -241,6 +248,9 @@ impl LibraryCatalog {
         // must refuse it rather than misread the verification status.
         if version < 3 {
             transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+        }
+        if version < 4 {
+            updates::migrate(&transaction)?;
         }
         transaction.commit()?;
         let mut catalog = Self { connection };
@@ -438,8 +448,14 @@ impl LibraryCatalog {
             awaiting_verification_count,
             user_checked_source_count,
             bundled_verified_at,
-            last_successful_check: None,
-            automatic_updates_available: false,
+            approved_update_count: self
+                .update_watches()?
+                .iter()
+                .filter(|watch| watch.enabled)
+                .count() as u64,
+            pending_update_count: self.pending_update_count()?,
+            last_successful_check: self.last_successful_source_check()?,
+            automatic_updates_available: cfg!(windows),
             domains,
         })
     }
@@ -579,7 +595,7 @@ mod tests {
         assert!(summary.domains.iter().all(|d| d.source_count > 0));
         assert!(summary.bundled_verified_at.is_some());
         assert_eq!(summary.last_successful_check, None);
-        assert!(!summary.automatic_updates_available);
+        assert_eq!(summary.automatic_updates_available, cfg!(windows));
         let source = catalog.sources().unwrap().remove(0);
         let snapshot = catalog.snapshot(source.id).unwrap();
         assert!(snapshot.text.contains("442"));

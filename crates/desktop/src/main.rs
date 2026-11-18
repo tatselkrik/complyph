@@ -7,6 +7,7 @@ mod provision_view;
 mod reader;
 mod reader_view;
 mod source_import;
+mod source_updates;
 mod text_navigation;
 mod theme;
 mod widgets;

@@ -1,12 +1,13 @@
 # Roadmap
 
-## Available in 0.5.0
+## Available in 0.6.0
 
 - Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
 - Complete supporting provisions and related rules from the exact historical local source.
 - Three focused labour numeric checks with explicit applicability and evidence requirements.
 - Nineteen preserved references across seven compliance domains, with provenance and coverage gaps.
+- Approved-URL source checks on Windows, daily while open; immutable downloaded-change history and explicit review notes.
 - Manual PDF/DOCX legal-source intake with official citation URLs, domains, dates, user verification notes and immutable version history.
 - Windows installation, workspace migration, protected ProgramData storage and preserving uninstall.
 
@@ -16,7 +17,7 @@ Expand supported labour provisions and add validated domain packs for OSHS, priv
 
 ## Library maintenance
 
-Add metadata editing and deliberate source-verification workflows. Implement daily checks against approved official publication pages, retain valid new versions and record failed/missed checks. Flag legal changes that require rule maintenance. Enforce operating-system file/network restrictions before enabling a downloader; private document data must never become updater inputs.
+Add metadata editing and deliberate source-verification workflows. Expand platform isolation support, source-page discovery and reviewed promotion of downloaded references. Flag legal changes that require rule maintenance. Retain the AppContainer boundary and public-only request protocol; private document data must never become updater inputs.
 
 ## Reading and workflow
 

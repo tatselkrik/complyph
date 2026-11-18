@@ -1,18 +1,18 @@
 # Privacy
 
-## ComplyPH 0.5.0
+## ComplyPH 0.6.0
 
 ComplyPH runs locally. Selecting a PDF/DOCX registers its filename, canonical path, size, and modification time, then reads supported text in a local child process. Extracted text, paragraph/page/table locations, the original’s SHA-256 hash, reading state, and read date are saved in the private SQLite workspace. Preferences use the same workspace. The private workspace also stores human-confirmed scope and review reports containing passages, outcomes, source/rule identifiers and hashes. The three numeric checks are local and do not certify compliance.
 
 Document bytes pass from the app to its own worker through local stdin/stdout pipes. Worker arguments contain only the document format; inherited credentials and proxy settings are cleared. The readers do not fetch document hyperlinks or external XML entities, execute fields, macros, PDF JavaScript, or embedded programs. Parser diagnostics are not logged. Resource limits and cancellation protect responsiveness; this is not a full operating-system sandbox.
 
-The application and catalog-status tool contain no HTTP client, telemetry, advertising, AI integration, document upload, or runtime source downloader.
+The desktop, document reader and rule engine contain no HTTP client, telemetry, advertising, AI integration or document upload. The separate updater uses a Windows AppContainer child for approved source downloads. Status queries and source import make no online request.
 
 ## Public reference library
 
 The separate public catalog stores 19 preserved references: 14 agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The catalog stores their original bytes, derived reading text, domains, citations, dates, integrity hashes, and provenance. Provenance is classified individually; mirrors and stitched social-media images are not agency-original verification. No private documents or document-derived queries were used for acquisition.
 
-Legal library → Add legal source explicitly copies a selected public PDF/DOCX into the local catalog, with derived reading text, user-provided official citation, domains, dates and verification notes. This action does not register a private document or write to the private workspace. The source URL is not fetched. Local paths are not stored in source metadata. Pending imports have no verification timestamp; user identity checks remain separate from agency-download verification. Same-URL revisions preserve earlier snapshots; identical files do not rewrite metadata.
+Legal library → Add legal source explicitly copies a selected public PDF/DOCX into the local catalog, with derived reading text, user-provided official citation, domains, dates and verification notes. This action does not register a private document or write to the private workspace. Importing does not fetch the source URL. A separate explicit URL approval enables source update checks. Local paths are not stored in source metadata. Pending imports have no verification timestamp; user identity checks remain separate from agency-download verification. Same-URL revisions preserve earlier snapshots; identical files do not rewrite metadata.
 
 The app renders reading text only. Archived source HTML is not executed or rendered as a webpage. Saving an original exports that public source locally without overwriting an existing file. Other software used to open exported originals operates independently.
 
@@ -28,10 +28,14 @@ Original private documents remain at their selected locations. Removing a docume
 
 SQLite files are not encrypted by the app. Access depends on operating-system permissions and device protection. Unix private directories/files receive restrictive permissions. Windows workspace directories use explicit owner-only access alongside SYSTEM and Administrators. Existing application data is not encrypted or securely erased by migration.
 
-## Future updater boundary
+## Source update boundary
 
-The future updater will operate on the public source catalog without a dependency on the private workspace crate. Shared location discovery reads directory/file existence and Windows process names only; no document/database contents.
+No URL is approved by default. The user approves an official HTTPS publication URL inside the local source reader. The updater checks those URLs daily while the desktop is open, with an immediate check button; a closed app does not schedule requests. Other-platform builds keep update networking disabled.
 
-Crate separation is not an operating-system sandbox. Enforced file/network restrictions, approved-source validation, and runtime verification are required before enabling networking. Private document content, identifiers, paths, hashes, employee/employer/payroll data, findings, and derived search terms must never be updater inputs.
+The public-catalog coordinator has no private-workspace or extraction dependency. Its network child receives only an approved source URL and optional ETag/Last-Modified values previously returned by that public server. Requests use GET without a body. Agencies see the approved URL, normal IP/TLS connection metadata, the app user-agent and their own cache validators. Document contents, paths, hashes, findings, employer/employee data and source-review notes are never request inputs. The app does not send search queries derived from documents.
 
-Backups, cloud-sync folders, endpoint tools, browsers, and the operating system act independently of ComplyPH. All bundled sample HR documents are synthetic.
+The Windows child runs in an AppContainer with Internet-client capability and a read/execute-only temporary copy of its executable. It receives an explicit list of pipe handles, without inherited catalog/document handles. The owning process's private database, catalog and standard original-document paths are denied by the AppContainer; Windows tests probe synthetic canaries. No private-network capability is granted. The HTTP layer also requires supported agency domains, HTTPS on port 443, public DNS addresses and same-origin redirects. Proxy credentials, cookies and HTTP authentication are not used. TLS certificate validation stays enabled. Environment/service credentials are not inherited. Job objects bound memory, CPU, child count and lifetime; closing the desktop terminates its updater processes.
+
+The worker cannot open a catalog or choose a document. The coordinator stores downloaded public bytes, source hashes, response validators, attempts/failures and review notes in public schema 4. The private schema stays at 3. New downloads remain reviewable copies rather than automatic legal verification or rule updates. Both source imports and update exports preserve original files and refuse to overwrite a chosen existing destination.
+
+The AppContainer profile is an account-local Windows security profile named ComplyPH.SourceUpdates. A temporary executable directory contains application code only and is removed after a batch. Backups, external programs, operating-system services and user changes to file-sharing permissions operate independently of ComplyPH. All test documents and privacy canaries are synthetic. See [source update limits and validation](docs/SOURCE_UPDATES.md).

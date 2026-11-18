@@ -18,11 +18,13 @@ pub struct LibraryView {
     sources: Vec<SourceRecord>,
     query: String,
     domain: String,
+    pending_only: bool,
     reader: Option<Reader>,
     export: FileDialog,
     export_id: Option<i64>,
     message: Option<String>,
     import: crate::source_import::SourceImportView,
+    updates: crate::source_updates::SourceUpdates,
 }
 
 impl Default for LibraryView {
@@ -31,6 +33,7 @@ impl Default for LibraryView {
             sources: Vec::new(),
             query: String::new(),
             domain: String::new(),
+            pending_only: false,
             reader: None,
             export: FileDialog::new()
                 .title("Save preserved source copy")
@@ -43,6 +46,7 @@ impl Default for LibraryView {
             export_id: None,
             message: None,
             import: crate::source_import::SourceImportView::default(),
+            updates: crate::source_updates::SourceUpdates::default(),
         }
     }
 }
@@ -50,6 +54,7 @@ impl Default for LibraryView {
 impl LibraryView {
     pub fn load(&mut self, catalog: &LibraryCatalog) -> Result<(), LibraryError> {
         self.sources = catalog.sources()?;
+        self.updates.load(catalog)?;
         Ok(())
     }
 
@@ -59,9 +64,10 @@ impl LibraryView {
             ui.add_space(8.0);
         }
         if self.reader.is_some() {
-            self.show_reader(ui);
+            self.show_reader(ui, catalog);
             return;
         }
+        self.updates.overview(ui);
         let Ok(manifest) = starter_manifest() else {
             ui.colored_label(RED, "Source metadata is unavailable.");
             return;
@@ -79,9 +85,12 @@ impl LibraryView {
                 .color(MUTED),
             );
             ui.label(
-                RichText::new(format!("Checked {} UTC", &manifest.verified_at_utc[..10]))
-                    .size(12.0)
-                    .color(MUTED),
+                RichText::new(format!(
+                    "Starter verified {} UTC",
+                    &manifest.verified_at_utc[..10]
+                ))
+                .size(12.0)
+                .color(MUTED),
             );
         });
         ui.label(
@@ -137,6 +146,7 @@ impl LibraryView {
             if !self.query.is_empty() && widgets::secondary(ui, "Clear").clicked() {
                 self.query.clear();
             }
+            ui.checkbox(&mut self.pending_only, "Update review needed");
         });
         ui.add_space(12.0);
         let query = self.query.to_lowercase();
@@ -144,6 +154,10 @@ impl LibraryView {
         let mut count = 0;
         for source in &self.sources {
             let metadata = &source.metadata;
+            let pending = self.updates.pending_for(source.id);
+            if self.pending_only && pending == 0 {
+                continue;
+            }
             if !self.domain.is_empty() && !metadata.domains.contains(&self.domain) {
                 continue;
             }
@@ -185,6 +199,15 @@ impl LibraryView {
                     if verified { GREEN_TINT } else { AMBER_TINT },
                     false,
                 );
+                if pending > 0 {
+                    widgets::pill(
+                        ui,
+                        &format!("{pending} downloaded change(s) · review needed"),
+                        AMBER,
+                        AMBER_TINT,
+                        false,
+                    );
+                }
                 ui.add_space(5.0);
                 if widgets::secondary(ui, "Read local snapshot").clicked() {
                     selected = Some(source.id);
@@ -237,12 +260,12 @@ impl LibraryView {
                     widgets::muted(ui, &reference.note);
                     ui.add(egui::Label::new(&reference.url).wrap().selectable(true));
                 }
-                ui.label(RichText::new("Daily source checks are not available yet. No runtime update check has run. Manually imported references do not automatically resolve coverage gaps or add checking rules.").color(AMBER));
+                ui.label(RichText::new("Source checks inspect approved URLs only; they do not discover every new law or resolve these coverage gaps. Downloaded changes require review and do not update checking rules automatically.").color(AMBER));
             });
         });
     }
 
-    fn show_reader(&mut self, ui: &mut Ui) {
+    fn show_reader(&mut self, ui: &mut Ui, catalog: &LibraryCatalog) {
         let mut back = false;
         let mut export = None;
         let reader = self.reader.as_mut().expect("reader was selected");
@@ -326,6 +349,8 @@ impl LibraryView {
             widgets::muted(ui, &reader.metadata.extraction);
             widgets::muted(ui, &reader.metadata.verification_scope);
         });
+        self.updates
+            .source(ui, catalog, reader.id, &reader.metadata);
         ui.add_space(12.0);
         ui.horizontal(|ui| {
             ui.add(
@@ -449,6 +474,6 @@ impl LibraryView {
             ctx.request_repaint();
             return true;
         }
-        false
+        self.updates.tick(ctx, catalog, directory)
     }
 }

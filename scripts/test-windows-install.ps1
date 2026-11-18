@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.5.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.6.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -89,13 +89,67 @@ foreach ($rule in $acl.Access) {
 $statusJson = & (Join-Path $root 'target/release/complyph-updater.exe') '--status'
 if ($LASTEXITCODE -ne 0) { throw 'Default library discovery or import failed.' }
 $status = $statusJson | ConvertFrom-Json
-if ($status.source_count -ne 19 -or $status.verified_source_count -ne 14 -or $status.identity_checked_upload_count -ne 3 -or $status.provisional_source_count -ne 2 -or $status.domains.Count -ne 7 -or $null -eq $status.bundled_verified_at -or $null -ne $status.last_successful_check -or $status.automatic_updates_available) {
+if ($status.source_count -ne 19 -or $status.verified_source_count -ne 14 -or $status.identity_checked_upload_count -ne 3 -or $status.provisional_source_count -ne 2 -or $status.domains.Count -ne 7 -or $null -eq $status.bundled_verified_at -or $null -ne $status.last_successful_check -or !$status.automatic_updates_available -or $status.approved_update_count -ne 0 -or $status.pending_update_count -ne 0) {
     throw 'Unexpected starter-library or update status.'
 }
 if (@($status.domains | Where-Object { $_.source_count -lt 1 }).Count -gt 0) { throw 'A domain has no source snapshots.' }
 if (Test-Path -LiteralPath $currentData) { throw 'Upgrade created a second data root.' }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Public catalog import changed private data.' }
 $catalog = Join-Path $machineData 'library/catalog.sqlite3'
+function Set-SourceWorkerEnvironment($processInfo) {
+    $processInfo.Environment.Clear()
+    foreach ($name in @('SystemRoot','WINDIR','TEMP','TMP')) {
+        $value = [Environment]::GetEnvironmentVariable($name)
+        if ($null -ne $value) { $processInfo.Environment[$name] = $value }
+    }
+}
+$installedUpdater = Join-Path $installDirectory 'complyph-updater.exe'
+if (!(Test-Path -LiteralPath $installedUpdater)) { throw 'The installed source updater is missing.' }
+$info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $installedUpdater; $info.UseShellExecute = $false; $info.RedirectStandardOutput = $true; Set-SourceWorkerEnvironment $info
+foreach ($argument in @('--self-test-isolation','--probe-file',$privateDatabase,'--probe-file',$catalog,'--probe-file',$original)) { $info.ArgumentList.Add($argument) }
+$isolationProcess = [Diagnostics.Process]::Start($info)
+$isolationTask = $isolationProcess.StandardOutput.ReadToEndAsync()
+if (!$isolationProcess.WaitForExit(45000)) { $isolationProcess.Kill($true); throw 'Downloader isolation verification timed out.' }
+if ($isolationProcess.ExitCode -ne 0) { throw 'The installed AppContainer downloader failed its private-file denial test.' }
+$isolation = $isolationTask.Result | ConvertFrom-Json
+if (!$isolation.app_container -or !$isolation.all_files_denied -or $isolation.files_tested -ne 3) { throw 'The network worker could open a protected synthetic fixture.' }
+$info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $installedUpdater; $info.UseShellExecute = $false; $info.RedirectStandardOutput = $true; Set-SourceWorkerEnvironment $info
+foreach ($argument in @('--check','--library-dir',(Join-Path $machineData 'library'))) { $info.ArgumentList.Add($argument) }
+$emptyBatch = [Diagnostics.Process]::Start($info)
+$emptyTask = $emptyBatch.StandardOutput.ReadToEndAsync()
+if (!$emptyBatch.WaitForExit(45000)) { $emptyBatch.Kill($true); throw 'The no-approval check timed out.' }
+if ($emptyBatch.ExitCode -ne 0 -or @((($emptyTask.Result | ConvertFrom-Json).checks)).Count -ne 0) { throw 'An unapproved source was checked.' }
+# Observe a real certificate-validated HTTP response in an isolated public-only catalog.
+# A server rejection (for example 403) proves transport, not source availability.
+$probeLibrary = Join-Path $fixtureRoot 'https-probe-library'
+& $installedUpdater '--status' '--library-dir' $probeLibrary | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'The public HTTPS probe catalog could not be initialized.' }
+$env:COMPLYPH_SMOKE_PROBE_LIBRARY = $probeLibrary
+$liveResponseObserved = $false
+$liveProbeResults = @()
+foreach ($key in @('ra-10173','ra-11223','ra-11199')) {
+    $env:COMPLYPH_SMOKE_PROBE_KEY = $key
+    @'
+import json,os,pathlib,sqlite3,time
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_PROBE_LIBRARY'])/'catalog.sqlite3') as db:
+ db.execute('UPDATE source_update_watches SET enabled=0')
+ row=db.execute('SELECT s.id,p.metadata_json FROM sources s JOIN source_versions v ON v.source_id=s.id JOIN source_snapshots p ON p.version_id=v.id WHERE s.stable_key=? ORDER BY v.id DESC LIMIT 1',(os.environ['COMPLYPH_SMOKE_PROBE_KEY'],)).fetchone()
+ db.execute('INSERT INTO source_update_watches(source_id,url,enabled,approved_at) VALUES(?,?,1,?)',(row[0],json.loads(row[1])['source_url'],int(time.time())))
+'@ | python -
+    if ($LASTEXITCODE -ne 0) { throw 'The explicit public probe URL fixture could not be approved.' }
+    $info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $installedUpdater; $info.UseShellExecute = $false; $info.RedirectStandardOutput = $true; Set-SourceWorkerEnvironment $info
+    foreach ($argument in @('--check','--library-dir',$probeLibrary)) { $info.ArgumentList.Add($argument) }
+    $liveProcess = [Diagnostics.Process]::Start($info)
+    $liveTask = $liveProcess.StandardOutput.ReadToEndAsync()
+    if (!$liveProcess.WaitForExit(90000)) { $liveProcess.Kill($true); throw 'The isolated HTTPS probe timed out.' }
+    if ($liveProcess.ExitCode -ne 0) { throw 'The isolated HTTPS coordinator failed.' }
+    $live = $liveTask.Result | ConvertFrom-Json
+    $liveProbeResults += $live.checks
+    $observed = @($live.checks | Where-Object { $_.outcome -in @('changed','unchanged') -or $_.detail -match 'returned HTTP [0-9]{3}' })
+    if ($observed.Count -gt 0) { $liveResponseObserved = $true; break }
+}
+if (!$liveResponseObserved) { throw ('No secure public HTTP response was observed: ' + ($liveProbeResults | ConvertTo-Json -Compress)) }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Downloader verification changed private data.' }
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 # Exercise the installed GUI-subsystem executable headlessly, including its child worker.
 $expected = Get-Content -LiteralPath (Join-Path $installDirectory 'Samples/expected-results.json') -Raw | ConvertFrom-Json -AsHashtable
@@ -183,7 +237,7 @@ if ($LASTEXITCODE -ne 0 -or $manualStatus.source_count -ne 20 -or $manualStatus.
 @'
 import os,pathlib,sqlite3
 with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'library/catalog.sqlite3') as db:
- assert db.execute('PRAGMA user_version').fetchone()[0]==3
+ assert db.execute('PRAGMA user_version').fetchone()[0]==4
  assert db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0]==20
 '@ | python -
 if ($LASTEXITCODE -ne 0) { throw 'Public source migration or duplicate persistence failed.' }
@@ -213,14 +267,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.4.1 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.4.1.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.4.1/ComplyPH-Setup-0.4.1.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'af2795394e6e8c5edb79316b8e46217efef209892589f449b5daaa9a53aed3de') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.5.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.5.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.5.0/ComplyPH-Setup-0.5.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e5010f31eb8b34053faf5a7d4cf5a7e5d817e45dfa5dfd92f192dd7dfcdd9edc') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.4.1 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.5.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -238,7 +292,9 @@ $result = [ordered]@{
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
     private_schema = 3; validated_check_count = 3; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
-    public_schema = 3; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
+    public_schema = 4; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
+    downloader_isolation_passed = $true; updater_no_approval_no_network_passed = $true
+    public_https_probe_passed = $liveResponseObserved; public_https_probe_results = $liveProbeResults
     synthetic_fixture_count = $readerResults.Count; reader_results = $readerResults
     interactive_windows_ui_tested = $false
 }

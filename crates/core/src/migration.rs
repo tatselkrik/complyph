@@ -124,7 +124,7 @@ pub fn import(source: &Path, target: &Path) -> Result<WorkspacePaths> {
     let result = (|| {
         for (relative, maximum) in [
             ("private/workspace.sqlite3", 3),
-            ("library/catalog.sqlite3", 3),
+            ("library/catalog.sqlite3", 4),
         ] {
             let original = source.join(relative);
             if !original.is_file() {

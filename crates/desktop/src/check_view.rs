@@ -61,6 +61,12 @@ impl CheckView {
         document: &Document,
         saved: Option<&SavedExtraction>,
     ) -> Option<ReviewAction> {
+        if catalog
+            .reference_has_downloaded_changes(complyph_checks::SOURCE_KEY)
+            .unwrap_or(false)
+        {
+            ui.colored_label(AMBER,"An online publication change is saved for this rule source. These checks still cite the preserved version; review source and rule currency before relying on the findings. See Legal library → Source updates and downloaded history.");
+        }
         if !self.visible {
             widgets::card().show(ui,|ui| {
                 ui.label(RichText::new("Findings").font(heading(20.0)));

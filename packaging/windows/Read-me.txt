@@ -1,4 +1,4 @@
-ComplyPH 0.5.0 - Local legal sources
+ComplyPH 0.6.0 - Source update checks
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -57,10 +57,21 @@ it is not a shared multi-user store. SQLite is not encrypted by the app. Removin
 a document entry deletes its cache and reports, preserving the original file.
 Uninstall preserves active data, backups and original documents.
 
-The app has no HTTP client, AI or document upload feature. Daily source updates,
-watched folders and in-app OCR remain planned. Report-copy actions
+The desktop has no HTTP client, AI or document upload feature. The separate
+AppContainer updater checks approved agency URLs only. Watched folders and
+in-app OCR remain planned. Report-copy actions
 place private report text on your clipboard only when requested.
 
 This Windows build is unsigned and may trigger SmartScreen.
 Checks and limitations: https://github.com/tatselkrik/complyph/blob/main/docs/VERIFICATION.md
 Source: MIT. Fonts: SIL OFL. See THIRD_PARTY_NOTICES.txt.
+
+Source updates: open a reference > Source updates and downloaded history.
+Review the official URL and choose Approve daily checks. No URL is enabled by
+default. Use Check approved sources now for an immediate batch. Daily checks
+run while the app is open; closing the app stops its updater.
+
+Downloaded changes remain separate, hash-checked copies awaiting review. Use
+Update review needed to filter the library, save a copy and record notes.
+Earlier references and report citations are retained. A byte change may be a
+webpage layout change and does not automatically change checking rules.
