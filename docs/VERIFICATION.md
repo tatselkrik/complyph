@@ -2,7 +2,7 @@
 
 ## Automated Rust checks
 
-The workspace includes reader/rule/store tests plus source-update and isolation tests, with one deliberately ignored stalled-child fixture. The supervisor test invokes and terminates that fixture; it is not an untested feature. Formatting and workspace Clippy pass with warnings denied. Builds use the lockfile and pinned Rust toolchain.
+The workspace passes 62 tests on Windows and 61 on Linux, covering the reader, rules, storage, source updates and isolation, with one deliberately ignored stalled-child fixture. The supervisor test invokes and terminates that fixture; it is not an untested feature. Formatting and workspace Clippy pass with warnings denied. Builds use the lockfile and pinned Rust toolchain.
 
 - Five rule-validation tests cover independently transcribed Article 83/87/86 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, and actual PDF/DOCX checking fixtures.
 - Thirteen private-store tests cover retained references/preferences/caches, schema 1/2 → 3, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
@@ -24,6 +24,8 @@ This observation covers those runs, not every possible operating-system action. 
 
 The native Linux interface is checked using synthetic data: document selection, extraction, disabled/enabled check action, three applicability controls, accuracy confirmation, local execution, saved findings with original paragraph locations, Reports history and the library's 19 saved / 14 agency / 3 uploaded / 2 provisional display. The connected review is checked for independent pane scrolling, passage jumps/highlighting, complete offline provisions, related-rule tabs and saved-report reopening. The source-intake flow was also exercised end to end: themed file selection, bounded extraction, invalid-date rejection, required comparison confirmation, pending import, library count/status refresh, search and offline reading with saved citation metadata. No private user employment document was used.
 
+The v0.6.0 source-update interface was exercised with an explicitly synthetic downloaded-copy fixture: pending-change filtering, source history, required review notes, immutable review records, local export with a matching SHA-256 hash, and the centered export dialog. The original reference and private document store were preserved. This fixture did not contact an agency or represent a legal amendment.
+
 ## Windows release gate
 
 GitHub Actions repeats formatting, all Rust tests and Clippy on Windows/MSVC, builds both executables with a static C runtime, packages NSIS/app ZIP and runs an isolated install test. Windows-specific ACL/process-enumeration code also passes a Linux-to-Windows GNU target type check; actual runtime permissions are checked on Windows.
@@ -36,7 +38,8 @@ The isolated Windows test refuses pre-existing installations/data roots. It requ
 4. All seven installed reader cases through the real child worker, expected text/states/locations and preserved originals.
 5. All three installed checking cases, source pin/context audit data, expected findings and persisted private reports/caches.
 6. Installed public-source intake and duplicate handling, public schema 4, pending verification, unchanged private data and preserved source originals.
-7. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.4.1, and private/public/original preservation through uninstall.
+7. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.5.0, and private/public/original preservation through uninstall.
+8. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
 
 The publisher accepts packages only from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
 
