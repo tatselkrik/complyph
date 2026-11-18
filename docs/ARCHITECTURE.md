@@ -63,7 +63,7 @@ The desktop registers documents and reads them on a background thread. Before pa
 
 Untrusted parsing runs in a child process of the same executable, entered before UI/catalog initialization. Arguments carry the format only. Bytes go to stdin and a bounded JSON result returns through stdout; stderr is discarded. The child receives no inherited credentials/proxy configuration. No shell, Python, office installation, downloaded model, HTTP client, or API is used. The public library and updater do not depend on `complyph-core` or `complyph-extract`.
 
-The supervisor cancels obsolete jobs, ignores stale results, terminates a worker after 20 seconds, and bounds output at 12 MiB. Linux workers limit address space to 1 GiB, CPU time to 12 seconds, and core dumps to zero. Windows workers use a Job Object with 512 MiB process memory, 12 seconds of user CPU time, and one active process. Failure to apply limits produces a reader error. These resource guards are not filesystem/network confinement; The source downloader uses separate AppContainer confinement; parser resource guards do not provide that boundary.
+The supervisor cancels obsolete jobs, ignores stale results, terminates a worker after 20 seconds, and bounds output at 12 MiB. Linux workers limit address space to 1 GiB, CPU time to 12 seconds, and core dumps to zero. Windows workers use a Job Object with 512 MiB process memory, 12 seconds of user CPU time, and one active process. Failure to apply limits produces a reader error. Parser resource guards limit resource use; the source downloader uses separate AppContainer confinement for file and network access.
 
 Input is limited to 32 MiB. PDFs use pdf-extract/lopdf, keep physical page numbers, reject password protection, and limit pages to 300. Empty text pages are identified; an entirely textless PDF is **Needs OCR**. Columns, font mappings, table layout, images, and reading order can be imperfect. No partial PDF parsing error is reported as fully read text.
 
@@ -71,25 +71,13 @@ DOCX uses ZIP and namespace-aware streaming XML, with no archive extraction to d
 
 DOCX limits are 2,048 archive entries, 64 MiB declared expanded bytes, 16 MiB per selected XML part, 128 nesting levels, and 12,000 paragraphs. Both formats stop at 4 MiB of extracted text. Known failures have explicit statuses; a crash or exhausted worker is shown as a local reading failure with the original preserved.
 
-Cache data lives only in `private/workspace.sqlite3`, under a foreign key that deletes it with the document entry. The GUI uses text-only selectable labels, location navigation, search, and bounded display chunks. The legal-check action remains disabled. No compliance result can be inferred from a successful text read.
+Cache data lives only in `private/workspace.sqlite3`, under a foreign key that deletes it with the document entry. The GUI uses text-only selectable labels, location navigation, search, and bounded display chunks. Legal checks separately require supported scope, reading integrity and pinned source integrity. No compliance result can be inferred from a successful text read.
 
 The developer-only `--read-file PATH --output NEW-JSON-FILE [--data-dir PATH]` route exercises the same worker/cache pipeline without opening a window. It refuses to overwrite an existing file. Installer smoke tests use it only with bundled synthetic data; its JSON output contains private text if a developer deliberately selects a private document.
 
-## Planned source updates
-
-A separate updater will check approved public publication listings and registered documents daily, preserve valid new versions, and show last successful checks and failures per source. Missed checks should run when the PC becomes available.
-
-The updater must receive no private document contents, filenames, paths, hashes, employee/employer details, payroll data, findings, or document-derived queries. Requests must be determined by the public catalog. Validate source domains, redirects, file types, and acquisition metadata.
-
-The Windows implementation enforces AppContainer file/network restrictions and verifies file denial at runtime. Other platforms keep networking disabled. Crate separation alone is insufficient; the network child also requires OS isolation. Source acquisition, verification, applicability, and rule coverage remain distinct. A new source version does not silently activate a new legal interpretation.
+## Manual source import
 
 Manual source import uses the same bounded child parser as private reading, without registering a private document. Source metadata validation and transactional writes live in `complyph-library`, which has no private-store, parser or HTTP dependency. Public schema 3 adds explicit manual-pending/user-checked provenance. The selected public bytes and location-labelled reading text are saved with their hashes, domains, dates and verification notes; absolute local source paths are omitted. Manual URLs cannot replace bundled entries. New same-URL file hashes append immutable versions; duplicates retain their recorded metadata. User checks never become agency-download verification or activate a rule. See [legal sources](LEGAL_SOURCES.md).
-
-## Connected review
-
-The document reader and findings use independent scroll areas. Evidence navigation checks the document hash and exact original location before locating a whitespace-normalized passage. Original UTF-8 byte spans drive highlighting and display-chunk selection; unrelated or changed content is never guessed. Repeated matches are explicit.
-
-Supporting provisions are resolved from the report's source key, raw hash and reading-text hash. The library returns the exact stored version, then the viewer opens the full mapped article or related implementing rule. A later source cannot silently replace a historical citation. The viewer renders preserved text without browser or network access.
 
 ## Connected review navigation
 

@@ -47,6 +47,11 @@ impl Default for SourceUpdates {
             changed: false,
             export: FileDialog::new()
                 .title("Save downloaded source copy")
+                .default_size([760.0, 500.0])
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show_devices(false)
+                .show_removable_devices(false)
+                .show_hidden_option(false)
                 .as_modal(true),
             export_id: None,
         }
@@ -84,7 +89,7 @@ impl SourceUpdates {
             ui.label(RichText::new("Source update checks").font(heading(17.0)));
             let approved=self.watches.iter().filter(|w|w.enabled).count();
             let pending=self.changes.values().flatten().filter(|c|c.reviewed_at.is_none()).count();
-            widgets::muted(ui,&format!("{approved} approved URLs · {pending} downloaded changes awaiting review"));
+            widgets::muted(ui,&format!("Approved URLs: {approved} · Downloads awaiting review: {pending}"));
             if cfg!(windows){widgets::muted(ui,"Approved URLs are checked daily while the app is open. Missed checks run at the next launch. Approve a URL inside its source's local reader.");}
             else{widgets::muted(ui,"Online checks require the Windows AppContainer downloader. This build keeps networking disabled.");}
             if self.receiver.is_some(){ui.horizontal(|ui|{ui.spinner();ui.label("Checking approved public sources…");});}
@@ -118,7 +123,7 @@ impl SourceUpdates {
             });
             if let Some(enabled)=action{
                 let result=if enabled{catalog.set_update_watch(id,url,true)}else{catalog.disable_update_watch(id)};
-                match result{Ok(())=>{self.changed=true;self.message=Some(if enabled{"URL approved. The next check will run while the app is open."}else{"Source checks disabled. Downloaded history is retained."}.into());},Err(e)=>self.message=Some(e.to_string())}
+                match result{Ok(())=>{self.changed=true;self.message=Some(if enabled && cfg!(windows){"URL approved. The next check will run while the app is open."}else if enabled{"URL approval saved. Online checks require the Windows build."}else{"Source checks disabled. Downloaded history is retained."}.into());},Err(e)=>self.message=Some(e.to_string())}
             }
             if let Some(w)=watch{
                 ui.label(format!("{} · last attempt: {}",if w.enabled{"Approved"}else{"Disabled"},time(w.last_attempt)));
@@ -136,7 +141,7 @@ impl SourceUpdates {
                     ui.add(egui::Label::new(format!("SHA-256: {}",change.content_sha256)).wrap().selectable(true));
                     if widgets::secondary(ui,"Save downloaded copy…").clicked(){
                         let extension=match change.mime.as_str(){"application/pdf"=>"pdf","text/html"=>"html","text/plain"=>"txt",_=>"docx"};
-                        self.export=FileDialog::new().title("Save downloaded source copy").default_file_name(&format!("source-change-{}.{}",change.id,extension)).as_modal(true);
+                        self.export=FileDialog::new().title("Save downloaded source copy").default_size([760.0,500.0]).anchor(egui::Align2::CENTER_CENTER,[0.0,0.0]).show_devices(false).show_removable_devices(false).show_hidden_option(false).default_file_name(&format!("source-change-{}.{}",change.id,extension)).as_modal(true);
                         self.export.save_file();self.export_id=Some(change.id);
                     }
                     if let Some(note)=&change.review_note{ui.label(format!("Reviewed {}: {note}",time(change.reviewed_at)));}
@@ -244,6 +249,7 @@ fn run_checker(directory: PathBuf, due: bool, cancel: &AtomicBool) -> Result<Str
     // Userenv needs these coordinator-local profile locations for AppContainer
     // setup. They are never fields of a source HTTP request.
     for name in [
+        "SystemDrive",
         "SystemRoot",
         "WINDIR",
         "TEMP",

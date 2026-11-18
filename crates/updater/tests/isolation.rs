@@ -61,6 +61,7 @@ fn appcontainer_cannot_open_the_catalog_private_store_or_original_document() {
     let mut command = Command::new(env!("CARGO_BIN_EXE_complyph-updater"));
     command.arg("--self-test-isolation").env_clear();
     for name in [
+        "SystemDrive",
         "SystemRoot",
         "WINDIR",
         "TEMP",

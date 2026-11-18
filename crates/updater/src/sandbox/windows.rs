@@ -352,9 +352,26 @@ impl Launcher {
             self.executable.display()
         ));
         let mut environment = Vec::new();
-        for name in ["SystemRoot", "WINDIR"] {
+        // CreateProcess also maps the AppContainer's per-user directories. It
+        // needs the fixed Windows profile variables in the child's environment
+        // block, even though the lowbox cannot read the user's profile. Never
+        // inherit arbitrary application variables or credentials. Keep names in
+        // Windows' required case-insensitive alphabetical order.
+        for name in [
+            "APPDATA",
+            "LOCALAPPDATA",
+            "SystemDrive",
+            "SystemRoot",
+            "TEMP",
+            "TMP",
+            "USERPROFILE",
+            "WINDIR",
+        ] {
             if let Some(value) = std::env::var_os(name) {
-                environment.extend(wide(format!("{name}={}", value.to_string_lossy())));
+                let mut entry = std::ffi::OsString::from(name);
+                entry.push("=");
+                entry.push(value);
+                environment.extend(wide(entry));
             }
         }
         environment.push(0u16);
