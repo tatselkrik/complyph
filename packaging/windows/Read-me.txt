@@ -1,4 +1,4 @@
-ComplyPH 0.9.1 - Local OCR and folder intake
+ComplyPH 0.10.0 - Service incentive leave checks
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -36,16 +36,17 @@ or reports above 200 pages. Exports do not recheck current originals or laws.
 Read PDF/DOCX text locally, compare it with the original, then choose Check document.
 Confirm scope for normal daily working hours, ordinary-day overtime additional
 premium, night shift differential, regular meal periods and consecutive weekly rest.
-The new checks compare 60 meal minutes and 24 consecutive rest hours after every
-six consecutive normal work days, under confirmed standard coverage. Shorter paid
-meals and exceptional rest-day arrangements need separate review; their full saved
-implementing rules are available offline. Earlier three-check reports are retained.
-Results include passages, article citations,
-source/document hashes and unresolved states. Saved findings appear in Reports.
-These five numeric comparisons are not legal certification or a compliance verdict.
+For service incentive leave, establish employee coverage, qualifying service and
+exceptions separately, and record the review period and eligibility basis. Only
+then compare explicit annual paid SIL days with five. Unsupported wording, unpaid
+or pooled leave and uncertain eligibility stay unresolved. Open Article 95 and
+Book III Rule V offline for eligibility, exceptions and other leave provisions.
+Existing reports keep their original findings. Results include passages, source
+and document hashes and unresolved states. These six numeric comparisons are not
+legal certification or a compliance verdict.
 No Philippine lawyer has certified the rules. Other legal domains are not checked.
 
-Samples includes seven fictional reader cases and three focused-check fixtures.
+Samples includes seven fictional reader cases, three earlier check fixtures and five SIL cases.
 All are test data, not legal templates. Reader limits: 32 MiB, 300 PDF pages,
 4 MiB text and a 20-second worker timeout. Run local OCR recognizes up to 20 PDF pages offline, with a 120-second limit.
 Inspect page text and low-confidence flags, then separately confirm every OCR

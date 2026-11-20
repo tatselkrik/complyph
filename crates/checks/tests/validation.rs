@@ -14,6 +14,7 @@ fn context() -> Context {
         night_differential: Covered,
         meal_period: Covered,
         weekly_rest: Covered,
+        service_incentive_leave: Default::default(),
     }
 }
 fn report(text: &str) -> Report {
@@ -60,8 +61,7 @@ fn ocr_numbers_require_explicit_confirmation_and_valid_reading_provenance() {
         }],
     });
     assert!(
-        review(&input, "synthetic", context())
-            .findings
+        review(&input, "synthetic", context()).findings[..5]
             .iter()
             .all(|f| f.outcome == NeedsReview)
     );
@@ -74,8 +74,7 @@ fn ocr_numbers_require_explicit_confirmation_and_valid_reading_provenance() {
     );
     input.ocr.as_mut().unwrap().model_sha256 = "changed".into();
     assert!(
-        review(&input, "synthetic", covered)
-            .findings
+        review(&input, "synthetic", covered).findings[..5]
             .iter()
             .all(|f| f.outcome == NeedsReview)
     );
@@ -106,11 +105,11 @@ fn independent_article_boundaries_exact_decimal_and_favourable_terms() {
         );
         assert_eq!(result.findings.len(), RULE_COUNT);
         assert!(
-            result.findings[3..]
+            result.findings[3..5]
                 .iter()
                 .all(|f| f.outcome == StatedTermMeetsMinimum)
         );
-        assert!(result.findings.iter().all(|f| f.evidence.len() == 1));
+        assert!(result.findings[..5].iter().all(|f| f.evidence.len() == 1));
         assert_eq!(result.source_sha256, SOURCE_SHA256);
         let round_trip: Review =
             serde_json::from_str(&serde_json::to_string(&result).unwrap()).unwrap();
@@ -134,6 +133,10 @@ fn coverage_and_reading_integrity_are_required() {
         night_differential: Applicability::OutsideScope,
         meal_period: Applicability::OutsideScope,
         weekly_rest: Applicability::OutsideScope,
+        service_incentive_leave: SilScope {
+            employee_coverage: Applicability::OutsideScope,
+            ..Default::default()
+        },
     };
     assert!(
         review(&input, "sha", outside)
@@ -144,16 +147,14 @@ fn coverage_and_reading_integrity_are_required() {
     let mut partial = input.clone();
     partial.warnings.push("Unread image on page two".into());
     assert!(
-        review(&partial, "sha", context())
-            .findings
+        review(&partial, "sha", context()).findings[..5]
             .iter()
             .all(|f| f.outcome == NeedsReview)
     );
     partial.warnings.clear();
     partial.status = Status::NeedsOcr;
     assert!(
-        review(&partial, "sha", context())
-            .findings
+        review(&partial, "sha", context()).findings[..5]
             .iter()
             .all(|f| f.outcome == NeedsReview)
     );
@@ -247,14 +248,14 @@ fn meal_and_weekly_rest_boundaries_use_independent_exact_thresholds() {
         );
         let result = review(&report(&text), "sha", context());
         assert_eq!(
-            result.findings[3..]
+            result.findings[3..5]
                 .iter()
                 .map(|f| f.outcome)
                 .collect::<Vec<_>>(),
             expected,
             "{text}"
         );
-        assert!(result.findings[3..].iter().all(|f| f.evidence.len() == 1
+        assert!(result.findings[3..5].iter().all(|f| f.evidence.len() == 1
             && matches!(
                 f.evidence[0].location,
                 Location::WordParagraph { paragraph: 1, .. }
@@ -262,7 +263,7 @@ fn meal_and_weekly_rest_boundaries_use_independent_exact_thresholds() {
     }
     let alternative = "Time-off for regular meals shall be 60 minutes.\nEmployees shall receive 24 consecutive hours of weekly rest after every 6 consecutive normal work days.";
     assert!(
-        review(&report(alternative), "sha", context()).findings[3..]
+        review(&report(alternative), "sha", context()).findings[3..5]
             .iter()
             .all(|f| f.outcome == StatedTermMeetsMinimum)
     );
@@ -310,7 +311,7 @@ fn meal_and_rest_exceptions_ambiguity_and_incomplete_terms_never_pass() {
     }
     let missing = review(&report("Fictional policy introduction."), "sha", context());
     assert!(
-        missing.findings[3..]
+        missing.findings[3..5]
             .iter()
             .all(|f| f.outcome == NeedsEvidence)
     );
@@ -325,7 +326,7 @@ fn meal_and_rest_exceptions_ambiguity_and_incomplete_terms_never_pass() {
         excluded,
     );
     assert!(
-        exceptions.findings[3..]
+        exceptions.findings[3..5]
             .iter()
             .all(|f| f.outcome == complyph_checks::Outcome::OutsideScope)
     );
@@ -396,7 +397,7 @@ fn synthetic_pdf_and_docx_use_real_extraction_locations() {
         );
         let result = review(&extracted, "synthetic", context());
         assert!(
-            result.findings.iter().all(|f| f.outcome == expected),
+            result.findings[..5].iter().all(|f| f.outcome == expected),
             "{name}: {:?}",
             result
                 .findings

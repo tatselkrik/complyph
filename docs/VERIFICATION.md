@@ -1,12 +1,13 @@
-# Verification — ComplyPH 0.9.1
+# Verification — ComplyPH 0.10.0
 
 ## Automated Rust checks
 
-The native Linux suite passes 79 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
+The native Linux suite passes 87 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
 
-- Nine rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, actual five-finding PDF/DOCX fixtures, and earlier three-rule context/report compatibility.
+- Nine rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, the original PDF/DOCX fixtures plus an unconfirmed sixth SIL finding, and earlier three-rule context/report compatibility.
+- Seven SIL rule tests independently cover five paid days, exact decimal boundaries and written values; separate eligibility facts and required basis; exemptions, special regimes and unknown service; unsupported/unpaid/pooled/conditional/quoted/conflicting wording; a condition in the next paragraph; OCR provenance/confirmation; and earlier five-rule context/report retention. Five real PDF/Word fixtures are reviewed through the actual executable, preserving originals and confirming saved eligibility/citations in PDF export.
 - Nineteen private-store tests cover retained references/preferences/caches, schema 1/2/3/4 → 5, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
-- Nine executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
+- Ten executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
 - Five parser tests cover independent reader outcomes, physical PDF pages, Word paragraph/table/header locations, XML/Unicode/entities/revisions, malformed documents and resource limits.
 - Nine desktop unit tests cover passage ranges, changed/missing evidence, Unicode/chunks, complete article boundaries, related-rule rendering, nested-pane visibility after a passage jump and cancellation/termination. The nested-pane regression reproduces the original off-screen viewport before the fix. Seventeen public-catalog tests cover all 19 sources, 14/3/2 provenance counts, tampering including provisional sources, export, idempotency, legacy schemas, concurrent import, historical source lookup and metadata-only bundle upgrades, manual URL/date/domain validation, comparison-note requirements, immutable manual history and bundled-source protection. Three path tests cover legacy discovery, ambiguity and empty directories.
 
@@ -21,6 +22,8 @@ The native Linux suite passes 79 tests covering the reader, rules, storage, sour
 These are technical tests, not qualified legal certification. See [rule scope, independent cases and limitations](VALIDATED_CHECKS.md). Synthetic files contain no real employee/employer records.
 
 ## Offline observation
+
+The v0.10.0 SIL diagnostic ran under `strace -f -e trace=network` on the fictional issue DOCX. The bounded reader, pinned-source validation and private review persistence completed with **zero observed network system calls**. Missing SIL eligibility correctly remained needing context.
 
 The v0.9.1 OCR diagnostic ran under `strace -f -e trace=network` on the two-page fictional policy PDF. Local PDFium rendering, Tesseract recognition and private cache persistence completed with **zero observed network system calls**. The English model hash and physical page locations were retained.
 
@@ -46,6 +49,8 @@ The v0.7.0 native five-rule flow was checked with the synthetic baseline: meal/w
 
 The v0.8.0 native tracking workflow was checked with fictional data: required reviewer/name fields, a document-review note, finding Acknowledged → Resolved with reasons, saved history and centered PDF file selection. The exported report completed successfully. Reopening the connected review showed **Human follow-up: Resolved** beside the unchanged **Potential issue** and original evidence. The generated PDF was inspected separately; no private user employment data was used.
 
+The v0.10.0 native SIL flow was checked using the fictional four-day Word case: reopening unknown eligibility, jumping to and highlighting paragraph 3, opening full Article 95 and Rule V sections 1–6, selecting each of the three scope facts, entering a synthetic eligibility basis, separately confirming operative text, and saving a new potential-issue finding. The basis and facts remained visible beside the original paragraph. No private user document was used.
+
 The v0.9.1 native UI was checked end to end: rerunning local OCR, recognized page/word counts, reopening a saved unconfirmed review, the separate OCR checkbox keeping the run button disabled until confirmed, and saving a new source-cited review. The folder picker enabled intake for three synthetic files; only one content copy appeared in Documents, the partial file stayed waiting, no review was started, and the pause checkbox persisted as disabled in schema 5. No private user document was used.
 
 ## Windows release gate
@@ -59,16 +64,17 @@ The isolated Windows test refuses pre-existing installations/data roots. It requ
 3. Public catalog status of 19 sources in seven domains, with 14 agency downloads, 3 identity-checked uploads and 2 provisional copies; no successful runtime update is claimed.
 4. All seven installed reader cases through the real child worker, expected text/states/locations and preserved originals.
 5. All three installed checking cases, source pin/context audit data, expected findings and persisted private reports/caches.
-6. Installed reviewer notes, acknowledged/resolved history, stale-action refusal, unchanged original review JSON, PDF export/overwrite refusal and re-reading all five findings, Unicode text and transitions through the installed child parser.
+6. Installed reviewer notes, acknowledged/resolved history, stale-action refusal, unchanged original review JSON, PDF export/overwrite refusal and re-reading all six findings, Unicode text and transitions through the installed child parser.
 7. Installed public-source intake and duplicate handling, public schema 4, pending verification, unchanged private data and preserved source originals.
-8. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.8.0, and private/public/original preservation through uninstall.
+8. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.9.1, and private/public/original preservation through uninstall.
 9. Installed OCR on three fixtures using packaged libraries, exact model/renderer identifiers, unchanged originals, and the separate human confirmation gate.
 10. Installed local watched-folder intake, partial-file waiting, duplicate suppression and absence of automatic reviews, followed by preservation of the complete schema-5 workspace.
-11. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
+11. Installed SIL fixtures and each unknown-fact/empty-basis gate, unchanged originals, saved eligibility/citation data and re-reading the SIL PDF through the installed parser.
+12. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
 
 The publisher accepts packages only from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, reviewer-history/PDF evidence, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
 
-Interactive Windows display scaling, assistive technology, account-specific permissions and every device's drag/drop behavior remain target-PC checks. The build is unsigned. No promise is made that extraction reproduces every font/layout/object/revision or that five matching numeric terms establish complete legal compliance.
+Interactive Windows display scaling, assistive technology, account-specific permissions and every device's drag/drop behavior remain target-PC checks. The build is unsigned. No promise is made that extraction reproduces every font/layout/object/revision or that six matching numeric terms establish complete legal compliance.
 
 ## Remaining scope
 

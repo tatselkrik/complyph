@@ -79,13 +79,21 @@ fn real_ocr_preserves_pages_originals_cache_and_requires_separate_accuracy_confi
         ));
         let saved: SavedReview = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
         assert!(saved.review.ocr.is_some());
-        assert!(saved.review.findings.iter().all(|f| f.outcome
+        assert!(saved.review.findings[..5].iter().all(|f| f.outcome
             == if confirmed {
                 complyph_checks::Outcome::PotentialIssue
             } else {
                 complyph_checks::Outcome::NeedsReview
             }));
     }
+    // Old five-rule scope never establishes eligibility for the added SIL comparison.
+    let last: SavedReview =
+        serde_json::from_slice(&fs::read(temp.path().join("confirmed-true.json")).unwrap())
+            .unwrap();
+    assert_eq!(
+        last.review.findings[5].outcome,
+        complyph_checks::Outcome::NeedsContext
+    );
     // Non-OCR reopening reuses the recognized cache without returning to blank text.
     let output = temp.path().join("cached.json");
     assert!(execute(

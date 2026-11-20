@@ -5,14 +5,14 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::LazyLock;
 
-pub const ENGINE: &str = "complyph-labor-3";
+pub const ENGINE: &str = "complyph-labor-4";
 pub const RULE_COUNT: usize = RULES.len();
 pub const SOURCE_KEY: &str = "labor-code-reference";
 pub const SOURCE_SHA256: &str = "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0";
 pub const SOURCE_TEXT_SHA256: &str =
     "c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f";
 pub const SOURCE_URL: &str = "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974";
-pub const LIMITATION: &str = "Five stated numeric terms only. This is not a compliance opinion. Eligibility, actual hours/payments/rest, amendments, shortened paid meals, rest-day exceptions, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
+pub const LIMITATION: &str = "Six stated numeric terms only. This is not a compliance opinion. Eligibility, actual hours/payments/rest/leave, amendments, shortened paid meals, rest-day exceptions, SIL service/exemptions/equivalent benefits, leave valuation/commutation, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -31,6 +31,71 @@ impl Applicability {
         }
     }
 }
+
+/// Human-established facts for the standard Article 95 comparison, never inferred.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SilScope {
+    pub employee_coverage: Applicability,
+    pub qualifying_service: Applicability,
+    /// Covered means the reviewer established that no applicable exception applies.
+    pub exceptions: Applicability,
+    pub basis: String,
+}
+impl SilScope {
+    pub fn applicability(&self) -> Applicability {
+        let facts = [
+            self.employee_coverage,
+            self.qualifying_service,
+            self.exceptions,
+        ];
+        if facts.contains(&Applicability::OutsideScope) {
+            return Applicability::OutsideScope;
+        }
+        let basis = self.basis.trim();
+        if facts.iter().all(|f| *f == Applicability::Covered)
+            && !basis.is_empty()
+            && self.basis.len() <= 4000
+            && !self
+                .basis
+                .chars()
+                .any(|c| c.is_control() && c != '\n' && c != '\t')
+        {
+            Applicability::Covered
+        } else {
+            Applicability::Unknown
+        }
+    }
+    pub fn details(&self) -> [(&'static str, &'static str); 3] {
+        use Applicability::*;
+        [
+            (
+                "Employee coverage",
+                match self.employee_coverage {
+                    Unknown => "Not established",
+                    Covered => "Confirmed within the standard Article 95 regime",
+                    OutsideScope => "Outside this standard regime / special arrangement",
+                },
+            ),
+            (
+                "Qualifying service",
+                match self.qualifying_service {
+                    Unknown => "Not established",
+                    Covered => "At least one qualifying year confirmed",
+                    OutsideScope => "Qualifying service not met for this review",
+                },
+            ),
+            (
+                "Exceptions",
+                match self.exceptions {
+                    Unknown => "Not reviewed / uncertain",
+                    Covered => "Reviewed; no applicable exception established",
+                    OutsideScope => "Exception or alternative benefit established",
+                },
+            ),
+        ]
+    }
+}
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Context {
     #[serde(default)]
@@ -45,6 +110,9 @@ pub struct Context {
     pub meal_period: Applicability,
     #[serde(default)]
     pub weekly_rest: Applicability,
+    /// Earlier contexts must not silently establish service or exception facts.
+    #[serde(default)]
+    pub service_incentive_leave: SilScope,
 }
 impl Context {
     /// Resolve by stable rule ID so historical/reordered findings retain their scope.
@@ -55,6 +123,7 @@ impl Context {
             "PH-LAB-086-01" => self.night_differential,
             "PH-LAB-085-01" => self.meal_period,
             "PH-LAB-091-01" => self.weekly_rest,
+            "PH-LAB-095-01" => self.service_incentive_leave.applicability(),
             _ => Applicability::Unknown,
         }
     }
@@ -121,7 +190,7 @@ struct Rule {
     patterns: [&'static str; 2],
     topic: &'static str,
 }
-const RULES: [Rule; 5] = [
+const RULES: [Rule; 6] = [
     Rule {
         id: "PH-LAB-083-01",
         title: "Normal daily working hours",
@@ -187,6 +256,19 @@ const RULES: [Rule; 5] = [
         ],
         topic: r"(?i)\bweekly\s+rest\b|\brest[- ]days?\b|\bconsecutive\s+(?:normal\s+)?work\s*days?\b",
     },
+    Rule {
+        id: "PH-LAB-095-01",
+        title: "Annual paid service incentive leave",
+        article: "Labor Code, Article 95; implementing rules, Book III, Rule V",
+        quote: "Every employee who has rendered at least one year of service shall be entitled to a yearly service incentive leave of five days with pay.",
+        threshold: 500,
+        upper: false,
+        patterns: [
+            r"(?i)^(?:annual|yearly) service incentive leave(?: entitlement)? (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?|zero|one|two|three|four|five|six|seven|eight|nine|ten) days with pay$",
+            r"(?i)^paid service incentive leave(?: entitlement)? (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?|zero|one|two|three|four|five|six|seven|eight|nine|ten) days (?:per year|annually|each year|per annum)$",
+        ],
+        topic: r"(?i)\bservice[- ]incentive[- ]leave\b|\bSIL\b",
+    },
 ];
 static MATCHERS: LazyLock<Vec<(Vec<Regex>, Regex)>> = LazyLock::new(|| {
     RULES
@@ -205,6 +287,15 @@ static MATCHERS: LazyLock<Vec<(Vec<Regex>, Regex)>> = LazyLock::new(|| {
 
 /// Exact decimal comparison; no floating-point rounding of legal boundaries.
 fn hundredths(value: &str) -> Option<u32> {
+    // Only the SIL patterns accept these words. Existing rule syntax stays numeric.
+    if let Some(number) = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    ]
+    .iter()
+    .position(|v| value.eq_ignore_ascii_case(v))
+    {
+        return Some(number as u32 * 100);
+    }
     let (whole, fraction) = value.split_once('.').unwrap_or((value, ""));
     let scale = match fraction.len() {
         0 => 0,
@@ -219,6 +310,12 @@ fn hundredths(value: &str) -> Option<u32> {
         .checked_add(scale)
 }
 fn segments(text: &str) -> Vec<String> {
+    split_statements(text, false)
+}
+fn sil_sentences(text: &str) -> Vec<String> {
+    split_statements(text, true)
+}
+fn split_statements(text: &str, preserve_qualifiers: bool) -> Vec<String> {
     let mut result = vec![];
     let mut start = 0;
     for (i, c) in text.char_indices() {
@@ -226,7 +323,10 @@ fn segments(text: &str) -> Vec<String> {
             && i > 0
             && text.as_bytes()[i - 1].is_ascii_digit()
             && text.as_bytes().get(i + 1).is_some_and(u8::is_ascii_digit);
-        if matches!(c, '.' | '!' | '?' | ';' | '\n' | '\r') && !decimal {
+        if (matches!(c, '.' | '!' | '?')
+            || (!preserve_qualifiers && matches!(c, ';' | '\n' | '\r')))
+            && !decimal
+        {
             if start < i {
                 result.push(
                     text[start..i]
@@ -272,11 +372,36 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
                 .map(move |text| (&unit.location, text))
         })
         .collect();
+    let sil_clauses: Vec<_> = report
+        .units
+        .iter()
+        .flat_map(|unit| {
+            sil_sentences(&unit.text)
+                .into_iter()
+                .map(move |text| (&unit.location, text))
+        })
+        .collect();
+    // A following explicit condition cannot be detached into an apparently
+    // unconditional numeric grant. Unrelated full policy interpretation is manual.
+    static FOLLOWING_CONDITION: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?i)^(?:but\s+)?(?:if\b|unless\b|except\b|subject\s+to\b|provided\s+that\b)")
+            .expect("fixed SIL condition")
+    });
+    let sil_condition = sil_clauses
+        .windows(2)
+        .any(|pair| MATCHERS[5].1.is_match(&pair[0].1) && FOLLOWING_CONDITION.is_match(&pair[1].1))
+        || report.units.iter().any(|unit| {
+            MATCHERS[5].1.is_match(&unit.text)
+                && sil_sentences(&unit.text)
+                    .iter()
+                    .any(|s| FOLLOWING_CONDITION.is_match(s))
+        });
     let findings = RULES.iter().enumerate().map(|(i, rule)| {
         let (patterns, topic) = &MATCHERS[i];
         let mut evidence = vec![];
-        let mut ambiguous = false;
-        for (location, text) in &clauses {
+        let sil=rule.id=="PH-LAB-095-01";
+        let mut ambiguous = sil && sil_condition;
+        for (location, text) in if sil {&sil_clauses} else {&clauses} {
             if !topic.is_match(text) { continue; }
             let number = patterns.iter().find_map(|p| p.captures(text).and_then(|c| hundredths(&c[1])));
             ambiguous |= number.is_none();
@@ -285,6 +410,7 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
         }
         let values: Vec<_> = evidence.iter().filter_map(|e| e.hundredths).collect();
         let (outcome, explanation) = match context.applicability(rule.id) {
+            Applicability::Unknown if rule.id=="PH-LAB-095-01" => (Outcome::NeedsContext, "Establish employee coverage, at least one qualifying year, applicable exceptions and a recorded eligibility basis before comparing annual paid service incentive leave."),
             Applicability::Unknown => (Outcome::NeedsContext, "Confirm this rule's coverage, review period and exceptions before interpreting a numeric comparison."),
             Applicability::OutsideScope => (Outcome::OutsideScope, "The reviewer marked this rule outside scope; no threshold conclusion was made."),
             Applicability::Covered if !context.operative_terms_confirmed => (Outcome::NeedsContext, "Confirm that extracted statements are accurate, operative terms rather than examples or quotations."),

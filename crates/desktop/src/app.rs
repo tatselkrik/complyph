@@ -542,7 +542,7 @@ impl ComplyApp {
                 (
                     "03",
                     "Review with citations",
-                    "Five focused labour checks",
+                    "Six focused labour checks",
                     true,
                 ),
             ] {
@@ -1000,7 +1000,7 @@ impl ComplyApp {
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
             ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Reviewer notes and PDF reports")).size(12.5).color(MUTED));
             ui.add_space(8.0);
-            ui.label(RichText::new("Five source-cited labour checks are available. Other-domain rules remain planned. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
+            ui.label(RichText::new("Six source-cited labour checks are available. Other-domain rules remain planned. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
         });
     }
 

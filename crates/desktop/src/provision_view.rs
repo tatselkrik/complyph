@@ -52,6 +52,7 @@ fn sections(text: &str, rule: &str, quote: &str) -> Result<Vec<Section>, String>
         "PH-LAB-086-01" => &[86, 82],
         "PH-LAB-085-01" => &[85, 82, 84],
         "PH-LAB-091-01" => &[91, 82, 92],
+        "PH-LAB-095-01" => &[95, 82],
         _ => return Err("This saved rule has no supported offline provision mapping.".into()),
     };
     let mut sections: Vec<_> = numbers
@@ -81,6 +82,11 @@ fn sections(text: &str, rule: &str, quote: &str) -> Result<Vec<Section>, String>
             "\nRule III\nWEEKLY REST PERIODS\n",
             "\nRule IV\n",
             "Book III · Rule III",
+        )),
+        "PH-LAB-095-01" => Some((
+            "\nRule V\nSERVICE INCENTIVE LEAVE\n",
+            "\nRule VI\n",
+            "Book III · Rule V",
         )),
         _ => None,
     };
@@ -228,6 +234,12 @@ mod tests {
                 91,
                 4,
             ),
+            (
+                "PH-LAB-095-01",
+                "yearly service incentive leave of five days with pay",
+                95,
+                3,
+            ),
         ] {
             let found = sections(text, rule, quote).unwrap();
             assert_eq!(found.len(), count);
@@ -258,6 +270,20 @@ mod tests {
                 let irr = &text[found[3].range.clone()];
                 assert!(irr.contains("When work on rest day authorized"));
                 assert!(!irr.contains("HOLIDAYS WITH PAY"));
+            }
+            if article == 95 {
+                assert!(selected.contains("regularly employing less than ten employees"));
+                let irr = &text[found[2].range.clone()];
+                for expected in [
+                    "whether continuous or broken",
+                    "authorized absences and paid regular holidays",
+                    "vacation leave with pay of at least five days",
+                    "commutable to its money equivalent",
+                    "Relation to agreements",
+                ] {
+                    assert!(irr.contains(expected));
+                }
+                assert!(!irr.contains("SERVICE CHARGES"));
             }
         }
         assert!(sections(text, "PH-LAB-083-01", "incorrect quote").is_err());
@@ -301,6 +327,10 @@ mod tests {
             (
                 "PH-LAB-091-01",
                 "twenty-four consecutive hours after every six consecutive normal work days",
+            ),
+            (
+                "PH-LAB-095-01",
+                "yearly service incentive leave of five days with pay",
             ),
         ] {
             let source = view.source.as_mut().unwrap();

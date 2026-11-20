@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.9.1"><img src="https://img.shields.io/badge/version-0.9.1-142B49?style=flat-square" alt="Version 0.9.1"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.10.0"><img src="https://img.shields.io/badge/version-0.10.0-142B49?style=flat-square" alt="Version 0.10.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -19,11 +19,13 @@ Inspect document text beside findings, follow evidence to its original location,
 
 ## About
 
-**ComplyPH** is a free, open-source Rust desktop application for reviewing Philippine workplace documents against a local reference library. It reads PDF and DOCX files locally and provides five focused labour checks with visible applicability, evidence and source citations. No AI model, account, API key or subscription is required.
+**ComplyPH** is a free, open-source Rust desktop application for reviewing Philippine workplace documents against a local reference library. It reads PDF and DOCX files locally and provides six focused labour checks with visible applicability, evidence and source citations. No AI model, account, API key or subscription is required.
 
-The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IBIG. Automated checking currently covers **normal daily working hours, ordinary-day overtime premium, night shift differential, regular meal periods and consecutive weekly rest**. Each comparison requires confirmed applicability; shortened paid meals and exceptional rest-day arrangements need separate review. Other domains are reference collections awaiting validated rules.
+The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IBIG. Automated checking currently covers **normal daily working hours, ordinary-day overtime premium, night shift differential, regular meal periods, consecutive weekly rest and annual paid service incentive leave**. Each comparison requires confirmed applicability; shortened paid meals and exceptional rest-day arrangements need separate review. SIL requires three separately confirmed eligibility facts and a recorded basis before comparing five paid days per year. Other domains are reference collections awaiting validated rules.
 
 ## Features
+
+- **Service incentive leave:** confirm employee coverage, qualifying service and exceptions; record the basis, inspect the annual paid entitlement and open Article 95 / Book III Rule V offline.
 
 - **Connected review:** independently scrolling document and findings panes; click a finding to jump to and highlight its PDF page or Word paragraph/table passage.
 - **Offline legal provisions:** open the complete supporting article, related provisions or full preserved source from the exact version used by a saved review.
@@ -45,9 +47,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.9.1/ComplyPH-Setup-0.9.1.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.9.1/ComplyPH-Windows-x64-0.9.1.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.9.1/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.10.0/ComplyPH-Setup-0.10.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.10.0/ComplyPH-Windows-x64-0.10.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.10.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -111,7 +113,7 @@ Document text, file references, hashes, findings and reviewer history remain in 
 
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The directory is restricted to its owning account, SYSTEM and Administrators. It is not a shared multi-user store, and SQLite is not encrypted by the app. Detected earlier workspaces are copied and checked, with the old data retained as backup. **Settings → Import an existing workspace** handles custom locations and refuses to overwrite a populated destination.
 
-Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. PDF OCR is available for up to 20 pages per run, with a 120-second elapsed limit and explicit human confirmation. Recognition estimates do not establish text accuracy. Images, text boxes, layout and revisions can affect coverage. The five numeric checks are technically tested, not qualified legal certification.
+Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. PDF OCR is available for up to 20 pages per run, with a 120-second elapsed limit and explicit human confirmation. Recognition estimates do not establish text accuracy. Images, text boxes, layout and revisions can affect coverage. The six numeric checks are technically tested, not qualified legal certification.
 
 Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, document-version comparison, library promotion/comparison and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
 

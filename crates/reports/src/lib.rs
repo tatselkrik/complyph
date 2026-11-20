@@ -245,6 +245,32 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
             workflow.status(&finding.rule_id).label()
         ))?;
         layout.muted(&format!("Rule: {}", finding.rule_id))?;
+        if finding.rule_id == "PH-LAB-095-01" {
+            for (label, value) in workflow
+                .saved
+                .review
+                .context
+                .service_incentive_leave
+                .details()
+            {
+                layout.body(&format!("{label}: {value}"))?;
+            }
+            let basis = workflow
+                .saved
+                .review
+                .context
+                .service_incentive_leave
+                .basis
+                .trim();
+            layout.body(&format!(
+                "Reviewer-provided eligibility basis: {}",
+                if basis.is_empty() {
+                    "Not recorded"
+                } else {
+                    basis
+                }
+            ))?;
+        }
         if finding.evidence.is_empty() {
             layout.body("No supported document passage was recorded.")?;
         }
@@ -544,11 +570,11 @@ mod tests {
                 night_differential: Covered,
                 meal_period: Covered,
                 weekly_rest: Covered,
+                service_incentive_leave: Default::default(),
             },
         );
         assert!(
-            review
-                .findings
+            review.findings[..5]
                 .iter()
                 .all(|f| f.outcome == complyph_checks::Outcome::PotentialIssue)
         );
@@ -623,7 +649,7 @@ mod tests {
             "Human follow-up status: Resolved",
             "Automated result: Potential issue",
             "Original evidence is retained.",
-            "complyph-labor-3",
+            "complyph-labor-4",
             "complyph-pdf-1",
             "Document review notes",
             "does not change the automated result",

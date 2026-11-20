@@ -1,0 +1,77 @@
+{
+  "Synthetic SIL baseline.pdf": {
+    "context": {
+      "operative_terms_confirmed": true,
+      "normal_hours": "unknown",
+      "ordinary_overtime": "unknown",
+      "night_differential": "unknown",
+      "service_incentive_leave": {
+        "employee_coverage": "covered",
+        "qualifying_service": "covered",
+        "exceptions": "covered",
+        "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+      }
+    },
+    "outcome": "stated_term_meets_minimum"
+  },
+  "Synthetic SIL issues.docx": {
+    "context": {
+      "operative_terms_confirmed": true,
+      "normal_hours": "unknown",
+      "ordinary_overtime": "unknown",
+      "night_differential": "unknown",
+      "service_incentive_leave": {
+        "employee_coverage": "covered",
+        "qualifying_service": "covered",
+        "exceptions": "covered",
+        "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+      }
+    },
+    "outcome": "potential_issue"
+  },
+  "Synthetic SIL ambiguous.docx": {
+    "context": {
+      "operative_terms_confirmed": true,
+      "normal_hours": "unknown",
+      "ordinary_overtime": "unknown",
+      "night_differential": "unknown",
+      "service_incentive_leave": {
+        "employee_coverage": "covered",
+        "qualifying_service": "covered",
+        "exceptions": "covered",
+        "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+      }
+    },
+    "outcome": "needs_review"
+  },
+  "Synthetic SIL excluded.docx": {
+    "context": {
+      "operative_terms_confirmed": true,
+      "normal_hours": "unknown",
+      "ordinary_overtime": "unknown",
+      "night_differential": "unknown",
+      "service_incentive_leave": {
+        "employee_coverage": "covered",
+        "qualifying_service": "covered",
+        "exceptions": "outside_scope",
+        "basis": "Fictional 2026 review: establishment regularly employs nine workers. Small-establishment exception confirmed for this standard comparison; contractual or other leave rights require separate review."
+      }
+    },
+    "outcome": "outside_scope"
+  },
+  "Synthetic SIL unknown service.docx": {
+    "context": {
+      "operative_terms_confirmed": true,
+      "normal_hours": "unknown",
+      "ordinary_overtime": "unknown",
+      "night_differential": "unknown",
+      "service_incentive_leave": {
+        "employee_coverage": "covered",
+        "qualifying_service": "unknown",
+        "exceptions": "covered",
+        "basis": "Fictional 2026 review: covered employment and exceptions reviewed; qualifying service records have not been provided."
+      }
+    },
+    "outcome": "needs_context"
+  }
+}

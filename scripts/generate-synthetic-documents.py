@@ -129,7 +129,7 @@ for name,lines in [('Synthetic labour issues.docx',issues),('Synthetic labour am
   info=ZipInfo('word/document.xml',date_time=(2026,1,1,0,0,0));info.compress_type=ZIP_DEFLATED;z.writestr(info,xml)
 (OUT/'expected-checks.json').write_text(json.dumps({
  'context':{'operative_terms_confirmed':True,'normal_hours':'covered','ordinary_overtime':'covered','night_differential':'covered','meal_period':'covered','weekly_rest':'covered'},
- 'expected':{'Synthetic labour baseline.pdf':['stated_term_meets_minimum']*5,'Synthetic labour issues.docx':['potential_issue']*5,'Synthetic labour ambiguous.docx':['needs_review']*5},
+ 'expected':{'Synthetic labour baseline.pdf':['stated_term_meets_minimum']*5+['needs_context'],'Synthetic labour issues.docx':['potential_issue']*5+['needs_context'],'Synthetic labour ambiguous.docx':['needs_review']*5+['needs_context']},
  'limitation':'Synthetic fixtures only. Reviewer-confirmed coverage, net hours and operative statements; no legal certification.'},indent=2)+'\n')
 print('Created three synthetic labour-check fixtures.')
 

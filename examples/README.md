@@ -18,12 +18,18 @@ Open ComplyPH and use **Try a synthetic sample: PDF / Word / Scan**, or choose a
 
 The development-only [generator](../scripts/generate-synthetic-documents.py) uses Python, ReportLab, Pillow, and pypdf. The installed application uses Rust readers; it needs none of those tools. The encrypted fixture may differ byte for byte when regenerated because encryption uses randomness.
 
-A successful reading result means that text was extracted. The separate focused-check fixtures below test five numeric terms; reading alone produces no legal conclusion.
+A successful reading result means that text was extracted. The separate focused-check fixtures below test the original five numeric terms; reading alone produces no legal conclusion.
 
-## Focused labour check fixtures (0.4.0)
+## Original labour check fixtures
 
-`Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime, 10% additional night differential for 22:00–06:00, 60 regular-meal minutes and 24 consecutive weekly-rest hours after six consecutive normal work days. `Synthetic labour issues.docx` states 9 hours / 20% / 5% / 30 meal minutes / 12 consecutive rest hours. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate, incomplete night window, shortened paid meal and split rest. With the separate reviewer-confirmed standard scope, expected outcomes are five meets / five potential issues / five unresolved. Shortened paid meals are not automatically unlawful; the fixture stays unresolved pending human review. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.
+`Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime, 10% additional night differential for 22:00–06:00, 60 regular-meal minutes and 24 consecutive weekly-rest hours after six consecutive normal work days. `Synthetic labour issues.docx` states 9 hours / 20% / 5% / 30 meal minutes / 12 consecutive rest hours. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate, incomplete night window, shortened paid meal and split rest. With the separate reviewer-confirmed standard scope, expected outcomes are five meets / five potential issues / five unresolved. Shortened paid meals are not automatically unlawful; the fixture stays unresolved pending human review. The added sixth SIL finding remains unconfirmed because these earlier contexts have no SIL eligibility facts. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.
 
 ## Legal-source intake fixture (0.5.0)
 
 `synthetic-source.json` contains fictional citation metadata for use with `Synthetic employment.pdf`. Its `example.invalid` URL is reserved test data and must not be fetched. This intentionally fictional source starts awaiting verification and tests local intake, duplicate handling and source history. Importing it does not create a legal checking rule. No sample is an authoritative legal publication.
+
+## Service incentive leave fixtures (0.10.0)
+
+`expected-sil.json` supplies separate fictional eligibility contexts and expected SIL outcomes for five cases: five annual paid days (meets this threshold), four paid days (potential issue), unsupported/conditional leave (needs human review), a confirmed small-establishment exception with nine regular employees (outside scope), and missing qualifying service (needs context). Other rules remain unconfirmed. These are test cases, not eligibility decisions or employment templates. The installed Samples folder includes all five.
+
+Regenerate only the SIL cases with `python scripts/generate-sil-fixtures.py` (development only, requires ReportLab). The application does not need Python.

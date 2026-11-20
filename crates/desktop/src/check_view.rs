@@ -108,6 +108,7 @@ impl CheckView {
                 "Covered employment under Articles 82 and 85 and Book III, Rule I, Section 7; ordinary regular-meal time-off measured in minutes. Confirm that the standard 60-minute requirement applies. Shorter compensable meals, on-call/interrupted meals, emergencies and other special arrangements need separate review; mark outside scope or leave unestablished when unsure.");
             scope(ui,"Consecutive weekly rest period", &mut self.context.weekly_rest,
                 "Covered employment under Articles 82 and 91 and Book III, Rule III; uninterrupted weekly rest after every six consecutive normal work days. Confirm that Article 92/implementing-rule rest-day work exceptions and special-sector arrangements do not govern the term being checked. This does not assess actual schedules, religious preference, rest-day work or premium pay.");
+            sil_scope(ui,&mut self.context.service_incentive_leave);
             widgets::muted(ui,"For all rules, establish Article 82 exclusions (including managerial, field, dependent family, domestic/personal service and qualifying paid-by-results workers), applicable amendments, contracts and CBAs. Leave scope unestablished when unsure.");
             ui.add_space(10.0);
             ui.checkbox(&mut self.context.operative_terms_confirmed,"I compared the extracted text with the original; these are operative policy terms, not examples or quotations.");
@@ -115,7 +116,7 @@ impl CheckView {
                 ui.colored_label(AMBER,"This text was recognized by OCR. High confidence does not establish that numbers, tables or clauses are correct.");
                 ui.checkbox(&mut self.context.ocr_text_confirmed,"I checked every OCR page, including numbers and low-confidence words, against the original.");
             }
-            widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, or consecutive weekly-rest hours after six consecutive normal work days. Other wording stays unresolved.");
+            widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, consecutive weekly-rest hours after six consecutive normal work days, or annual paid service incentive leave days. Other wording stays unresolved.");
             if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready && (s.report.ocr.is_none() || self.context.ocr_text_confirmed))).clicked() {
                 self.result=None;
                 let result=(|| {
@@ -143,6 +144,89 @@ impl CheckView {
         }
         None
     }
+}
+fn sil_scope(ui: &mut Ui, scope: &mut complyph_checks::SilScope) {
+    ui.add_space(16.0);
+    ui.separator();
+    ui.add_space(8.0);
+    ui.label(
+        RichText::new("Service incentive leave · Article 95")
+            .strong()
+            .size(16.0),
+    );
+    widgets::muted(
+        ui,
+        "This comparison needs three established facts and a recorded basis. Leave uncertain facts unestablished. Outside this standard rule does not mean the person has no leave rights.",
+    );
+    sil_question(
+        ui,
+        "SIL employee coverage",
+        &mut scope.employee_coverage,
+        [
+            "Not established",
+            "Confirmed within the standard Article 95 regime",
+            "Outside this standard regime / special arrangement",
+        ],
+        "Review applicable law and employee coverage, including government, managerial/staff, field/unsupervised and personal-service categories. Special regimes, including household work, need separate review. Do not infer exclusion from a job title, task/piece/commission pay or probationary status alone.",
+    );
+    sil_question(
+        ui,
+        "SIL qualifying service",
+        &mut scope.qualifying_service,
+        [
+            "Not established",
+            "At least one qualifying year confirmed",
+            "Qualifying service not met for this review",
+        ],
+        "Establish service for the people/period under review. Rule V counts at least 12 months, continuous or broken, including authorized absences and paid regular holidays; an agreed/established shorter working year can qualify. This does not require 365 actual work days or necessarily continuous service.",
+    );
+    sil_question(
+        ui,
+        "SIL exception and benefit review",
+        &mut scope.exceptions,
+        [
+            "Not reviewed / uncertain",
+            "Reviewed; no applicable exception established",
+            "Exception or alternative benefit established",
+        ],
+        "Review existing SIL, vacation leave with pay of at least five days, establishments regularly employing fewer than ten employees, any valid Secretary-granted exemption, and other applicable exclusions. Ten employees is not fewer than ten. Do not infer an equivalent vacation benefit from a generic pooled-leave figure. More favourable contracts/CBAs and employer practice still need separate review.",
+    );
+    ui.label("SIL eligibility basis (required for a numeric comparison)");
+    ui.add(
+        egui::TextEdit::multiline(&mut scope.basis)
+            .desired_rows(3)
+            .desired_width(f32::INFINITY)
+            .char_limit(1000),
+    );
+    widgets::muted(
+        ui,
+        "Record the review period, coverage/service records and exception/headcount/alternative-benefit basis. Saved locally with the review; this is a reviewer assertion, not independently verified eligibility.",
+    );
+}
+fn sil_question(
+    ui: &mut Ui,
+    title: &str,
+    value: &mut Applicability,
+    labels: [&str; 3],
+    explanation: &str,
+) {
+    ui.add_space(8.0);
+    ui.label(RichText::new(title).strong());
+    let choices = [
+        Applicability::Unknown,
+        Applicability::Covered,
+        Applicability::OutsideScope,
+    ];
+    let selected = choices.iter().position(|v| v == value).unwrap_or(0);
+    egui::ComboBox::from_id_salt(title)
+        .selected_text(labels[selected])
+        .width(ui.available_width().clamp(180.0, 390.0))
+        .show_ui(ui, |ui| {
+            for (choice, label) in choices.into_iter().zip(labels) {
+                ui.selectable_value(value, choice, label);
+            }
+        });
+    widgets::muted(ui, explanation);
 }
 fn scope(ui: &mut Ui, title: &str, value: &mut Applicability, explanation: &str) {
     ui.add_space(10.0);
@@ -194,6 +278,11 @@ pub fn show_review(
             ui.label(&finding.explanation);
             let scope=saved.review.context.applicability(&finding.rule_id);
             widgets::muted(ui,&format!("Confirmed scope: {}",scope.label()));
+            if finding.rule_id=="PH-LAB-095-01" {
+                for (label,value) in saved.review.context.service_incentive_leave.details() {widgets::muted(ui,&format!("{label}: {value}"));}
+                let basis=saved.review.context.service_incentive_leave.basis.trim();
+                if !basis.is_empty() {ui.add(egui::Label::new(format!("Reviewer-provided eligibility basis: {basis}")).wrap().selectable(true));}
+            }
             for evidence in &finding.evidence {
                 if ui.add_enabled(can_jump,egui::Button::new(format!("Show passage · {}",evidence.location.label())).small().wrap()).clicked(){
                     action=Some(ReviewAction::Passage{hash:saved.review.document_sha256.clone(),evidence:evidence.clone()});

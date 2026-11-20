@@ -13,21 +13,24 @@
       "stated_term_meets_minimum",
       "stated_term_meets_minimum",
       "stated_term_meets_minimum",
-      "stated_term_meets_minimum"
+      "stated_term_meets_minimum",
+      "needs_context"
     ],
     "Synthetic labour issues.docx": [
       "potential_issue",
       "potential_issue",
       "potential_issue",
       "potential_issue",
-      "potential_issue"
+      "potential_issue",
+      "needs_context"
     ],
     "Synthetic labour ambiguous.docx": [
       "needs_review",
       "needs_review",
       "needs_review",
       "needs_review",
-      "needs_review"
+      "needs_review",
+      "needs_context"
     ]
   },
   "limitation": "Synthetic fixtures only. Reviewer-confirmed coverage, net hours and operative statements; no legal certification."

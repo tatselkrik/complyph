@@ -1,6 +1,6 @@
 # Local OCR and watched folders
 
-ComplyPH 0.9.1 adds recognition for scanned PDFs and optional folder intake. Both features process documents locally. The Windows installer/ZIP includes the OCR runtime and English recognition data. No OCR service, account, API key, subscription, separate installation command or runtime model download is used.
+ComplyPH supports recognition for scanned PDFs and optional folder intake. Both features process documents locally. The Windows installer/ZIP includes the OCR runtime and English recognition data. No OCR service, account, API key, subscription, separate installation command or runtime model download is used.
 
 ## Read a scanned PDF
 
@@ -16,7 +16,7 @@ Recognized text is cached privately against the original file hash. Reopening an
 
 OCR limits are **20 PDF pages**, **32 MiB input**, **4 MiB recognized text**, a **2,800-pixel maximum page side**, **90 seconds of worker CPU time** and **120 seconds elapsed time**. Pages are rendered at up to 200 DPI, reduced to fit the pixel bound. Recognition uses English Tesseract data and is not a guarantee for handwriting, other scripts, faint scans, complex tables, stamps, signatures or page layout. Empty pages remain unestablished. Split longer scanned PDFs locally before processing. Password-protected PDFs require an unprotected local copy; OCR does not request a password or bypass encryption.
 
-The original PDF is never changed. OCR produces a private reading cache, not a rewritten/searchable PDF. Public legal-source intake still uses its selectable-text reader; this feature applies to private document review. Numeric rules remain the same five labour comparisons. Engine `complyph-labor-3` adds the OCR input gate and preserved recognition metadata, not additional legal coverage.
+The original PDF is never changed. OCR produces a private reading cache, not a rewritten/searchable PDF. Public legal-source intake still uses its selectable-text reader; this feature applies to private document review. Numeric rules remain the same six labour comparisons. Engine `complyph-labor-4` retains the OCR input gate and recognition metadata introduced by engine 3, and adds the separately gated SIL comparison.
 
 ## Watch an intake folder
 

@@ -45,7 +45,7 @@ See [addition assessment](ADDITIONS.md) for source links, completeness observati
 
 The imported Labor Code and OSHS files add reference material; later amendments, special-sector applicability and amendment reconciliation remain outstanding. Agency originals for the provisional Pag-IBIG circulars still need exact comparison. No OSHS staffing/facilities matrix or contribution/remittance calculator has been validated. BIR/NIRC coverage remains incomplete. The 2025 PhilHealth premium advisory remains a dated reference.
 
-Five supported labour rules use the pinned **agency-downloaded Senate P.D. 442** reference, not the provisional or OCR-heavy additions. See [rule scope and validation](../docs/VALIDATED_CHECKS.md). Acquiring a reference does not create a validated checking rule.
+Six supported labour rules use the pinned **agency-downloaded Senate P.D. 442** reference, not the provisional or OCR-heavy additions. See [rule scope and validation](../docs/VALIDATED_CHECKS.md). Acquiring a reference does not create a validated checking rule.
 
 ## Reproducibility
 
