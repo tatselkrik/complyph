@@ -1,4 +1,4 @@
-# Verification — ComplyPH 0.9.0
+# Verification — ComplyPH 0.9.1
 
 ## Automated Rust checks
 
@@ -22,7 +22,7 @@ These are technical tests, not qualified legal certification. See [rule scope, i
 
 ## Offline observation
 
-The v0.9.0 OCR diagnostic ran under `strace -f -e trace=network` on the two-page fictional policy PDF. Local PDFium rendering, Tesseract recognition and private cache persistence completed with **zero observed network system calls**. The English model hash and physical page locations were retained.
+The v0.9.1 OCR diagnostic ran under `strace -f -e trace=network` on the two-page fictional policy PDF. Local PDFium rendering, Tesseract recognition and private cache persistence completed with **zero observed network system calls**. The English model hash and physical page locations were retained.
 
 
 The v0.8.0 PDF diagnostic was run under `strace -f -e trace=network` using the synthetic review and saved UI-created notes/status history. It exported the full three-page report with **zero observed network system calls**. PDF metadata confirms A4, embedded local fonts, no encryption and no JavaScript. Pages were rasterized and visually checked for readable layout and complete identifiers.
@@ -46,7 +46,7 @@ The v0.7.0 native five-rule flow was checked with the synthetic baseline: meal/w
 
 The v0.8.0 native tracking workflow was checked with fictional data: required reviewer/name fields, a document-review note, finding Acknowledged → Resolved with reasons, saved history and centered PDF file selection. The exported report completed successfully. Reopening the connected review showed **Human follow-up: Resolved** beside the unchanged **Potential issue** and original evidence. The generated PDF was inspected separately; no private user employment data was used.
 
-The v0.9.0 native UI was checked end to end: rerunning local OCR, recognized page/word counts, reopening a saved unconfirmed review, the separate OCR checkbox keeping the run button disabled until confirmed, and saving a new source-cited review. The folder picker enabled intake for three synthetic files; only one content copy appeared in Documents, the partial file stayed waiting, no review was started, and the pause checkbox persisted as disabled in schema 5. No private user document was used.
+The v0.9.1 native UI was checked end to end: rerunning local OCR, recognized page/word counts, reopening a saved unconfirmed review, the separate OCR checkbox keeping the run button disabled until confirmed, and saving a new source-cited review. The folder picker enabled intake for three synthetic files; only one content copy appeared in Documents, the partial file stayed waiting, no review was started, and the pause checkbox persisted as disabled in schema 5. No private user document was used.
 
 ## Windows release gate
 

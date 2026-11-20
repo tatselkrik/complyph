@@ -9,7 +9,7 @@ Unicode True
   !error "Pass /DUPDATER_EXE=path-to-complyph-updater.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "ComplyPH-Setup-0.9.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.9.1.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
@@ -29,10 +29,10 @@ SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
 BrandingText "ComplyPH - Local OCR and folder intake"
-VIProductVersion "0.9.0.0"
+VIProductVersion "0.9.1.0"
 VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
 VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local legal source installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.9.1"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
@@ -92,7 +92,7 @@ Section "ComplyPH" SEC_APP
   CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.9.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.9.1"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"

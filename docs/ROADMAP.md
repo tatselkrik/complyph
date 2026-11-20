@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.9.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.9.1. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.9.0
+## Available in 0.9.1
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -42,7 +42,7 @@ PDF reports, document/finding notes and status history have been available since
 
 ### 3. Local OCR and folder monitoring
 
-Local PDF OCR and optional nonrecursive folder intake are available in 0.9.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
+Local PDF OCR and optional nonrecursive folder intake are available in 0.9.1. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
 
 - [x] Read scanned PDF documents using local OCR, with page locations, low-confidence highlights, visible quality limits and separate text confirmation before checking.
 - [ ] Improve layout, font and embedded-content reading coverage.
@@ -52,7 +52,7 @@ Local PDF OCR and optional nonrecursive folder intake are available in 0.9.0. Se
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.9.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.9.1. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

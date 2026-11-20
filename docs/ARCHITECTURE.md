@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.9.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
+ComplyPH 0.9.1 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |

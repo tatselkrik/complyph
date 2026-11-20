@@ -1,6 +1,6 @@
 # Privacy
 
-## ComplyPH 0.9.0
+## ComplyPH 0.9.1
 
 ComplyPH runs locally. Selecting a PDF/DOCX registers its filename, canonical path, size, and modification time, then reads supported text in a local child process. Extracted text, paragraph/page/table locations, the original’s SHA-256 hash, reading state, and read date are saved in the private SQLite workspace. Preferences use the same workspace. The private workspace also stores human-confirmed scope and review reports containing passages, outcomes, source/rule identifiers and hashes. Private schema 4 also stores append-only document-review/finding notes, self-reported reviewer names, timestamps, status transitions and fingerprints binding them to the original saved review. Names are not authenticated identities or digital signatures. The five numeric checks are local and do not certify compliance.
 

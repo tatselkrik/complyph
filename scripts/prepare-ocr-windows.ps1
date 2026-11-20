@@ -21,6 +21,11 @@ set(VCPKG_TARGET_ARCHITECTURE x64)
 set(VCPKG_CRT_LINKAGE static)
 set(VCPKG_LIBRARY_LINKAGE dynamic)
 set(VCPKG_BUILD_TYPE release)
+# The shared JPEG codec forces a dynamic VC runtime upstream. Link this codec
+# statically into its consumers so a fresh PC needs no redistributable installer.
+if(PORT STREQUAL "libjpeg-turbo")
+    set(VCPKG_LIBRARY_LINKAGE static)
+endif()
 '@ | Set-Content (Join-Path $triplets 'x64-complyph-ocr.cmake') -Encoding ascii
 & (Join-Path $vcpkgRoot 'vcpkg.exe') install 'tesseract[core]:x64-complyph-ocr' "--overlay-triplets=$triplets" --disable-metrics
 if ($LASTEXITCODE -ne 0) { throw 'The pinned offline OCR engine could not be built.' }
@@ -50,4 +55,6 @@ Invoke-WebRequest 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast
 $files = @(Get-ChildItem $output -File | ForEach-Object { [ordered]@{ name=$_.Name; sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() } })
 [ordered]@{ tesseract='5.5.4'; vcpkg_commit=$commit; pdfium='8165'; language='eng'; model_sha256='7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2'; network_features=$false; files=$files } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $output 'runtime-manifest.json') -Encoding utf8
 if ($env:GITHUB_ENV) { "COMPLYPH_OCR_DIR=$output" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append }
+python (Join-Path $PSScriptRoot 'verify_ocr_runtime.py') $output
+if ($LASTEXITCODE -ne 0) { throw 'The OCR runtime has an unbundled dependency.' }
 Write-Output 'Prepared pinned local OCR libraries and licenses; URL support is disabled.'

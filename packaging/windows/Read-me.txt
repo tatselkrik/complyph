@@ -1,4 +1,4 @@
-ComplyPH 0.9.0 - Local OCR and folder intake
+ComplyPH 0.9.1 - Local OCR and folder intake
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,

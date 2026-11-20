@@ -1,6 +1,6 @@
 # Local OCR and watched folders
 
-ComplyPH 0.9.0 adds recognition for scanned PDFs and optional folder intake. Both features process documents locally. The Windows installer/ZIP includes the OCR runtime and English recognition data. No OCR service, account, API key, subscription, separate installation command or runtime model download is used.
+ComplyPH 0.9.1 adds recognition for scanned PDFs and optional folder intake. Both features process documents locally. The Windows installer/ZIP includes the OCR runtime and English recognition data. No OCR service, account, API key, subscription, separate installation command or runtime model download is used.
 
 ## Read a scanned PDF
 

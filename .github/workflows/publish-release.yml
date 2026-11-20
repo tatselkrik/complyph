@@ -132,6 +132,10 @@ jobs:
               for item in runtime['files']:
                   assert '/' not in item['name'] and chr(92) not in item['name']
                   assert hashlib.sha256(package.read(prefix + item['name'])).hexdigest() == item['sha256']
+              import sys
+              sys.path.insert(0, 'scripts')
+              from verify_ocr_runtime import verify
+              verify({item['name']: package.read(prefix + item['name']) for item in runtime['files']})
               for sample in [path.name for path in Path('examples').iterdir() if path.is_file()]:
                   matches = [name for name in package.namelist() if name.endswith('/Samples/' + sample)]
                   assert len(matches) == 1
