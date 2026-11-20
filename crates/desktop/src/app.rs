@@ -383,7 +383,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            concat!("SOURCE UPDATE CHECKS / ", env!("CARGO_PKG_VERSION")),
+            concat!("LABOUR WORK AND REST / ", env!("CARGO_PKG_VERSION")),
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -538,7 +538,7 @@ impl ComplyApp {
                 (
                     "03",
                     "Review with citations",
-                    "Three focused labour checks",
+                    "Five focused labour checks",
                     true,
                 ),
             ] {
@@ -977,9 +977,9 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Source update checks")).size(12.5).color(MUTED));
+            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Labour work and rest")).size(12.5).color(MUTED));
             ui.add_space(8.0);
-            ui.label(RichText::new("Three source-cited labour checks are available. Other-domain rules remain planned. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
+            ui.label(RichText::new("Five source-cited labour checks are available. Other-domain rules remain planned. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
         });
     }
 

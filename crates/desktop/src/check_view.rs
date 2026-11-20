@@ -94,7 +94,7 @@ impl CheckView {
         if self.editing || self.result.is_none() {
             widgets::card().show(ui, |ui| {
             ui.set_min_width(ui.available_width());
-            ui.label(RichText::new("Three focused labour checks").font(heading(21.0)));
+            ui.label(RichText::new(format!("{} focused labour checks",complyph_checks::RULE_COUNT)).font(heading(21.0)));
             widgets::muted(ui,"Confirm applicability for the period you are reviewing. The app cannot establish coverage from the document or a job title.");
             scope(ui,"Normal daily working hours", &mut self.context.normal_hours,
                 "Covered adult employment under Articles 82–85; standard eight-hour arrangement; stated hours are net working time, not a shift including unpaid meals. Excludes compressed/flexible schedules and special-sector or health-personnel arrangements.");
@@ -102,10 +102,14 @@ impl CheckView {
                 "Covered employment under Articles 82 and 87. Ordinary working days beyond eight hours only; the figure is an additional premium on the regular hourly wage. Holiday, rest-day and special arrangements require separate review.");
             scope(ui,"Night shift differential", &mut self.context.night_differential,
                 "Covered employment under Article 86 and Book III, Rule II; premium is additional to regular hourly wage for each hour 22:00–06:00. Check exclusions, including government, managerial/staff, field/unsupervised, domestic/personal service, qualifying paid-by-results work and retail/service establishments with not more than five workers.");
+            scope(ui,"Regular meal period", &mut self.context.meal_period,
+                "Covered employment under Articles 82 and 85 and Book III, Rule I, Section 7; ordinary regular-meal time-off measured in minutes. Confirm that the standard 60-minute requirement applies. Shorter compensable meals, on-call/interrupted meals, emergencies and other special arrangements need separate review; mark outside scope or leave unestablished when unsure.");
+            scope(ui,"Consecutive weekly rest period", &mut self.context.weekly_rest,
+                "Covered employment under Articles 82 and 91 and Book III, Rule III; uninterrupted weekly rest after every six consecutive normal work days. Confirm that Article 92/implementing-rule rest-day work exceptions and special-sector arrangements do not govern the term being checked. This does not assess actual schedules, religious preference, rest-day work or premium pay.");
             widgets::muted(ui,"For all rules, establish Article 82 exclusions (including managerial, field, dependent family, domestic/personal service and qualifying paid-by-results workers), applicable amendments, contracts and CBAs. Leave scope unestablished when unsure.");
             ui.add_space(10.0);
             ui.checkbox(&mut self.context.operative_terms_confirmed,"I compared the extracted text with the original; these are operative policy terms, not examples or quotations.");
-            widgets::muted(ui,"Supported statements use explicit numeric hours, an additional ordinary-day premium, or a night differential with its full time window. Other wording stays unresolved.");
+            widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, or consecutive weekly-rest hours after six consecutive normal work days. Other wording stays unresolved.");
             if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready)).clicked() {
                 self.result=None;
                 let result=(|| {
@@ -155,7 +159,7 @@ pub fn show_review(
     widgets::card().show(ui,|ui| {
         ui.set_min_width(ui.available_width());
         ui.label(RichText::new(format!("Findings · review #{}",saved.id)).font(heading(20.0)));
-        widgets::muted(ui,"Three supported numeric comparisons. No overall compliance verdict is produced.");
+        widgets::muted(ui,&format!("{} supported numeric comparisons in this saved review. No overall compliance verdict is produced.",saved.review.findings.len()));
         if current_hash.is_some() && !can_jump {
             ui.colored_label(AMBER,"This document has changed since the saved review. Evidence quotes remain available; passage navigation is disabled. Run a new review for this version.");
         }else if !can_jump {widgets::muted(ui,"Open the connected review and wait for text reading to navigate document passages.");}
@@ -169,7 +173,7 @@ pub fn show_review(
             let color=match finding.outcome {Outcome::PotentialIssue=>RED,Outcome::StatedTermMeetsMinimum=>GREEN,_=>AMBER};
             ui.colored_label(color,finding.outcome.label());
             ui.label(&finding.explanation);
-            let scope=[saved.review.context.normal_hours,saved.review.context.ordinary_overtime,saved.review.context.night_differential].get(index).copied().unwrap_or_default();
+            let scope=saved.review.context.applicability(&finding.rule_id);
             widgets::muted(ui,&format!("Confirmed scope: {}",scope.label()));
             for evidence in &finding.evidence {
                 if ui.add_enabled(can_jump,egui::Button::new(format!("Show passage · {}",evidence.location.label())).small().wrap()).clicked(){

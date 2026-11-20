@@ -1,4 +1,4 @@
-ComplyPH 0.6.0 - Source update checks
+ComplyPH 0.7.0 - Labour work and rest checks
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -21,9 +21,14 @@ mismatched legal snapshot is reported without substituting the latest version.
 
 Read PDF/DOCX text locally, compare it with the original, then choose Check document.
 Confirm scope for normal daily working hours, ordinary-day overtime additional
-premium and night shift differential. Results include passages, article citations,
+premium, night shift differential, regular meal periods and consecutive weekly rest.
+The new checks compare 60 meal minutes and 24 consecutive rest hours after every
+six consecutive normal work days, under confirmed standard coverage. Shorter paid
+meals and exceptional rest-day arrangements need separate review; their full saved
+implementing rules are available offline. Earlier three-check reports are retained.
+Results include passages, article citations,
 source/document hashes and unresolved states. Saved findings appear in Reports.
-These three numeric comparisons are not legal certification or a compliance verdict.
+These five numeric comparisons are not legal certification or a compliance verdict.
 No Philippine lawyer has certified the rules. Other legal domains are not checked.
 
 Samples includes seven fictional reader cases and three focused-check fixtures.

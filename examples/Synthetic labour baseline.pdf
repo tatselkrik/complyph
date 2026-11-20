@@ -38,7 +38,7 @@ endobj
 endobj
 7 0 obj
 <<
-/Length 531
+/Length 731
 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
@@ -48,6 +48,8 @@ BT 1 0 0 1 30 526 Tm (Fictional rule fixture; coverage is confirmed separately.)
 BT 1 0 0 1 30 502 Tm (Normal daily working hours are 8 hours.) Tj T* ET
 BT 1 0 0 1 30 478 Tm (Ordinary-day overtime premium is 25% of the regular hourly wage.) Tj T* ET
 BT 1 0 0 1 30 454 Tm (Night shift differential is 10% of the regular hourly wage for hours worked between 22:00 and 06:00.) Tj T* ET
+BT 1 0 0 1 30 430 Tm (Regular meal period is 60 minutes of time-off.) Tj T* ET
+BT 1 0 0 1 30 406 Tm (Weekly rest period is 24 consecutive hours after every six consecutive normal work days.) Tj T* ET
  
 endstream
 endobj
@@ -72,5 +74,5 @@ trailer
 /Size 8
 >>
 startxref
-1361
+1561
 %%EOF

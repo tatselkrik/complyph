@@ -50,6 +50,8 @@ fn sections(text: &str, rule: &str, quote: &str) -> Result<Vec<Section>, String>
         "PH-LAB-083-01" => &[83, 82, 84, 85],
         "PH-LAB-087-01" => &[87, 82, 90],
         "PH-LAB-086-01" => &[86, 82],
+        "PH-LAB-085-01" => &[85, 82, 84],
+        "PH-LAB-091-01" => &[91, 82, 92],
         _ => return Err("This saved rule has no supported offline provision mapping.".into()),
     };
     let mut sections: Vec<_> = numbers
@@ -64,20 +66,37 @@ fn sections(text: &str, rule: &str, quote: &str) -> Result<Vec<Section>, String>
     if !text[sections[0].range.clone()].contains(quote) || quote.trim().is_empty() {
         return Err("The report's legal quote does not match its mapped saved provision. No substitute was opened.".into());
     }
-    if rule == "PH-LAB-086-01" {
-        let marker = "\nRule II\nNIGHT SHIFT DIFFERENTIAL\n";
+    let related_rule = match rule {
+        "PH-LAB-085-01" => Some((
+            "\nRule 1\nHOURS OF WORK\n",
+            "\nRule I-A\n",
+            "Book III · Rule I",
+        )),
+        "PH-LAB-086-01" => Some((
+            "\nRule II\nNIGHT SHIFT DIFFERENTIAL\n",
+            "\nRule III\n",
+            "Book III · Rule II",
+        )),
+        "PH-LAB-091-01" => Some((
+            "\nRule III\nWEEKLY REST PERIODS\n",
+            "\nRule IV\n",
+            "Book III · Rule III",
+        )),
+        _ => None,
+    };
+    if let Some((marker, next, title)) = related_rule {
         let matches: Vec<_> = text.match_indices(marker).collect();
         let [(start, _)] = matches.as_slice() else {
-            return Err("The night-shift implementing rule is unavailable or ambiguous.".into());
+            return Err("The supporting implementing rule is unavailable or ambiguous.".into());
         };
         let end = text[start + 1..]
-            .find("\nRule III\n")
+            .find(next)
             .map(|end| start + 1 + end)
             .ok_or_else(|| {
                 "The implementing-rule boundary could not be established.".to_string()
             })?;
         sections.push(Section {
-            title: "Book III · Rule II".into(),
+            title: title.into(),
             range: start + 1..end,
         });
     }
@@ -176,7 +195,7 @@ impl ProvisionView {
 mod tests {
     use super::*;
     #[test]
-    fn exact_articles_and_night_rule_preserve_full_provisions_and_boundaries() {
+    fn exact_articles_and_related_rules_preserve_full_provisions_and_boundaries() {
         let text = include_str!("../../../library/starter/text/labor-code-reference.txt");
         for (rule, quote, article, count) in [
             (
@@ -197,6 +216,18 @@ mod tests {
                 86,
                 3,
             ),
+            (
+                "PH-LAB-085-01",
+                "not less than sixty minutes time-off for their regular meals",
+                85,
+                4,
+            ),
+            (
+                "PH-LAB-091-01",
+                "twenty-four consecutive hours after every six consecutive normal work days",
+                91,
+                4,
+            ),
         ] {
             let found = sections(text, rule, quote).unwrap();
             assert_eq!(found.len(), count);
@@ -215,6 +246,18 @@ mod tests {
                 assert!(irr.contains("not more than five (5) workers"));
                 assert!(irr.contains("Relation to agreements"));
                 assert!(!irr.contains("WEEKLY REST PERIODS"));
+            }
+            if article == 85 {
+                let irr = &text[found[3].range.clone()];
+                assert!(irr.contains("shorter meal period is credited as compensable hours"));
+                assert!(irr.contains("twenty (20) minutes"));
+                assert!(!irr.contains("HOURS OF WORK OF HOSPITAL"));
+            }
+            if article == 91 {
+                assert!(text[found[2].range.clone()].contains("emergencies"));
+                let irr = &text[found[3].range.clone()];
+                assert!(irr.contains("When work on rest day authorized"));
+                assert!(!irr.contains("HOLIDAYS WITH PAY"));
             }
         }
         assert!(sections(text, "PH-LAB-083-01", "incorrect quote").is_err());
@@ -249,6 +292,25 @@ mod tests {
             view.source.as_mut().unwrap().section = section;
             let mut output = ctx.run_ui(egui::RawInput::default(), |ui| view.show(ui.ctx()));
             output.textures_delta.clear();
+        }
+        for (rule, quote) in [
+            (
+                "PH-LAB-085-01",
+                "not less than sixty minutes time-off for their regular meals",
+            ),
+            (
+                "PH-LAB-091-01",
+                "twenty-four consecutive hours after every six consecutive normal work days",
+            ),
+        ] {
+            let source = view.source.as_mut().unwrap();
+            source.sections = sections(text, rule, quote).unwrap();
+            source.quote = quote.into();
+            for section in 0..view.source.as_ref().unwrap().sections.len() {
+                view.source.as_mut().unwrap().section = section;
+                let mut output = ctx.run_ui(egui::RawInput::default(), |ui| view.show(ui.ctx()));
+                output.textures_delta.clear();
+            }
         }
         view.source.as_mut().unwrap().full = true;
         let count = text_navigation::chunk_boundaries(text).len() - 1;

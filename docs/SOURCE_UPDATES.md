@@ -26,7 +26,7 @@ The first successful response is compared with the preserved reference bytes. La
 
 Downloads are public-reference candidates with their URL, resolved URL, time, type, byte count and SHA-256 hash. Earlier reference snapshots, downloads, citations and report hashes remain available. Export checks integrity and refuses to overwrite an existing destination. A recorded review note is retained with its time.
 
-Recording a review does not promote a download to a verified agency reference, replace the reader's curated text or update an automated rule. The three numeric checks continue to cite their pinned source. If that publication has downloaded changes, Review displays a source-currency warning; existing reports still open their exact historical provisions. Updating a checking rule requires separate source/rule validation.
+Recording a review does not promote a download to a verified agency reference, replace the reader's curated text or update an automated rule. The five numeric checks continue to cite their pinned source. If that publication has downloaded changes, Review displays a source-currency warning; existing reports still open their exact historical provisions. Updating a checking rule requires separate source/rule validation.
 
 A webpage layout, navigation or protection-page change can alter bytes without amending the law. An unchanged URL does not prove that an agency published no other issuance. These checks do not crawl linked pages, discover all new laws, determine effectivity dates or reconcile amendments. Approving a publication index can help surface new links for human review. In-app source-diff interpretation and reviewed promotion of downloaded references remain future work.
 

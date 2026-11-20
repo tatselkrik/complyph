@@ -18,11 +18,11 @@ Open ComplyPH and use **Try a synthetic sample: PDF / Word / Scan**, or choose a
 
 The development-only [generator](../scripts/generate-synthetic-documents.py) uses Python, ReportLab, Pillow, and pypdf. The installed application uses Rust readers; it needs none of those tools. The encrypted fixture may differ byte for byte when regenerated because encryption uses randomness.
 
-A successful reading result means that text was extracted. The separate focused-check fixtures below test three numeric terms; reading alone produces no legal conclusion.
+A successful reading result means that text was extracted. The separate focused-check fixtures below test five numeric terms; reading alone produces no legal conclusion.
 
 ## Focused labour check fixtures (0.4.0)
 
-`Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime and 10% additional night differential for 22:00–06:00. `Synthetic labour issues.docx` states 9 hours / 20% / 5%. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate and incomplete night window. With the separate reviewer-confirmed scope, expected outcomes are three meets / three potential issues / three unresolved. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.
+`Synthetic labour baseline.pdf` states 8 net daily working hours, 25% additional ordinary-day overtime, 10% additional night differential for 22:00–06:00, 60 regular-meal minutes and 24 consecutive weekly-rest hours after six consecutive normal work days. `Synthetic labour issues.docx` states 9 hours / 20% / 5% / 30 meal minutes / 12 consecutive rest hours. `Synthetic labour ambiguous.docx` contains a lunch-inclusive shift, unqualified all-in overtime rate, incomplete night window, shortened paid meal and split rest. With the separate reviewer-confirmed standard scope, expected outcomes are five meets / five potential issues / five unresolved. Shortened paid meals are not automatically unlawful; the fixture stays unresolved pending human review. See `expected-checks.json`. These are fictional test statements, not legal templates or certified compliant policies.
 
 ## Legal-source intake fixture (0.5.0)
 

@@ -107,16 +107,20 @@ print('Created seven synthetic reader fixtures and expected results in',OUT)
 # Focused rule fixtures: deliberately fictional, with independently stated outcomes.
 baseline=['Normal daily working hours are 8 hours.',
  'Ordinary-day overtime premium is 25% of the regular hourly wage.',
- 'Night shift differential is 10% of the regular hourly wage for hours worked between 22:00 and 06:00.']
+ 'Night shift differential is 10% of the regular hourly wage for hours worked between 22:00 and 06:00.',
+ 'Regular meal period is 60 minutes of time-off.',
+ 'Weekly rest period is 24 consecutive hours after every six consecutive normal work days.']
 # Keep every complete clause on one PDF line within the page width.
 stream=BytesIO(); c=canvas.Canvas(stream,pagesize=(842,595),invariant=1,pageCompression=0)
 c.setFont('Helvetica',10)
 for n,line in enumerate([BANNER,'Fictional rule fixture; coverage is confirmed separately.']+baseline): c.drawString(30,550-n*24,line)
 c.showPage();c.save()
 (OUT/'Synthetic labour baseline.pdf').write_bytes(stream.getvalue())
-issues=[baseline[0].replace('8 hours','9 hours'),baseline[1].replace('25%','20%'),baseline[2].replace('10%','5%')]
+issues=[baseline[0].replace('8 hours','9 hours'),baseline[1].replace('25%','20%'),baseline[2].replace('10%','5%'),baseline[3].replace('60 minutes','30 minutes'),baseline[4].replace('24 consecutive hours','12 consecutive hours')]
 ambiguous=['Normal daily working hours are 9 hours including unpaid lunch.',
- 'Overtime is paid at 125%.','Night shift differential is 10% of the regular hourly wage.']
+ 'Overtime is paid at 125%.','Night shift differential is 10% of the regular hourly wage.',
+ 'Regular meal period is 20 minutes paid as working time.',
+ 'Weekly rest period is 24 total hours in two separate breaks.']
 for name,lines in [('Synthetic labour issues.docx',issues),('Synthetic labour ambiguous.docx',ambiguous)]:
  with ZipFile(OUT/name,'w',ZIP_DEFLATED) as z:
   for part in ['[Content_Types].xml','_rels/.rels']:
@@ -124,7 +128,7 @@ for name,lines in [('Synthetic labour issues.docx',issues),('Synthetic labour am
   xml='<w:document xmlns:w="'+W+'"><w:body>'+p(BANNER)+p('Fictional fixture; no real agreement.')+''.join(p(line) for line in lines)+'</w:body></w:document>'
   info=ZipInfo('word/document.xml',date_time=(2026,1,1,0,0,0));info.compress_type=ZIP_DEFLATED;z.writestr(info,xml)
 (OUT/'expected-checks.json').write_text(json.dumps({
- 'context':{'operative_terms_confirmed':True,'normal_hours':'covered','ordinary_overtime':'covered','night_differential':'covered'},
- 'expected':{'Synthetic labour baseline.pdf':['stated_term_meets_minimum']*3,'Synthetic labour issues.docx':['potential_issue']*3,'Synthetic labour ambiguous.docx':['needs_review']*3},
+ 'context':{'operative_terms_confirmed':True,'normal_hours':'covered','ordinary_overtime':'covered','night_differential':'covered','meal_period':'covered','weekly_rest':'covered'},
+ 'expected':{'Synthetic labour baseline.pdf':['stated_term_meets_minimum']*5,'Synthetic labour issues.docx':['potential_issue']*5,'Synthetic labour ambiguous.docx':['needs_review']*5},
  'limitation':'Synthetic fixtures only. Reviewer-confirmed coverage, net hours and operative statements; no legal certification.'},indent=2)+'\n')
 print('Created three synthetic labour-check fixtures.')

@@ -694,7 +694,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-checks"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "complyph-extract",
  "complyph-library",
@@ -707,7 +707,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-core"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "complyph-checks",
  "complyph-extract",
@@ -722,7 +722,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-desktop"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "complyph-checks",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-extract"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "lopdf",
  "pdf-extract",
@@ -751,7 +751,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-library"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "chrono",
  "complyph-paths",
@@ -767,7 +767,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-paths"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "directories",
  "tempfile",
@@ -777,7 +777,7 @@ dependencies = [
 
 [[package]]
 name = "complyph-updater"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "complyph-library",
  "complyph-paths",

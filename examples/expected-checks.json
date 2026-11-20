@@ -3,10 +3,14 @@
     "operative_terms_confirmed": true,
     "normal_hours": "covered",
     "ordinary_overtime": "covered",
-    "night_differential": "covered"
+    "night_differential": "covered",
+    "meal_period": "covered",
+    "weekly_rest": "covered"
   },
   "expected": {
     "Synthetic labour baseline.pdf": [
+      "stated_term_meets_minimum",
+      "stated_term_meets_minimum",
       "stated_term_meets_minimum",
       "stated_term_meets_minimum",
       "stated_term_meets_minimum"
@@ -14,9 +18,13 @@
     "Synthetic labour issues.docx": [
       "potential_issue",
       "potential_issue",
+      "potential_issue",
+      "potential_issue",
       "potential_issue"
     ],
     "Synthetic labour ambiguous.docx": [
+      "needs_review",
+      "needs_review",
       "needs_review",
       "needs_review",
       "needs_review"

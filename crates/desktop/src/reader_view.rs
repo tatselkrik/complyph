@@ -223,7 +223,7 @@ impl ReaderView {
                             self.scroll_to_passage=false;
                             let text = if unit.text.is_empty() { "No selectable text on this page. It may be blank or require OCR." }
                                 else { &unit.text[boundaries[self.chunk]..boundaries[self.chunk + 1]] };
-                            egui::Frame::new().fill(IVORY).stroke(egui::Stroke::new(1.0, BORDER))
+                            let text_frame=egui::Frame::new().fill(IVORY).stroke(egui::Stroke::new(1.0, BORDER))
                                 .corner_radius(8).inner_margin(14).show(ui, |ui| {
                                 ui.set_min_width(ui.available_width());
                                 ScrollArea::vertical().id_salt(("private-reader", self.generation, self.unit, self.chunk))
@@ -232,6 +232,11 @@ impl ReaderView {
                                     text_navigation::highlighted_label(ui,text,&ranges,scroll);
                                 });
                             });
+                            if scroll.is_some() {
+                                // The inner text viewport may itself be below
+                                // the outer pane's clip after controls wrap.
+                                ui.scroll_to_rect(text_frame.response.rect,Some(egui::Align::Center));
+                            }
                         }
                     }
                     ui.add_space(8.0);
@@ -250,5 +255,79 @@ impl Drop for ReaderView {
         if let Some(cancel) = &self.cancel {
             cancel.store(true, Ordering::Relaxed);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use complyph_extract::{Format, Location, Report, TextUnit};
+
+    #[test]
+    fn passage_jump_scrolls_the_outer_pane_to_the_text_viewport() {
+        let location = Location::PdfPage { page: 1 };
+        let evidence = complyph_checks::Evidence {
+            location: location.clone(),
+            text: "Regular meal period is 60 minutes of time-off".into(),
+            hundredths: Some(6000),
+        };
+        let saved = SavedExtraction {
+            sha256: "synthetic".into(),
+            read_at: 0,
+            report: Report {
+                engine: complyph_extract::ENGINE.into(),
+                format: Format::Pdf,
+                status: Status::Ready,
+                summary: "PDF text read locally. Page numbers refer to the original PDF.".into(),
+                units: vec![TextUnit {
+                    location,
+                    text: format!(
+                        "{}{}.",
+                        "Fictional introductory paragraph.\n".repeat(30),
+                        evidence.text
+                    ),
+                }],
+                warnings: vec![complyph_extract::PDF_LAYOUT_WARNING.into()],
+            },
+        };
+        let mut view = ReaderView::default();
+        view.state = State::Finished(saved);
+        let ctx = egui::Context::default();
+        let mut offset = 0.0;
+        let mut frame = |view: &mut ReaderView, time: f64| {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(440.0, 520.0),
+                    )),
+                    time: Some(time),
+                    ..Default::default()
+                },
+                |ui| {
+                    let shown = ScrollArea::vertical()
+                        .id_salt("outer-reader-test")
+                        .max_height(500.0)
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            view.show(ui, 500.0);
+                        });
+                    offset = shown.state.clamped_offset().y;
+                },
+            );
+            output.textures_delta.clear();
+            offset
+        };
+        let before = frame(&mut view, 0.0);
+        view.jump_to("synthetic", &evidence);
+        let mut after = 0.0;
+        for i in 1..=12 {
+            after = frame(&mut view, i as f64 * 0.1);
+        }
+        assert!(view.passage.is_some());
+        assert!(
+            after > before + 20.0,
+            "The passage viewport remained below the visible pane: before={before}, after={after}"
+        );
     }
 }

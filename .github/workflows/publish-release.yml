@@ -92,7 +92,7 @@ jobs:
           assert check['synthetic_fixture_count'] == manifest['synthetic_fixture_count'] == len(expected) == 7
           assert {item['name']: item['status'] for item in check['reader_results']} == {name: value['status'] for name, value in expected.items()}
           checks_expected = json.loads(Path('examples/expected-checks.json').read_text())['expected']
-          assert manifest['validated_check_count'] == check['validated_check_count'] == 3
+          assert manifest['validated_check_count'] == check['validated_check_count'] == 5
           assert manifest['synthetic_check_fixture_count'] == check['synthetic_check_fixture_count'] == len(checks_expected) == 3
           assert {item['name']: item['outcomes'] for item in check['check_results']} == checks_expected
           assert manifest['workspace_default'] == r'C:\ProgramData\ComplyPH'
@@ -140,7 +140,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Source update checks" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Labour work and rest checks" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

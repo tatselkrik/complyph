@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.6.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Three deterministic labour comparisons and saved reports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. In-app OCR and folder monitoring remain future work.
+ComplyPH 0.7.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons and saved reports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. In-app OCR and folder monitoring remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -55,7 +55,7 @@ The Legal library page filters sources by domain, searches titles/instruments/is
 4. Evaluate explicit, versioned rules and produce findings with passages, source provisions, missing facts, and review status.
 5. Preserve evaluated domains, coverage, evidence, source versions, and rule versions in reports.
 
-The source/domain layer and the first three labour rules are implemented. Rules use a pinned agency source; the desktop validates raw/text hashes, current document hash, human-confirmed scope and extraction quality before saving a local review. See [rule scope/validation](VALIDATED_CHECKS.md). Additional domain packs and legal-period reconciliation remain planned. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
+The source/domain layer and the first five labour rules are implemented. Rules use a pinned agency source; the desktop validates raw/text hashes, current document hash, human-confirmed scope and extraction quality before saving a local review. See [rule scope/validation](VALIDATED_CHECKS.md). Additional domain packs and legal-period reconciliation remain planned. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
 
 ## Private document reading
 

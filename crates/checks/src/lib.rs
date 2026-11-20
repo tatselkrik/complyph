@@ -1,17 +1,18 @@
-//! Three narrow, deterministic comparisons. No I/O, network, AI, or eligibility inference.
+//! Focused, deterministic comparisons. No I/O, network, AI, or eligibility inference.
 use complyph_extract::{Location, Report, Status};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::LazyLock;
 
-pub const ENGINE: &str = "complyph-labor-1";
+pub const ENGINE: &str = "complyph-labor-2";
+pub const RULE_COUNT: usize = RULES.len();
 pub const SOURCE_KEY: &str = "labor-code-reference";
 pub const SOURCE_SHA256: &str = "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0";
 pub const SOURCE_TEXT_SHA256: &str =
     "c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f";
 pub const SOURCE_URL: &str = "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974";
-pub const LIMITATION: &str = "Three stated numeric terms only. This is not a compliance opinion. Eligibility, actual hours/payments, amendments, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
+pub const LIMITATION: &str = "Five stated numeric terms only. This is not a compliance opinion. Eligibility, actual hours/payments/rest, amendments, shortened paid meals, rest-day exceptions, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,6 +38,24 @@ pub struct Context {
     pub normal_hours: Applicability,
     pub ordinary_overtime: Applicability,
     pub night_differential: Applicability,
+    /// Earlier reports never established coverage for the additional rules.
+    #[serde(default)]
+    pub meal_period: Applicability,
+    #[serde(default)]
+    pub weekly_rest: Applicability,
+}
+impl Context {
+    /// Resolve by stable rule ID so historical/reordered findings retain their scope.
+    pub fn applicability(&self, rule_id: &str) -> Applicability {
+        match rule_id {
+            "PH-LAB-083-01" => self.normal_hours,
+            "PH-LAB-087-01" => self.ordinary_overtime,
+            "PH-LAB-086-01" => self.night_differential,
+            "PH-LAB-085-01" => self.meal_period,
+            "PH-LAB-091-01" => self.weekly_rest,
+            _ => Applicability::Unknown,
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -98,7 +117,7 @@ struct Rule {
     patterns: [&'static str; 2],
     topic: &'static str,
 }
-const RULES: [Rule; 3] = [
+const RULES: [Rule; 5] = [
     Rule {
         id: "PH-LAB-083-01",
         title: "Normal daily working hours",
@@ -137,6 +156,32 @@ const RULES: [Rule; 3] = [
             r"(?i)^night differential (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?)% of (?:the )?regular hourly wage for hours worked between 10 pm and 6 am$",
         ],
         topic: r"(?i)night.*(?:shift|differential)|\bNSD\b",
+    },
+    Rule {
+        id: "PH-LAB-085-01",
+        title: "Regular meal period",
+        article: "Labor Code, Article 85; implementing rules, Book III, Rule I, Section 7",
+        quote: "Subject to such regulations as the Secretary of Labor and Employment may prescribe, it shall be the duty of every employer to give his employees not less than sixty minutes time-off for their regular meals.",
+        threshold: 6000,
+        upper: false,
+        patterns: [
+            r"(?i)^regular meal (?:period|break) (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?) minutes(?: of time[- ]off)?$",
+            r"(?i)^time[- ]off for regular meals (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?) minutes$",
+        ],
+        topic: r"(?i)\b(?:meals?|lunch|dinner|breakfast)\b",
+    },
+    Rule {
+        id: "PH-LAB-091-01",
+        title: "Consecutive weekly rest period",
+        article: "Labor Code, Article 91 (read with Article 92); implementing rules, Book III, Rule III",
+        quote: "It shall be the duty of every employer, whether operating for profit or not, to provide each of his employees a rest period of not less than twenty-four consecutive hours after every six consecutive normal work days.",
+        threshold: 2400,
+        upper: false,
+        patterns: [
+            r"(?i)^weekly rest period (?:is|shall be) ([0-9]{1,3}(?:\.[0-9]{1,2})?) consecutive hours after every (?:six|6) consecutive normal work ?days$",
+            r"(?i)^employees (?:receive|shall receive) ([0-9]{1,3}(?:\.[0-9]{1,2})?) consecutive hours of weekly rest after every (?:six|6) consecutive normal work ?days$",
+        ],
+        topic: r"(?i)\bweekly\s+rest\b|\brest[- ]days?\b|\bconsecutive\s+(?:normal\s+)?work\s*days?\b",
     },
 ];
 static MATCHERS: LazyLock<Vec<(Vec<Regex>, Regex)>> = LazyLock::new(|| {
@@ -201,11 +246,6 @@ fn segments(text: &str) -> Vec<String> {
 }
 /// Applicability is asserted by a human. Never inferred from a job title or document.
 pub fn review(report: &Report, document_sha256: &str, context: Context) -> Review {
-    let coverage = [
-        context.normal_hours,
-        context.ordinary_overtime,
-        context.night_differential,
-    ];
     let readable = report.status == Status::Ready
         && report.warnings.iter().all(|w| {
             w == complyph_extract::PDF_LAYOUT_WARNING || w == complyph_extract::DOCX_LAYOUT_WARNING
@@ -235,7 +275,7 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
             if evidence.len() < 32 { evidence.push(Evidence { location: (*location).clone(), text: text.chars().take(1500).collect(), hundredths: number }); } else { ambiguous = true; }
         }
         let values: Vec<_> = evidence.iter().filter_map(|e| e.hundredths).collect();
-        let (outcome, explanation) = match coverage[i] {
+        let (outcome, explanation) = match context.applicability(rule.id) {
             Applicability::Unknown => (Outcome::NeedsContext, "Confirm this rule's coverage, review period and exceptions before interpreting a numeric comparison."),
             Applicability::OutsideScope => (Outcome::OutsideScope, "The reviewer marked this rule outside scope; no threshold conclusion was made."),
             Applicability::Covered if !context.operative_terms_confirmed => (Outcome::NeedsContext, "Confirm that extracted statements are accurate, operative terms rather than examples or quotations."),

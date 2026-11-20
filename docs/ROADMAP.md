@@ -1,13 +1,13 @@
 # Roadmap
 
-Status reflects ComplyPH 0.6.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.7.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.6.0
+## Available in 0.7.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
 - [x] Complete supporting provisions and related rules from the exact historical local source.
-- [x] Three focused labour numeric checks: normal daily working hours, ordinary-day overtime premium and night shift differential, with explicit applicability and evidence requirements.
+- [x] Five focused labour numeric checks: normal daily working hours, ordinary-day overtime premium, night shift differential, regular meal periods and consecutive weekly rest, with explicit applicability and evidence requirements.
 - [x] Nineteen preserved references across seven compliance domains, with provenance and coverage gaps.
 - [x] Approved-URL source checks on Windows, daily while open; immutable downloaded-change history, change flags, local export and source-review notes.
 - [x] Manual PDF/DOCX legal-source intake with official citation URLs, domains, dates, user verification notes and immutable version history.
@@ -18,9 +18,10 @@ Status reflects ComplyPH 0.6.0. Checked items are available; unchecked items are
 
 ### 1. More validated checks
 
-Only the three labour comparisons listed above are implemented. Other saved laws are reference material awaiting checking rules.
+Only the five labour comparisons listed above are implemented. Other saved laws are reference material awaiting checking rules.
 
-- [ ] Expand labour coverage first, beyond the current three numeric comparisons.
+- [x] First labour expansion in 0.7.0: meal-period and weekly-rest comparisons, exception-aware scope controls, exact offline provisions, boundary/ambiguity tests and historical-report compatibility.
+- [ ] Expand labour coverage first, beyond the current five numeric comparisons.
 - [ ] Add reviewed and tested DOLE OSHS checks.
 - [ ] Add reviewed and tested privacy/NPC checks.
 - [ ] Add BIR/tax and SSS, PhilHealth and Pag-IBIG contribution/compliance checks, including applicable periods and versioned rates or tables.
@@ -49,7 +50,7 @@ The current reader extracts supported PDF/DOCX text and identifies pages that ne
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.6.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.7.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

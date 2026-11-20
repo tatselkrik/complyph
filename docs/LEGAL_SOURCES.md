@@ -32,7 +32,7 @@ Raw-file and derived-text hashes protect snapshot integrity in both states. Inte
 
 ## Versions and limits
 
-The canonical citation URL identifies a manually imported source. A different file hash under the same URL adds an immutable snapshot and preserves earlier bytes, reading text and metadata. Importing identical bytes under that URL keeps the earlier snapshot and its original metadata/status; metadata editing is not implemented. A manual import cannot replace a bundled source or alter the source pinned by the three labour checks. Historical report citations still open their exact recorded hashes.
+The canonical citation URL identifies a manually imported source. A different file hash under the same URL adds an immutable snapshot and preserves earlier bytes, reading text and metadata. Importing identical bytes under that URL keeps the earlier snapshot and its original metadata/status; metadata editing is not implemented. A manual import cannot replace a bundled source or alter the source pinned by the five labour checks. Historical report citations still open their exact recorded hashes.
 
 PDF/DOCX intake uses the existing bounded reader: 32 MiB input, 300 PDF pages, 4 MiB extracted text, 12,000 text units and a 20-second worker deadline. Parser memory/CPU guards apply. Scans without selectable text, encrypted files and unreadable files are rejected without a partial source entry; use external OCR first. Mixed selectable/scanned pages can produce incomplete reading text with warnings. Compare the preview with the original, especially for tables, figures and omitted content. In-app OCR is not available.
 
