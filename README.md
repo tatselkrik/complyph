@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.8.0"><img src="https://img.shields.io/badge/version-0.8.0-142B49?style=flat-square" alt="Version 0.8.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.9.0"><img src="https://img.shields.io/badge/version-0.9.0-142B49?style=flat-square" alt="Version 0.9.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -27,6 +27,8 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 
 - **Connected review:** independently scrolling document and findings panes; click a finding to jump to and highlight its PDF page or Word paragraph/table passage.
 - **Offline legal provisions:** open the complete supporting article, related provisions or full preserved source from the exact version used by a saved review.
+- **Local OCR:** recognize scanned PDF pages with bundled English OCR, page references, low-confidence flags and a separate accuracy confirmation before numeric checking.
+- **Watched folder:** opt into local PDF/DOCX intake with a quiet interval, completion/lock checks, duplicate detection and pause/resume controls.
 - **Private document reader:** local extraction, text search, location navigation and content-hash-validated caching. Original files remain in place.
 - **Saved reports:** retain the confirmed scope, matched passages, outcomes, rule versions and document/source hashes; reopen a report beside its document.
 - **Reviewer notes and tracking:** add document-review and finding notes; track Unresolved, Acknowledged and Resolved follow-up with append-only local history. Original automated findings stay intact.
@@ -43,9 +45,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/ComplyPH-Setup-0.8.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/ComplyPH-Windows-x64-0.8.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.9.0/ComplyPH-Setup-0.9.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.9.0/ComplyPH-Windows-x64-0.9.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.9.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -62,6 +64,12 @@ Normal use requires no command prompt or development tools. The current Windows 
 A resolved follow-up status records a human decision and never changes the automated result or certifies compliance. Reviewer names are self-reported. Each saved review has separate tracking; a new review starts fresh. PDF exports contain private excerpts and notes, include all saved actions, and do not recheck current documents or laws. See [reports and tracking](docs/REPORTS.md).
 
 A matching numeric term is not a complete compliance verdict. Unclear applicability, unsupported wording, conflicting values and incomplete extraction remain unresolved. See [supported checks and validation](docs/VALIDATED_CHECKS.md).
+
+## Scanned documents and folder intake
+
+Choose **Run local OCR** in Review to recognize PDF pages entirely on your computer. Inspect page text and uncertainty highlights, compare every number with the original, and confirm OCR accuracy separately before running checks. The installer includes the runtime; no OCR account or setup command is needed.
+
+Use **Settings → Watched document folder** to select a local intake folder. Completed PDF/DOCX files appear in Documents after a stability interval; unchanged/duplicate files are skipped. Polling runs while the app is open and never starts OCR or reviews automatically. See [OCR, folder controls and limits](docs/OCR_AND_FOLDERS.md).
 
 ## Reference library
 
@@ -103,13 +111,13 @@ Document text, file references, hashes, findings and reviewer history remain in 
 
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The directory is restricted to its owning account, SYSTEM and Administrators. It is not a shared multi-user store, and SQLite is not encrypted by the app. Detected earlier workspaces are copied and checked, with the old data retained as backup. **Settings → Import an existing workspace** handles custom locations and refuses to overwrite a populated destination.
 
-Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. Scans need external OCR; images, text boxes, layout and revisions can affect coverage. The five numeric checks are technically tested, not qualified legal certification.
+Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. PDF OCR is available for up to 20 pages per run, with a 120-second elapsed limit and explicit human confirmation. Recognition estimates do not establish text accuracy. Images, text boxes, layout and revisions can affect coverage. The five numeric checks are technically tested, not qualified legal certification.
 
-Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, document-version comparison, local OCR, watched folders and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
+Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, document-version comparison, library promotion/comparison and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
 
 ## Build from source
 
-Use the toolchain pinned in `rust-toolchain.toml`. Install [Git](https://git-scm.com/downloads) and [Rust](https://rustup.rs). On Windows, install the Microsoft Visual Studio Build Tools with **Desktop development with C++** and a Windows SDK, and use the MSVC Rust toolchain. Linux development requires a C compiler, `pkg-config`, X11/Wayland development libraries and OpenGL support. SQLite and application fonts are bundled.
+Use the toolchain pinned in `rust-toolchain.toml`. Install [Git](https://git-scm.com/downloads) and [Rust](https://rustup.rs). On Windows, install the Microsoft Visual Studio Build Tools with **Desktop development with C++** and a Windows SDK, and use the MSVC Rust toolchain. Linux development requires a C compiler, `pkg-config`, X11/Wayland development libraries and OpenGL support. SQLite and application fonts are bundled. The Windows OCR package also includes native PDFium/Tesseract libraries and English recognition data; their licences accompany the runtime.
 
 ```sh
 git clone https://github.com/tatselkrik/complyph.git
@@ -117,6 +125,8 @@ cd complyph
 cargo build --workspace --locked
 cargo run --locked
 ```
+
+Prepare OCR dependencies for tests: on Windows run `scripts/prepare-ocr-windows.ps1`; on Linux install the system Tesseract 5 library and run `bash scripts/prepare-ocr-linux.sh`. Set `COMPLYPH_OCR_DIR` to the absolute `target/ocr-runtime` directory for debug builds/tests. Runtime resources are downloaded only during this explicit developer setup.
 
 Run the project checks:
 
@@ -141,6 +151,7 @@ Developers can use `--data-dir PATH` for isolated storage. The Windows CI workfl
 | `crates/core` | Private workspace, text cache, reports and migrations |
 | `crates/extract` | Memory-only PDF/DOCX parsing |
 | `crates/reports` | Offline PDF layout, bundled-font embedding and new-file export |
+| `crates/ocr` | Bounded local PDF rendering, recognition and confidence metadata |
 | `crates/checks` | Deterministic rules and applicability gates |
 | `crates/library` | Public source snapshots, provenance and integrity |
 | `crates/paths` | Workspace discovery and permissions |

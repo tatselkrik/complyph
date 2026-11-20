@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.8.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. In-app OCR and folder monitoring remain future work.
+ComplyPH 0.9.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -10,6 +10,7 @@ ComplyPH 0.8.0 is a native Rust desktop application using egui/eframe. It combin
 | `complyph-core` | Private references, content snapshots, text cache, settings, and migrations | Owns private workspace |
 | `complyph-extract` | In-memory PDF/DOCX parsing and structured text locations | Receives bytes only; no file/network I/O |
 | `complyph-reports` | Pure local PDF rendering from a captured review/history, bundled fonts and atomic new-file export | Receives private snapshot; no HTTP/original-file access |
+| `complyph-ocr` | Memory PDF rendering and OCR through packaged native C APIs; no HTTP | Receives private bytes in bounded worker |
 | `complyph-checks` | Pure, source-pinned numeric rules with context gates; no I/O | Receives extraction/context values |
 | `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
 | `complyph-paths` | Shared current/legacy data-root discovery | File/directory existence and process-name checks; no document/database content reads |
@@ -22,7 +23,7 @@ The desktop and private-processing crates have no HTTP client or telemetry, AI i
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running review-app processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
 
 ```text
-private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions; schema 4
+private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions and folder intake; schema 5
 library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 4
 ```
 
@@ -105,3 +106,9 @@ A fingerprint hashes the stored original JSON bytes and saved row identifiers/ti
 PDF export captures the original review, document name and all actions in one read transaction. The renderer uses `lopdf` and embedded Lato TrueType fonts with explicit Unicode/GID mappings. A4 layout wraps text and paginates; limits are 200 pages and 8 MiB of input text. Unsupported glyphs fail explicitly, with complete JSON available as the alternative. An export worker receives only the captured DTO and destination path; it never opens the original or a legal catalog. A temporary file in the destination directory is completed and synced before new-file persistence; existing paths are refused. PDF strings are encoded as text, without actions, links, attachments, scripts or external resources. PDF reports identify the saved scope, evidence, legal quote, source/rule hashes and history cutoff; they do not establish current legal currency.
 
 The diagnostic routes `--review-state`, `--review-action` and `--export-review-pdf` exercise the same store/renderer as the native controls. JSON metadata is bounded and rejects unknown fields; a new output is required before an action is written. Normal use needs no command prompt. See [reports](REPORTS.md).
+
+## OCR and watched intake
+
+Private schema 5 adds a single opt-in folder configuration and path/signature/hash intake ledger. Polling is nonrecursive and performed off the UI thread. Stable-file observations use monotonic time, a ten-second quiet period, completion markers, writer-excluding Windows opens and bounded/fair batches. Transactions recheck the configuration generation before registration; a paused/replaced/forgotten watch cannot commit queued work under an obsolete generation. Content duplicates are checked against live local files. Removal retains an unchanged-path tombstone; forgetting intake clears it. No review/OCR is started by intake.
+
+OCR uses the existing pipe/supervisor model with 90 CPU/120 elapsed seconds, 20 PDF pages and 2,800 pixels per side. PDFium renders from memory without V8/XFA. Tesseract initializes from hash-checked English model bytes and consumes RGB pixels through fixed C APIs; no document filename/URL/configuration is passed to it. The Windows build excludes curl/archive features and uses a static CRT. The Rust application orchestrates native C/C++ libraries with their bundled licences. Recognition metadata and byte-aligned uncertainty ranges are validated before caching. Rule engine 3 requires explicit OCR confirmation, complete page text and supported provenance; its five legal thresholds are unchanged. Historical review JSON is not rewritten. See [implementation and limits](OCR_AND_FOLDERS.md).

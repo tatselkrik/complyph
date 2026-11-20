@@ -505,7 +505,7 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
-        workspace.connection.execute_batch("DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; PRAGMA user_version=3;").unwrap();
+        workspace.connection.execute_batch("DROP TABLE folder_intake; DROP TABLE folder_watch; DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; PRAGMA user_version=3;").unwrap();
         drop(workspace);
         let upgraded = Workspace::open(&paths).unwrap();
         let after: String = upgraded
@@ -522,7 +522,7 @@ mod tests {
                 .connection
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i32>(0))
                 .unwrap(),
-            4
+            5
         );
         assert!(
             upgraded

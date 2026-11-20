@@ -84,6 +84,7 @@ pub struct ComplyApp {
     reader_view: crate::reader_view::ReaderView,
     check_view: crate::check_view::CheckView,
     review_tools: crate::review_tools::ReviewTools,
+    folder_watch: crate::folder_watch::FolderWatch,
     provision_view: crate::provision_view::ProvisionView,
     workspace_picker: FileDialog,
     import_source: Option<PathBuf>,
@@ -114,6 +115,7 @@ impl ComplyApp {
             reader_view: crate::reader_view::ReaderView::default(),
             check_view: crate::check_view::CheckView::default(),
             review_tools: crate::review_tools::ReviewTools::default(),
+            folder_watch: crate::folder_watch::FolderWatch::default(),
             provision_view: crate::provision_view::ProvisionView::default(),
             workspace_picker: FileDialog::new()
                 .title("Choose existing workspace folder")
@@ -734,7 +736,13 @@ impl ComplyApp {
         if let Some(action) = action {
             self.review_action(action);
         }
-        if reread && let Some(paths) = self.paths.clone() {
+        if self.reader_view.take_ocr_request()
+            && let Some(paths) = self.paths.clone()
+        {
+            self.check_view.clear();
+            self.reader_view
+                .start_ocr(paths, document.clone(), ui.ctx());
+        } else if reread && let Some(paths) = self.paths.clone() {
             self.check_view.clear();
             self.reader_view
                 .start(paths, document.clone(), true, ui.ctx());
@@ -964,6 +972,10 @@ impl ComplyApp {
             self.save_preferences();
         }
         ui.add_space(18.0);
+        if let Some(workspace) = &self.workspace {
+            self.folder_watch.show(ui, workspace);
+        }
+        ui.add_space(18.0);
         widgets::card().show(ui,|ui| {
             ui.set_min_width(ui.available_width());
             ui.horizontal(|ui| { widgets::icon(ui,Icon::Lock,22.0,NAVY); ui.label(RichText::new("Stored on this computer").font(heading(19.0))); });
@@ -1078,6 +1090,16 @@ impl eframe::App for ComplyApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.messages(ctx);
         self.reader_view.poll();
+        if self
+            .folder_watch
+            .tick(ctx, self.workspace.as_ref(), self.paths.as_ref())
+            && let Some(workspace) = &self.workspace
+        {
+            if let Ok(documents) = workspace.documents() {
+                self.documents = documents;
+            }
+            self.notice=Some(Notice {text:"Folder intake added or updated local document entries. Open them from Documents and confirm reading accuracy and scope before review.".into(),error:false});
+        }
         self.review_tools.tick(ctx, self.workspace.as_ref());
         if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
             self.choose_documents(ctx);

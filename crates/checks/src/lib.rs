@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::LazyLock;
 
-pub const ENGINE: &str = "complyph-labor-2";
+pub const ENGINE: &str = "complyph-labor-3";
 pub const RULE_COUNT: usize = RULES.len();
 pub const SOURCE_KEY: &str = "labor-code-reference";
 pub const SOURCE_SHA256: &str = "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0";
@@ -35,6 +35,8 @@ impl Applicability {
 pub struct Context {
     #[serde(default)]
     pub operative_terms_confirmed: bool,
+    #[serde(default)]
+    pub ocr_text_confirmed: bool,
     pub normal_hours: Applicability,
     pub ordinary_overtime: Applicability,
     pub night_differential: Applicability,
@@ -106,6 +108,8 @@ pub struct Review {
     pub context: Context,
     pub findings: Vec<Finding>,
     pub limitation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ocr: Option<complyph_extract::OcrInfo>,
 }
 struct Rule {
     id: &'static str,
@@ -246,9 +250,14 @@ fn segments(text: &str) -> Vec<String> {
 }
 /// Applicability is asserted by a human. Never inferred from a job title or document.
 pub fn review(report: &Report, document_sha256: &str, context: Context) -> Review {
+    let ocr = report.ocr.is_some() || report.engine == complyph_extract::OCR_ENGINE;
     let readable = report.status == Status::Ready
+        && ((!ocr && report.engine == complyph_extract::ENGINE)
+            || (ocr && complyph_extract::valid_ocr(report) && context.ocr_text_confirmed))
         && report.warnings.iter().all(|w| {
-            w == complyph_extract::PDF_LAYOUT_WARNING || w == complyph_extract::DOCX_LAYOUT_WARNING
+            w == complyph_extract::PDF_LAYOUT_WARNING
+                || w == complyph_extract::DOCX_LAYOUT_WARNING
+                || (ocr && w == complyph_extract::OCR_WARNING)
         })
         && !report.units.is_empty()
         && report.units.iter().all(|u| !u.text.trim().is_empty())
@@ -298,6 +307,7 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
         context,
         findings,
         limitation: LIMITATION.into(),
+        ocr: report.ocr.clone(),
     }
 }
 

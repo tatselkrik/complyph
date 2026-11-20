@@ -87,9 +87,15 @@ jobs:
           assert check['public_https_probe_passed'] is True
           assert manifest['public_schema'] == check['public_schema'] == 4
           assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
-          assert manifest['private_schema'] == check['private_schema'] == 4
+          assert manifest['private_schema'] == check['private_schema'] == 5
           assert manifest['reviewer_tracking'] is True and manifest['pdf_export'] is True and manifest['pdf_engine'] == 'complyph-pdf-1'
           for flag in ('installed_review_notes_passed','installed_issue_tracking_passed','installed_pdf_export_passed','review_audit_history_preserved'):
+              assert check[flag] is True
+          assert manifest['local_ocr'] is True and manifest['folder_monitoring'] is True
+          assert manifest['ocr_engine'] == 'complyph-ocr-1' and manifest['ocr_max_pages'] == 20
+          assert manifest['rule_engine'] == 'complyph-labor-3'
+          assert manifest['synthetic_ocr_fixture_count'] == check['synthetic_ocr_fixture_count'] == 3
+          for flag in ('installed_ocr_passed','ocr_confirmation_gate_passed','ocr_originals_preserved','watched_folder_intake_passed','no_auto_review_from_watch_passed'):
               assert check[flag] is True
           expected = json.loads(Path('examples/expected-results.json').read_text())
           assert check['synthetic_fixture_count'] == manifest['synthetic_fixture_count'] == len(expected) == 7
@@ -117,6 +123,15 @@ jobs:
               assert data[pe:pe+4] == b'PE\0\0'
               assert struct.unpack_from('<H', data, pe+4)[0] == 0x8664
               assert struct.unpack_from('<H', data, pe+24+68)[0] == 2
+              ocr = [name for name in package.namelist() if name.endswith('/OCR/runtime-manifest.json')]
+              assert len(ocr) == 1
+              prefix = ocr[0].removesuffix('runtime-manifest.json')
+              runtime = json.loads(package.read(ocr[0]).decode('utf-8-sig'))
+              assert runtime['network_features'] is False and runtime['tesseract'] == '5.5.4'
+              assert runtime['model_sha256'] == '7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2'
+              for item in runtime['files']:
+                  assert '/' not in item['name'] and chr(92) not in item['name']
+                  assert hashlib.sha256(package.read(prefix + item['name'])).hexdigest() == item['sha256']
               for sample in [path.name for path in Path('examples').iterdir() if path.is_file()]:
                   matches = [name for name in package.namelist() if name.endswith('/Samples/' + sample)]
                   assert len(matches) == 1
@@ -143,7 +158,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Reviewer notes and PDF reports" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Local OCR and folder intake" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

@@ -3,6 +3,14 @@
 
 #[cfg(unix)]
 pub fn apply() -> std::io::Result<()> {
+    apply_with_cpu(12)
+}
+#[cfg(unix)]
+pub fn apply_ocr() -> std::io::Result<()> {
+    apply_with_cpu(90)
+}
+#[cfg(unix)]
+fn apply_with_cpu(seconds: u64) -> std::io::Result<()> {
     fn limit(resource: libc::__rlimit_resource_t, value: libc::rlim_t) -> std::io::Result<()> {
         let limits = libc::rlimit {
             rlim_cur: value,
@@ -16,7 +24,7 @@ pub fn apply() -> std::io::Result<()> {
         }
     }
     limit(libc::RLIMIT_AS, 1024 * 1024 * 1024)?;
-    limit(libc::RLIMIT_CPU, 12)?;
+    limit(libc::RLIMIT_CPU, seconds)?;
     limit(libc::RLIMIT_CORE, 0)?;
     Ok(())
 }
@@ -36,6 +44,14 @@ impl Drop for Job {
 
 #[cfg(windows)]
 pub fn apply() -> std::io::Result<Job> {
+    apply_with_cpu(12)
+}
+#[cfg(windows)]
+pub fn apply_ocr() -> std::io::Result<Job> {
+    apply_with_cpu(90)
+}
+#[cfg(windows)]
+fn apply_with_cpu(seconds: i64) -> std::io::Result<Job> {
     use windows_sys::Win32::System::{JobObjects::*, Threading::GetCurrentProcess};
     // SAFETY: no name/attributes; returned handle is checked, owned, and closed by Job.
     let handle = unsafe { CreateJobObjectW(std::ptr::null(), std::ptr::null()) };
@@ -49,7 +65,7 @@ pub fn apply() -> std::io::Result<Job> {
         | JOB_OBJECT_LIMIT_PROCESS_TIME
         | JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
     info.ProcessMemoryLimit = 512 * 1024 * 1024;
-    info.BasicLimitInformation.PerProcessUserTimeLimit = 12 * 10_000_000;
+    info.BasicLimitInformation.PerProcessUserTimeLimit = seconds * 10_000_000;
     info.BasicLimitInformation.ActiveProcessLimit = 1;
     // SAFETY: correctly sized input structure and valid handles; assigns this worker only.
     let configured = unsafe {

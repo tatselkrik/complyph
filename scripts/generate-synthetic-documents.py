@@ -132,3 +132,20 @@ for name,lines in [('Synthetic labour issues.docx',issues),('Synthetic labour am
  'expected':{'Synthetic labour baseline.pdf':['stated_term_meets_minimum']*5,'Synthetic labour issues.docx':['potential_issue']*5,'Synthetic labour ambiguous.docx':['needs_review']*5},
  'limitation':'Synthetic fixtures only. Reviewer-confirmed coverage, net hours and operative statements; no legal certification.'},indent=2)+'\n')
 print('Created three synthetic labour-check fixtures.')
+
+# Separate raster-only and mixed-page cases for offline OCR validation.
+from PIL import ImageFont
+ocr_image=Image.new('RGB',(2200,1500),'white')
+ocr_draw=ImageDraw.Draw(ocr_image)
+ocr_font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',30)
+for n,line in enumerate([BANNER,'Fictional OCR policy. Applicability is confirmed separately.']+issues):
+    ocr_draw.text((50,70+n*140),line,font=ocr_font,fill='black')
+stream=BytesIO();c=canvas.Canvas(stream,pagesize=(792,540),invariant=1,pageCompression=0)
+c.drawImage(ImageReader(ocr_image),0,0,width=792,height=540);c.showPage()
+c.setFont('Helvetica',15);c.drawString(35,490,'SYNTHETIC SECOND PAGE - NO REAL AGREEMENT');c.showPage();c.save()
+(OUT/'Synthetic OCR policy.pdf').write_bytes(stream.getvalue())
+(OUT/'expected-ocr.json').write_text(json.dumps({
+ 'Synthetic scan.pdf':{'pages':1,'contains':['IMAGE-ONLY-FIXTURE','pixels']},
+ 'Synthetic mixed pages.pdf':{'pages':2,'contains':['MIXED-TEXT-PAGE','IMAGE-ONLY-FIXTURE']},
+ 'Synthetic OCR policy.pdf':{'pages':2,'contains':['Normal daily working hours are 9 hours','Regular meal period is 30 minutes','12 consecutive hours','SECOND PAGE']},
+},indent=2)+'\n')

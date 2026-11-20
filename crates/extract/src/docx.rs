@@ -81,6 +81,7 @@ fn read(bytes: &[u8]) -> Result<Report> {
         summary: "Word text read locally. Locations identify XML parts and paragraphs; Word page numbers are not inferred.".into(),
         units: vec![],
         warnings: vec![crate::DOCX_LAYOUT_WARNING.into()],
+        ocr: None,
     };
     let mut used = 0;
     for part in parts {

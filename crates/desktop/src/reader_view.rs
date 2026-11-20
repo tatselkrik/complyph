@@ -13,11 +13,13 @@ type Reply = (u64, Result<SavedExtraction, String>);
 enum State {
     Idle,
     Reading,
-    Finished(SavedExtraction),
+    Finished(Box<SavedExtraction>),
     Failed(String),
 }
 
 pub struct ReaderView {
+    request_ocr: bool,
+    ocr_running: bool,
     state: State,
     generation: u64,
     cancel: Option<reader::Cancel>,
@@ -35,6 +37,8 @@ impl Default for ReaderView {
     fn default() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
+            request_ocr: false,
+            ocr_running: false,
             state: State::Idle,
             generation: 0,
             cancel: None,
@@ -51,6 +55,12 @@ impl Default for ReaderView {
 }
 
 impl ReaderView {
+    pub fn take_ocr_request(&mut self) -> bool {
+        std::mem::take(&mut self.request_ocr)
+    }
+    pub fn start_ocr(&mut self, paths: WorkspacePaths, document: Document, ctx: &egui::Context) {
+        self.start_mode(paths, document, true, true, ctx);
+    }
     pub fn current(&self) -> Option<&SavedExtraction> {
         match &self.state {
             State::Finished(saved) => Some(saved),
@@ -76,7 +86,19 @@ impl ReaderView {
         force: bool,
         ctx: &egui::Context,
     ) {
+        self.start_mode(paths, document, force, false, ctx);
+    }
+    fn start_mode(
+        &mut self,
+        paths: WorkspacePaths,
+        document: Document,
+        force: bool,
+        ocr: bool,
+        ctx: &egui::Context,
+    ) {
         self.clear();
+        self.request_ocr = false;
+        self.ocr_running = ocr;
         self.unit = 0;
         self.chunk = 0;
         self.search.clear();
@@ -87,7 +109,11 @@ impl ReaderView {
         let sender = self.sender.clone();
         let ctx = ctx.clone();
         std::thread::spawn(move || {
-            let result = reader::read_document(&paths, &document, force, &cancel);
+            let result = if ocr {
+                reader::read_document_ocr(&paths, &document, &cancel)
+            } else {
+                reader::read_document(&paths, &document, force, &cancel)
+            };
             let _ = sender.send((generation, result));
             ctx.request_repaint();
         });
@@ -98,7 +124,7 @@ impl ReaderView {
             if generation == self.generation {
                 self.cancel = None;
                 self.state = match result {
-                    Ok(saved) => State::Finished(saved),
+                    Ok(saved) => State::Finished(Box::new(saved)),
                     Err(error) => State::Failed(error),
                 };
             }
@@ -144,7 +170,8 @@ impl ReaderView {
             match &self.state {
                 State::Idle => { widgets::muted(ui, "Choose a document to read its text locally."); }
                 State::Reading => {
-                    ui.horizontal(|ui| { ui.spinner(); ui.label("Reading locally…"); });
+                    ui.horizontal(|ui| { ui.spinner(); ui.label(if self.ocr_running { "Recognizing pages locally…" } else { "Reading locally…" }); });
+                    if self.ocr_running { widgets::muted(ui,"Up to 20 PDF pages per run; processing stops at 120 seconds. No OCR service or document upload is used."); }
                     widgets::muted(ui, "The original is unchanged. No document content is sent online.");
                     if widgets::secondary(ui, "Cancel reading").clicked() {
                         self.clear();
@@ -180,6 +207,10 @@ impl ReaderView {
                         reread = widgets::secondary(ui, "Read again").clicked();
                     });
                     ui.label(&report.summary);
+                    if report.format == complyph_extract::Format::Pdf && matches!(report.status, Status::Ready | Status::NeedsOcr) {
+                        if ui.button(if report.ocr.is_some() { "Run local OCR again" } else { "Run local OCR" }).clicked() { self.request_ocr = true; }
+                        widgets::muted(ui,"Recognize every PDF page offline. OCR can misread confident-looking numbers; compare the result with the original.");
+                    }
                     widgets::muted(ui, "Saved text stays in the private workspace. File contents are checked against the cache whenever opened here; use Read again after editing.");
                     if !report.units.is_empty() && report.text_bytes() > 0 {
                         ui.add_space(10.0);
@@ -218,7 +249,15 @@ impl ReaderView {
                                 });
                             }
                             let start=boundaries[self.chunk];let end=boundaries[self.chunk+1];
-                            let ranges=self.passage.as_ref().filter(|p|p.unit==self.unit).map(|p|text_navigation::clip_ranges(&p.ranges,start..end)).unwrap_or_default();
+                            let uncertain=report.ocr.as_ref().and_then(|o|o.pages.get(self.unit));
+                            if let Some(quality) = uncertain {
+                                ui.colored_label(AMBER,format!("OCR page {} · {} words · {} low-confidence words",quality.page,quality.words,quality.uncertain.len()));
+                                widgets::muted(ui,"OCR highlights mark low recognition confidence; a selected finding highlights its evidence instead. Check all numbers even when unflagged.");
+                            }
+                            let ranges=self.passage.as_ref().filter(|p|p.unit==self.unit).map(|p|text_navigation::clip_ranges(&p.ranges,start..end)).unwrap_or_else(|| {
+                                let flags:Vec<_>=uncertain.map(|p|p.uncertain.iter().map(|w|w.start..w.end).collect()).unwrap_or_default();
+                                text_navigation::clip_ranges(&flags,start..end)
+                            });
                             let scroll=self.passage.as_ref().filter(|p|p.unit==self.unit && self.scroll_to_passage).map(|p|p.ranges[p.active].start.saturating_sub(start));
                             self.scroll_to_passage=false;
                             let text = if unit.text.is_empty() { "No selectable text on this page. It may be blank or require OCR." }
@@ -276,6 +315,7 @@ mod tests {
             read_at: 0,
             report: Report {
                 engine: complyph_extract::ENGINE.into(),
+                ocr: None,
                 format: Format::Pdf,
                 status: Status::Ready,
                 summary: "PDF text read locally. Page numbers refer to the original PDF.".into(),
@@ -291,7 +331,7 @@ mod tests {
             },
         };
         let mut view = ReaderView::default();
-        view.state = State::Finished(saved);
+        view.state = State::Finished(Box::new(saved));
         let ctx = egui::Context::default();
         let mut offset = 0.0;
         let mut frame = |view: &mut ReaderView, time: f64| {

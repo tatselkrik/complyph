@@ -2,6 +2,7 @@
 
 mod app;
 mod check_view;
+mod folder_watch;
 mod library_view;
 mod provision_view;
 mod reader;
@@ -49,6 +50,21 @@ fn main() -> eframe::Result {
 fn parse_arguments() -> Option<PathBuf> {
     let mut arguments = std::env::args_os().skip(1);
     match arguments.next() {
+        Some(argument) if argument == "--watch-folder" => {
+            if let Err(error) = diagnostic_watch(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
+        Some(argument) if argument == "--ocr-worker" => {
+            if arguments.next().as_deref() != Some(std::ffi::OsStr::new("pdf"))
+                || arguments.next().is_some()
+            {
+                std::process::exit(2);
+            }
+            reader::ocr_worker_main();
+        }
         Some(argument) if argument == "--extract-worker" => {
             let format = match arguments.next().as_deref().and_then(|value| value.to_str()) {
                 Some("pdf") => complyph_extract::Format::Pdf,
@@ -71,6 +87,13 @@ fn parse_arguments() -> Option<PathBuf> {
             // Diagnostic entry point for isolated installer/reader verification.
             let result = diagnostic_read(arguments.collect());
             if let Err(error) = result {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
+        Some(argument) if argument == "--ocr-file" => {
+            if let Err(error) = diagnostic_ocr(arguments.collect()) {
                 eprintln!("{error}");
                 std::process::exit(2);
             }
@@ -117,6 +140,70 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         None => None,
     }
+}
+fn diagnostic_watch(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    if !matches!(arguments.len(), 3 | 5)
+        || arguments[1] != "--output"
+        || (arguments.len() == 5 && arguments[3] != "--data-dir")
+    {
+        return Err("Use --watch-folder PATH --output NEW-JSON [--data-dir PATH]".into());
+    }
+    let output = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&arguments[2])
+        .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
+    let paths = if arguments.len() == 5 {
+        WorkspacePaths::under(PathBuf::from(&arguments[4]))
+    } else {
+        WorkspacePaths::default_location().map_err(|e| e.to_string())?
+    };
+    let workspace = complyph_core::Workspace::open(&paths).map_err(|e| e.to_string())?;
+    let config = workspace
+        .configure_watched_folder(std::path::Path::new(&arguments[0]), true)
+        .map_err(|e| e.to_string())?;
+    let mut scanner = complyph_core::folder_watch::Scanner::default();
+    scanner
+        .poll(&workspace, std::time::Instant::now())
+        .map_err(|e| e.to_string())?;
+    std::thread::sleep(complyph_core::folder_watch::QUIET_PERIOD);
+    let scan = scanner
+        .poll(&workspace, std::time::Instant::now())
+        .map_err(|e| e.to_string())?;
+    serde_json::to_writer_pretty(
+        output,
+        &serde_json::json!({"configuration":config,"scan":scan}),
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn diagnostic_ocr(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    if !matches!(arguments.len(), 3 | 5)
+        || arguments[1] != "--output"
+        || (arguments.len() == 5 && arguments[3] != "--data-dir")
+    {
+        return Err("Use --ocr-file PDF --output NEW-JSON [--data-dir PATH]".into());
+    }
+    let output = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&arguments[2])
+        .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
+    let paths = if arguments.len() == 5 {
+        WorkspacePaths::under(PathBuf::from(&arguments[4]))
+    } else {
+        WorkspacePaths::default_location().map_err(|e| e.to_string())?
+    };
+    let workspace = complyph_core::Workspace::open(&paths).map_err(|e| e.to_string())?;
+    let document = workspace
+        .register_document(std::path::Path::new(&arguments[0]))
+        .map_err(|e| e.to_string())?;
+    let saved = reader::read_document_ocr(
+        &paths,
+        &document,
+        &std::sync::atomic::AtomicBool::new(false),
+    )?;
+    serde_json::to_writer_pretty(output, &saved).map_err(|e| e.to_string())
 }
 
 fn diagnostic_review(mode: &str, arguments: Vec<std::ffi::OsString>) -> Result<(), String> {

@@ -13,7 +13,7 @@ jobs:
   windows:
     name: Test, build, and install
     runs-on: windows-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - name: Check out public source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,6 +26,9 @@ jobs:
         run: cargo fmt --all --check
       - name: Verify downloader isolation
         run: cargo test -p complyph-updater --test isolation --locked
+      - name: Prepare bundled offline OCR
+        shell: pwsh
+        run: ./scripts/prepare-ocr-windows.ps1
       - name: Test local storage and boundaries
         run: cargo test --workspace --locked
       - name: Check Rust warnings

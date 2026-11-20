@@ -67,6 +67,23 @@ pub fn import_into_empty(source: &Path, target: &Path) -> Result<WorkspacePaths>
             }
         }
     }
+    if private.is_file() {
+        let input = Connection::open_with_flags(&private, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        let version: i32 = input.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version >= 5 {
+            let count: i64 = input.query_row(
+                "SELECT (SELECT COUNT(*) FROM folder_watch WHERE root<>'')+(SELECT COUNT(*) FROM folder_intake)",
+                [],
+                |r| r.get(0),
+            )?;
+            if count != 0 {
+                return Err(WorkspaceError::InvalidDocument(
+                    "The destination has folder intake settings/history and cannot be replaced."
+                        .into(),
+                ));
+            }
+        }
+    }
     let backup = target.with_file_name(format!(
         "ComplyPH-empty-before-import-{}-{}",
         std::process::id(),
@@ -284,7 +301,7 @@ mod tests {
             .unwrap();
         drop(workspace);
         let db = Connection::open(&source.database).unwrap();
-        db.execute_batch("DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; DROP TABLE review_runs; PRAGMA user_version=2;")
+        db.execute_batch("DROP TABLE folder_intake; DROP TABLE folder_watch; DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; DROP TABLE review_runs; PRAGMA user_version=2;")
             .unwrap();
         drop(db);
         let before = fs::read(&source.database).unwrap();

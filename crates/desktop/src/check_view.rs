@@ -45,6 +45,7 @@ impl CheckView {
         self.editing = false;
         self.context = review.review.context.clone();
         self.context.operative_terms_confirmed = false;
+        self.context.ocr_text_confirmed = false;
         self.result = Some(review);
         self.error = None;
         self.editing = false;
@@ -110,8 +111,12 @@ impl CheckView {
             widgets::muted(ui,"For all rules, establish Article 82 exclusions (including managerial, field, dependent family, domestic/personal service and qualifying paid-by-results workers), applicable amendments, contracts and CBAs. Leave scope unestablished when unsure.");
             ui.add_space(10.0);
             ui.checkbox(&mut self.context.operative_terms_confirmed,"I compared the extracted text with the original; these are operative policy terms, not examples or quotations.");
+            if saved.is_some_and(|s|s.report.ocr.is_some()) {
+                ui.colored_label(AMBER,"This text was recognized by OCR. High confidence does not establish that numbers, tables or clauses are correct.");
+                ui.checkbox(&mut self.context.ocr_text_confirmed,"I checked every OCR page, including numbers and low-confidence words, against the original.");
+            }
             widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, or consecutive weekly-rest hours after six consecutive normal work days. Other wording stays unresolved.");
-            if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready)).clicked() {
+            if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready && (s.report.ocr.is_none() || self.context.ocr_text_confirmed))).clicked() {
                 self.result=None;
                 let result=(|| {
                     let saved=saved.ok_or("Wait for this document to finish reading.")?;

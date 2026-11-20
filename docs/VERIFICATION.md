@@ -1,12 +1,12 @@
-# Verification — ComplyPH 0.8.0
+# Verification — ComplyPH 0.9.0
 
 ## Automated Rust checks
 
-The native Linux suite passes 73 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
+The native Linux suite passes 79 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
 
-- Eight rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, actual five-finding PDF/DOCX fixtures, and earlier three-rule context/report compatibility.
-- Seventeen private-store tests cover retained references/preferences/caches, schema 1/2/3 → 4, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
-- Seven executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
+- Nine rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, actual five-finding PDF/DOCX fixtures, and earlier three-rule context/report compatibility.
+- Nineteen private-store tests cover retained references/preferences/caches, schema 1/2/3/4 → 5, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
+- Nine executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
 - Five parser tests cover independent reader outcomes, physical PDF pages, Word paragraph/table/header locations, XML/Unicode/entities/revisions, malformed documents and resource limits.
 - Nine desktop unit tests cover passage ranges, changed/missing evidence, Unicode/chunks, complete article boundaries, related-rule rendering, nested-pane visibility after a passage jump and cancellation/termination. The nested-pane regression reproduces the original off-screen viewport before the fix. Seventeen public-catalog tests cover all 19 sources, 14/3/2 provenance counts, tampering including provisional sources, export, idempotency, legacy schemas, concurrent import, historical source lookup and metadata-only bundle upgrades, manual URL/date/domain validation, comparison-note requirements, immutable manual history and bundled-source protection. Three path tests cover legacy discovery, ambiguity and empty directories.
 
@@ -14,9 +14,16 @@ The native Linux suite passes 73 tests covering the reader, rules, storage, sour
 - Three PDF tests extract the generated PDF to verify every saved finding, evidence passage, legal quote, Unicode name/peso sign and status transition; exercise long-history pagination and margin bounds; check embedded fonts and absence of active PDF actions; and refuse overwrite, unsupported glyphs and oversized reports without partial output. Historical export works without opening an original file, and three-rule reports retain their original rule set.
 - The executable report integration invokes notes, acknowledgement/resolution, stale-action rejection, new-file refusal and PDF export through the actual desktop binary, then reads the PDF through its bounded child parser. Automated findings and original bytes remain unchanged.
 
+- OCR TSV tests preserve UTF-8 word offsets/lines and low-confidence ranges, reject malformed/nonfinite confidence and distinguish estimates from text accuracy. Rule validation independently requires explicit OCR confirmation and supported model/renderer metadata.
+- Core folder tests cover quiet periods, incomplete writes, content duplicates, restarts, pause/resume, removed-entry suppression, workspace-root refusal, links, temporary names, subfolders and size limits. Executable integration repeats real ten-second intake, preserves originals/caches and confirms that intake creates no review or OCR reading.
+- Real OCR executable tests cover three raster/mixed PDF fixtures, physical pages, expected text, model provenance, unchanged originals, cache reuse, protected-file refusal and the missing/present human confirmation gate. The Windows release includes pinned native runtime files with all notices and no Tesseract URL-input support.
+
 These are technical tests, not qualified legal certification. See [rule scope, independent cases and limitations](VALIDATED_CHECKS.md). Synthetic files contain no real employee/employer records.
 
 ## Offline observation
+
+The v0.9.0 OCR diagnostic ran under `strace -f -e trace=network` on the two-page fictional policy PDF. Local PDFium rendering, Tesseract recognition and private cache persistence completed with **zero observed network system calls**. The English model hash and physical page locations were retained.
+
 
 The v0.8.0 PDF diagnostic was run under `strace -f -e trace=network` using the synthetic review and saved UI-created notes/status history. It exported the full three-page report with **zero observed network system calls**. PDF metadata confirms A4, embedded local fonts, no encryption and no JavaScript. Pages were rasterized and visually checked for readable layout and complete identifiers.
 
@@ -39,21 +46,25 @@ The v0.7.0 native five-rule flow was checked with the synthetic baseline: meal/w
 
 The v0.8.0 native tracking workflow was checked with fictional data: required reviewer/name fields, a document-review note, finding Acknowledged → Resolved with reasons, saved history and centered PDF file selection. The exported report completed successfully. Reopening the connected review showed **Human follow-up: Resolved** beside the unchanged **Potential issue** and original evidence. The generated PDF was inspected separately; no private user employment data was used.
 
+The v0.9.0 native UI was checked end to end: rerunning local OCR, recognized page/word counts, reopening a saved unconfirmed review, the separate OCR checkbox keeping the run button disabled until confirmed, and saving a new source-cited review. The folder picker enabled intake for three synthetic files; only one content copy appeared in Documents, the partial file stayed waiting, no review was started, and the pause checkbox persisted as disabled in schema 5. No private user document was used.
+
 ## Windows release gate
 
-GitHub Actions repeats formatting, all Rust tests and Clippy on Windows/MSVC, builds both executables with a static C runtime, packages NSIS/app ZIP and runs an isolated install test. Windows-specific ACL/process-enumeration code also passes a Linux-to-Windows GNU target type check; actual runtime permissions are checked on Windows.
+GitHub Actions repeats formatting, all Rust tests and Clippy on Windows/MSVC, builds both executables with a static C runtime, packages NSIS/app ZIP and runs an isolated install test. Windows/MSVC executes the platform-specific ACL, process and local-drive behavior.
 
 The isolated Windows test refuses pre-existing installations/data roots. It requires:
 
 1. Upgrade from hash-pinned earlier 0.1.0 desktop, registered installation/shortcut replacement and executable startup.
-2. Desktop migration of the legacy SQLite workspace to `%ProgramData%\ComplyPH`, retained source database bytes, migration marker, protected owner/SYSTEM/Administrators ACL, retained document references/preferences and private schema 4.
+2. Desktop migration of the legacy SQLite workspace to `%ProgramData%\ComplyPH`, retained source database bytes, migration marker, protected owner/SYSTEM/Administrators ACL, retained document references/preferences and private schema 5.
 3. Public catalog status of 19 sources in seven domains, with 14 agency downloads, 3 identity-checked uploads and 2 provisional copies; no successful runtime update is claimed.
 4. All seven installed reader cases through the real child worker, expected text/states/locations and preserved originals.
 5. All three installed checking cases, source pin/context audit data, expected findings and persisted private reports/caches.
 6. Installed reviewer notes, acknowledged/resolved history, stale-action refusal, unchanged original review JSON, PDF export/overwrite refusal and re-reading all five findings, Unicode text and transitions through the installed child parser.
 7. Installed public-source intake and duplicate handling, public schema 4, pending verification, unchanged private data and preserved source originals.
-8. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.7.0, and private/public/original preservation through uninstall.
-9. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
+8. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.8.0, and private/public/original preservation through uninstall.
+9. Installed OCR on three fixtures using packaged libraries, exact model/renderer identifiers, unchanged originals, and the separate human confirmation gate.
+10. Installed local watched-folder intake, partial-file waiting, duplicate suppression and absence of automatic reviews, followed by preservation of the complete schema-5 workspace.
+11. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
 
 The publisher accepts packages only from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, reviewer-history/PDF evidence, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
 
@@ -61,7 +72,7 @@ Interactive Windows display scaling, assistive technology, account-specific perm
 
 ## Remaining scope
 
-Reviewed promotion of downloaded references, source-page discovery, metadata editing, watched folders, in-app OCR, other-domain rules and qualified legal review remain outstanding. Uploaded/provisional additions preserve their verification limits; [coverage gaps](../library/README.md) remain visible.
+Reviewed promotion of downloaded references, source-page discovery, metadata editing, broader OCR/layout coverage, other-domain rules and qualified legal review remain outstanding. Uploaded/provisional additions preserve their verification limits; [coverage gaps](../library/README.md) remain visible.
 
 ## Source update validation
 

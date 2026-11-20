@@ -1,4 +1,4 @@
-ComplyPH 0.8.0 - Reviewer notes and PDF reports
+ComplyPH 0.9.0 - Local OCR and folder intake
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -47,7 +47,9 @@ No Philippine lawyer has certified the rules. Other legal domains are not checke
 
 Samples includes seven fictional reader cases and three focused-check fixtures.
 All are test data, not legal templates. Reader limits: 32 MiB, 300 PDF pages,
-4 MiB text and a 20-second worker timeout. OCR is not built into the app. Images,
+4 MiB text and a 20-second worker timeout. Run local OCR recognizes up to 20 PDF pages offline, with a 120-second limit.
+Inspect page text and low-confidence flags, then separately confirm every OCR
+page/number against the original before checking. The runtime is bundled. Images,
 text boxes and some revision/layout information may be missing; compare originals.
 
 The local library has 19 preserved references: 14 verified agency downloads,
@@ -77,8 +79,11 @@ a document entry deletes its cache, reports and tracking history, preserving the
 Uninstall preserves active data, backups and original documents.
 
 The desktop has no HTTP client, AI or document upload feature. The separate
-AppContainer updater checks approved agency URLs only. Watched folders and
-in-app OCR remain planned. Report-copy actions
+AppContainer updater checks approved agency URLs only. Settings > Watched
+document folder enables local, nonrecursive intake after a quiet interval.
+Folder intake adds entries only; it never runs OCR/reviews automatically.
+Pause or forget intake from Settings. Its local path/hash ledger persists across
+restarts; forgetting it clears intake history. Originals remain in place. Report-copy actions
 place private report text on your clipboard only when requested.
 
 This Windows build is unsigned and may trigger SmartScreen.

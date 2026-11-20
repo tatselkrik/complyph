@@ -9,10 +9,14 @@ Unicode True
   !error "Pass /DUPDATER_EXE=path-to-complyph-updater.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "ComplyPH-Setup-0.8.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.9.0.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
+!endif
+
+!ifndef OCR_UNINSTALL
+  !error "Pass /DOCR_UNINSTALL=path-to-runtime-file-list"
 !endif
 
 Name "ComplyPH"
@@ -24,15 +28,15 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
-BrandingText "ComplyPH - Review tracking and reports"
-VIProductVersion "0.8.0.0"
+BrandingText "ComplyPH - Local OCR and folder intake"
+VIProductVersion "0.9.0.0"
 VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
 VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local legal source installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.8.0"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.9.0"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
-!define MUI_WELCOMEPAGE_TEXT "Install ComplyPH for private document review.$\r$\n$\r$\nInspect document text beside findings, jump to highlighted passages, and open exact supporting provisions offline. Import local legal references with citation URLs, dates and verification notes. Add reviewer notes, track follow-up statuses, and export PDF reports locally. Includes five focused labour checks and 19 starter references. Windows workspace data uses ProgramData\ComplyPH; old data is copied safely and retained as backup. Approved official URLs can be checked daily while the app is open. Changed downloads are preserved for review."
+!define MUI_WELCOMEPAGE_TEXT "Install ComplyPH for private document review.$\r$\n$\r$\nInspect document text beside findings, jump to highlighted passages, and open exact supporting provisions offline. Import local legal references with citation URLs, dates and verification notes. Add reviewer notes, track follow-up statuses, and export PDF reports locally. Includes offline OCR for up to 20 PDF pages and optional local folder intake. Five focused labour checks and 19 starter references. Windows workspace data uses ProgramData\ComplyPH; old data is copied safely and retained as backup. Approved official URLs can be checked daily while the app is open. Changed downloads are preserved for review."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\ComplyPH.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Open ComplyPH"
 !insertmacro MUI_PAGE_WELCOME
@@ -79,6 +83,8 @@ Section "ComplyPH" SEC_APP
   File /oname=Read-me.txt "..\..\packaging\windows\Read-me.txt"
   File /oname=starter-manifest.json "..\..\library\starter\manifest.json"
   File /oname=Library-notes.md "..\..\library\README.md"
+  SetOutPath "$INSTDIR\OCR"
+  File /r "..\..\target\ocr-runtime\*"
   SetOutPath "$INSTDIR\Samples"
   File "..\..\examples\*"
   SetOutPath "$INSTDIR"
@@ -86,7 +92,7 @@ Section "ComplyPH" SEC_APP
   CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.8.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.9.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"
@@ -120,11 +126,14 @@ Section "Uninstall"
   Delete "$INSTDIR\Samples\Synthetic labour baseline.pdf"
   Delete "$INSTDIR\Samples\Synthetic labour issues.docx"
   Delete "$INSTDIR\Samples\Synthetic labour ambiguous.docx"
+  Delete "$INSTDIR\Samples\Synthetic OCR policy.pdf"
+  Delete "$INSTDIR\Samples\expected-ocr.json"
   Delete "$INSTDIR\Samples\expected-checks.json"
   Delete "$INSTDIR\Samples\expected-results.json"
   Delete "$INSTDIR\Samples\synthetic-source.json"
   Delete "$INSTDIR\Samples\README.md"
   RMDir "$INSTDIR\Samples"
+  !include "${OCR_UNINSTALL}"
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH"

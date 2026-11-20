@@ -1,12 +1,20 @@
 # Privacy
 
-## ComplyPH 0.8.0
+## ComplyPH 0.9.0
 
 ComplyPH runs locally. Selecting a PDF/DOCX registers its filename, canonical path, size, and modification time, then reads supported text in a local child process. Extracted text, paragraph/page/table locations, the original’s SHA-256 hash, reading state, and read date are saved in the private SQLite workspace. Preferences use the same workspace. The private workspace also stores human-confirmed scope and review reports containing passages, outcomes, source/rule identifiers and hashes. Private schema 4 also stores append-only document-review/finding notes, self-reported reviewer names, timestamps, status transitions and fingerprints binding them to the original saved review. Names are not authenticated identities or digital signatures. The five numeric checks are local and do not certify compliance.
 
 Document bytes pass from the app to its own worker through local stdin/stdout pipes. Worker arguments contain only the document format; inherited credentials and proxy settings are cleared. The readers do not fetch document hyperlinks or external XML entities, execute fields, macros, PDF JavaScript, or embedded programs. Parser diagnostics are not logged. Resource limits and cancellation protect responsiveness; this is not a full operating-system sandbox.
 
 The desktop, document reader and rule engine contain no HTTP client, telemetry, advertising, AI integration or document upload. The separate updater uses a Windows AppContainer child for approved source downloads. Status queries and source import make no online request.
+
+## Local OCR and watched folders
+
+OCR is an explicit local action for a selected PDF. A bounded child receives bytes through local pipes and calls packaged PDFium/Tesseract APIs using memory buffers and hash-pinned English recognition data. Page images are not written to temporary files. No service, document URL, model downloader or upload is used. The Windows Tesseract build disables curl/URL support. Recognition text, page references, confidence flags and engine/model identifiers are saved in the private cache; saved reviews preserve OCR provenance and the human accuracy confirmation. Confidence is an estimate, not verified accuracy.
+
+An explicitly chosen watched folder is polled locally while the app is open. Private schema 5 stores its canonical root, enabled state, generation and a ledger of intake paths/signatures/hashes/document IDs. Windows network locations, links, temporary files and nested folders are excluded. Intake registers document references only; it does not run OCR/reviews, infer scope, upload content or construct source-update requests. A changed file can refresh its entry while preserving saved reviews. The ledger retains paths/hashes for unchanged-file and duplicate suppression after an entry is removed. Forget folder and intake history clears the configuration/path ledger while preserving imported document entries/originals; SQLite backups/journals are not secure erasure. No folder is enabled by default.
+
+The installer includes public OCR runtime resources/licences. Developer preparation scripts download public, pinned build resources; installed OCR performs no runtime downloads. See [OCR/folder details](docs/OCR_AND_FOLDERS.md).
 
 ## Public reference library
 
@@ -42,6 +50,6 @@ The public-catalog coordinator has no private-workspace or extraction dependency
 
 The Windows child runs in an AppContainer with Internet-client capability and a read/execute-only temporary copy of its executable. It receives an explicit list of pipe handles, without inherited catalog/document handles. The owning process's private database, catalog and standard original-document paths are denied by the AppContainer; Windows tests probe synthetic canaries. No private-network capability is granted. The HTTP layer also requires supported agency domains, HTTPS on port 443, public DNS addresses and same-origin redirects. Proxy credentials, cookies and HTTP authentication are not used. TLS certificate validation stays enabled. Environment/service credentials are not inherited. Job objects bound memory, CPU, child count and lifetime; closing the desktop terminates its updater processes.
 
-The worker cannot open a catalog or choose a document. The coordinator stores downloaded public bytes, source hashes, response validators, attempts/failures and review notes in public schema 4. The private schema is 4; it is separate from the public schema. New downloads remain reviewable copies rather than automatic legal verification or rule updates. Both source imports and update exports preserve original files and refuse to overwrite a chosen existing destination.
+The worker cannot open a catalog or choose a document. The coordinator stores downloaded public bytes, source hashes, response validators, attempts/failures and review notes in public schema 4. The private schema is 5; it is separate from the public schema. New downloads remain reviewable copies rather than automatic legal verification or rule updates. Both source imports and update exports preserve original files and refuse to overwrite a chosen existing destination.
 
 The AppContainer profile is an account-local Windows security profile named ComplyPH.SourceUpdates. A temporary executable directory contains application code only and is removed after a batch. Backups, external programs, operating-system services and user changes to file-sharing permissions operate independently of ComplyPH. All test documents and privacy canaries are synthetic. See [source update limits and validation](docs/SOURCE_UPDATES.md).

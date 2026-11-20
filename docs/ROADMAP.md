@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.8.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.9.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.8.0
+## Available in 0.9.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -12,6 +12,8 @@ Status reflects ComplyPH 0.8.0. Checked items are available; unchecked items are
 - [x] Approved-URL source checks on Windows, daily while open; immutable downloaded-change history, change flags, local export and source-review notes.
 - [x] Manual PDF/DOCX legal-source intake with official citation URLs, domains, dates, user verification notes and immutable version history.
 - [x] Saved local reviews, connected reopening, document/finding notes, Unresolved/Acknowledged/Resolved follow-up history, offline PDF export and full-report JSON copying.
+- [x] Local PDF OCR with bundled Windows runtime and a separate accuracy gate.
+- [x] Optional local watched-folder intake with pause/resume, stability checks, duplicate detection and persisted local history.
 - [x] Windows installation, workspace migration, protected `C:\ProgramData\ComplyPH` storage and preserving uninstall.
 
 ## Remaining work
@@ -30,7 +32,7 @@ Each new check requires reviewed source provisions, applicability and exception 
 
 ### 2. Better reports and review tracking
 
-PDF reports, document/finding notes and status history are available in 0.8.0. Existing source-review notes concern downloaded legal references; they remain separate from document/finding notes. See [reports and tracking](REPORTS.md).
+PDF reports, document/finding notes and status history have been available since 0.8.0. Existing source-review notes concern downloaded legal references; they remain separate from document/finding notes. See [reports and tracking](REPORTS.md).
 
 - [x] Export readable PDF reports with findings, evidence, scope, citations and document/source/rule versions.
 - [x] Add reviewer notes to document reviews and individual findings.
@@ -40,17 +42,17 @@ PDF reports, document/finding notes and status history are available in 0.8.0. E
 
 ### 3. Local OCR and folder monitoring
 
-The current reader extracts supported PDF/DOCX text and identifies pages that need OCR. OCR processing and watched-folder intake are not implemented.
+Local PDF OCR and optional nonrecursive folder intake are available in 0.9.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
 
-- [ ] Read scanned documents using local OCR, with page locations, visible quality limits and confirmation of uncertain text.
+- [x] Read scanned PDF documents using local OCR, with page locations, low-confidence highlights, visible quality limits and separate text confirmation before checking.
 - [ ] Improve layout, font and embedded-content reading coverage.
-- [ ] Add a folder picker for local watched-folder intake.
-- [ ] Wait for completed file writes, preserve originals and avoid rechecking unchanged content.
-- [ ] Keep watched-folder processing local; it must never trigger an AI upload automatically.
+- [x] Add a folder picker for local watched-folder intake.
+- [x] Wait for stable writes/completion markers, preserve originals and avoid duplicate/unchanged intake; numeric reviews are not automatic.
+- [x] Keep watched-folder processing local; it must never trigger an AI upload automatically.
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.8.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.9.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

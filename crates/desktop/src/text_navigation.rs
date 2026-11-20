@@ -163,7 +163,7 @@ mod tests {
     use complyph_extract::{Format, Location, Report, Status, TextUnit};
     fn fixture() -> (SavedExtraction, Evidence) {
         let location = Location::PdfPage { page: 2 };
-        (SavedExtraction{sha256:"original".into(),read_at:0,report:Report{engine:complyph_extract::ENGINE.into(),format:Format::Pdf,status:Status::Ready,summary:String::new(),units:vec![TextUnit{location:location.clone(),text:"José’s normal daily\nworking  hours are 9 hours.\nJosé’s normal daily working hours are 9 hours.".into()}],warnings:vec![]}},Evidence{location,text:"José’s normal daily working hours are 9 hours".into(),hundredths:Some(900)})
+        (SavedExtraction{sha256:"original".into(),read_at:0,report:Report{ocr:None,engine:complyph_extract::ENGINE.into(),format:Format::Pdf,status:Status::Ready,summary:String::new(),units:vec![TextUnit{location:location.clone(),text:"José’s normal daily\nworking  hours are 9 hours.\nJosé’s normal daily working hours are 9 hours.".into()}],warnings:vec![]}},Evidence{location,text:"José’s normal daily working hours are 9 hours".into(),hundredths:Some(900)})
     }
     #[test]
     fn unicode_wrapped_and_duplicate_passages_preserve_actual_byte_spans() {

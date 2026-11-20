@@ -280,6 +280,22 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
         }
     ))?;
     layout.heading("Snapshot and source identifiers")?;
+    if let Some(ocr) = &workflow.saved.review.ocr {
+        layout.body(&format!(
+            "OCR reading: Tesseract {} | {} | {}",
+            ocr.engine_version, ocr.renderer, ocr.language
+        ))?;
+        layout.body(&format!("{} OCR pages; {} low-confidence words. All text still requires comparison with the original.",ocr.pages.len(),ocr.pages.iter().map(|p|p.uncertain.len()).sum::<usize>()))?;
+        layout.body(&format!(
+            "OCR accuracy confirmation: {}",
+            if workflow.saved.review.context.ocr_text_confirmed {
+                "recorded by the original reviewer"
+            } else {
+                "not established"
+            }
+        ))?;
+        layout.muted(&format!("OCR model SHA-256: {}", ocr.model_sha256))?;
+    }
     for line in [
         format!("Rule engine: {}", workflow.saved.review.engine),
         format!(
@@ -522,6 +538,7 @@ mod tests {
             "synthetic-document-hash",
             complyph_checks::Context {
                 operative_terms_confirmed: true,
+                ocr_text_confirmed: false,
                 normal_hours: Covered,
                 ordinary_overtime: Covered,
                 night_differential: Covered,
@@ -606,7 +623,7 @@ mod tests {
             "Human follow-up status: Resolved",
             "Automated result: Potential issue",
             "Original evidence is retained.",
-            "complyph-labor-2",
+            "complyph-labor-3",
             "complyph-pdf-1",
             "Document review notes",
             "does not change the automated result",

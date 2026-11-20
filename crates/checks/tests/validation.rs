@@ -8,6 +8,7 @@ use complyph_extract::{Format, Location, Report, Status, TextUnit};
 fn context() -> Context {
     Context {
         operative_terms_confirmed: true,
+        ocr_text_confirmed: false,
         normal_hours: Covered,
         ordinary_overtime: Covered,
         night_differential: Covered,
@@ -18,6 +19,7 @@ fn context() -> Context {
 fn report(text: &str) -> Report {
     Report {
         engine: complyph_extract::ENGINE.into(),
+        ocr: None,
         format: Format::Docx,
         status: Status::Ready,
         summary: "synthetic".into(),
@@ -36,6 +38,47 @@ fn clauses(hours: &str, ot: &str, night: &str) -> String {
     format!(
         "Normal daily working hours are {hours} hours.\nOrdinary-day overtime premium is {ot}% of the regular hourly wage.\nNight shift differential is {night}% of the regular hourly wage for hours worked between 22:00 and 06:00.\nRegular meal period is 60 minutes of time-off.\nWeekly rest period is 24 consecutive hours after every six consecutive normal work days."
     )
+}
+
+#[test]
+fn ocr_numbers_require_explicit_confirmation_and_valid_reading_provenance() {
+    let mut input = report(&clauses("9", "20", "5"));
+    input.format = Format::Pdf;
+    input.engine = complyph_extract::OCR_ENGINE.into();
+    input.units[0].location = Location::PdfPage { page: 1 };
+    input.warnings = vec![complyph_extract::OCR_WARNING.into()];
+    input.ocr = Some(complyph_extract::OcrInfo {
+        engine_version: "synthetic-validation".into(),
+        renderer: "pdfium-8165".into(),
+        language: "eng".into(),
+        model_sha256: complyph_extract::OCR_MODEL_SHA256.into(),
+        confidence_threshold: 8000,
+        pages: vec![complyph_extract::OcrPage {
+            page: 1,
+            words: 30,
+            uncertain: vec![],
+        }],
+    });
+    assert!(
+        review(&input, "synthetic", context())
+            .findings
+            .iter()
+            .all(|f| f.outcome == NeedsReview)
+    );
+    let mut covered = context();
+    covered.ocr_text_confirmed = true;
+    assert!(
+        review(&input, "synthetic", covered.clone()).findings[..3]
+            .iter()
+            .all(|f| f.outcome == PotentialIssue)
+    );
+    input.ocr.as_mut().unwrap().model_sha256 = "changed".into();
+    assert!(
+        review(&input, "synthetic", covered)
+            .findings
+            .iter()
+            .all(|f| f.outcome == NeedsReview)
+    );
 }
 #[test]
 fn independent_article_boundaries_exact_decimal_and_favourable_terms() {
@@ -85,6 +128,7 @@ fn coverage_and_reading_integrity_are_required() {
     );
     let outside = Context {
         operative_terms_confirmed: true,
+        ocr_text_confirmed: false,
         normal_hours: Applicability::OutsideScope,
         ordinary_overtime: Applicability::OutsideScope,
         night_differential: Applicability::OutsideScope,

@@ -21,21 +21,52 @@ pub fn read_document(
     force: bool,
     cancel: &AtomicBool,
 ) -> Result<SavedExtraction, String> {
+    read_document_mode(paths, document, force, false, cancel)
+}
+
+pub fn read_document_ocr(
+    paths: &WorkspacePaths,
+    document: &Document,
+    cancel: &AtomicBool,
+) -> Result<SavedExtraction, String> {
+    if document.kind.format() != Format::Pdf {
+        return Err("Local OCR currently accepts PDF documents.".into());
+    }
+    read_document_mode(paths, document, true, true, cancel)
+}
+
+fn read_document_mode(
+    paths: &WorkspacePaths,
+    document: &Document,
+    force: bool,
+    requested_ocr: bool,
+    cancel: &AtomicBool,
+) -> Result<SavedExtraction, String> {
     check_cancel(cancel)?;
     let snapshot = document_snapshot(&document.path).map_err(|error| error.to_string())?;
     let workspace = Workspace::open(paths).map_err(|error| error.to_string())?;
+    let cached = workspace
+        .extraction(document.id)
+        .map_err(|e| e.to_string())?;
+    let ocr = requested_ocr || (force && cached.as_ref().is_some_and(|s| s.report.ocr.is_some()));
     if !force
-        && let Some(cached) = workspace
-            .extraction(document.id)
-            .map_err(|error| error.to_string())?
+        && let Some(cached) = cached
         && cached.sha256 == snapshot.sha256
-        && cached.report.engine == ENGINE
+        && ((cached.report.engine == ENGINE && cached.report.ocr.is_none())
+            || complyph_extract::valid_ocr(&cached.report))
     {
         check_cancel(cancel)?;
         return Ok(cached);
     }
     check_cancel(cancel)?;
-    let report = run_worker(document.kind.format(), snapshot.bytes.clone(), cancel)?;
+    let report = if ocr {
+        run_worker_mode(Format::Pdf, snapshot.bytes.clone(), cancel, true)?
+    } else {
+        run_worker(document.kind.format(), snapshot.bytes.clone(), cancel)?
+    };
+    if ocr && !complyph_extract::valid_ocr(&report) {
+        return Err(report.summary.clone());
+    }
     check_cancel(cancel)?;
     let current = document_snapshot(&document.path).map_err(|error| error.to_string())?;
     if current.sha256 != snapshot.sha256 {
@@ -60,13 +91,27 @@ pub(crate) fn run_worker(
     bytes: Vec<u8>,
     cancel: &AtomicBool,
 ) -> Result<Report, String> {
+    run_worker_mode(format, bytes, cancel, false)
+}
+fn run_worker_mode(
+    format: Format,
+    bytes: Vec<u8>,
+    cancel: &AtomicBool,
+    ocr: bool,
+) -> Result<Report, String> {
     let executable =
         std::env::current_exe().map_err(|_| "The local reader could not be located.")?;
     let mut command = Command::new(executable);
-    command.arg("--extract-worker").arg(match format {
-        Format::Pdf => "pdf",
-        Format::Docx => "docx",
-    });
+    command
+        .arg(if ocr {
+            "--ocr-worker"
+        } else {
+            "--extract-worker"
+        })
+        .arg(match format {
+            Format::Pdf => "pdf",
+            Format::Docx => "docx",
+        });
     // No inherited service credentials, proxy settings, or document-derived arguments.
     command.env_clear();
     for name in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
@@ -74,15 +119,25 @@ pub(crate) fn run_worker(
             command.env(name, value);
         }
     }
+    command.env("OMP_THREAD_LIMIT", "1");
+    #[cfg(debug_assertions)]
+    if ocr && let Some(path) = std::env::var_os("COMPLYPH_OCR_DIR") {
+        command.env("COMPLYPH_OCR_DIR", path);
+    }
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x08000000); // CREATE_NO_WINDOW
     }
-    let output = supervise(command, bytes, cancel, Duration::from_secs(20))?;
+    let output = supervise(
+        command,
+        bytes,
+        cancel,
+        Duration::from_secs(if ocr { 120 } else { 20 }),
+    )?;
     let report: Report = serde_json::from_slice(&output)
         .map_err(|_| "The local reader returned an invalid result. The original is unchanged.")?;
-    if report.engine != ENGINE
+    if (report.engine != ENGINE && !(ocr && complyph_extract::valid_ocr(&report)))
         || report.format != format
         || report.units.len() > complyph_extract::MAX_UNITS
         || report.text_bytes() > complyph_extract::MAX_TEXT_BYTES
@@ -122,7 +177,7 @@ fn supervise(
         }
         if started.elapsed() >= timeout {
             break Err(
-                "Reading stopped after 20 seconds. This file may be too complex or damaged. The original is unchanged.",
+                "Reading stopped after reaching its local time limit. This file may be too complex or damaged. The original is unchanged.",
             );
         }
         match child.try_wait() {
@@ -155,7 +210,17 @@ fn supervise(
 /// Internal helper: bounded memory/CPU, no window, no file-path argument, no disk writes.
 /// Always terminate before desktop or catalog initialization.
 pub fn worker_main(format: Format) -> ! {
-    let guard = limits::apply();
+    worker(format, false)
+}
+pub fn ocr_worker_main() -> ! {
+    worker(Format::Pdf, true)
+}
+fn worker(format: Format, ocr: bool) -> ! {
+    let guard = if ocr {
+        limits::apply_ocr()
+    } else {
+        limits::apply()
+    };
     let report = if guard.is_err() {
         Report::failure(
             format,
@@ -165,7 +230,14 @@ pub fn worker_main(format: Format) -> ! {
     } else {
         let mut bytes = Vec::new();
         match std::io::stdin().lock().take(MAX_INPUT_BYTES as u64 + 1).read_to_end(&mut bytes) {
-            Ok(_) => std::panic::catch_unwind(|| complyph_extract::extract(format, &bytes)).unwrap_or_else(|_| {
+            Ok(_) => std::panic::catch_unwind(|| {
+                if ocr {
+                    match complyph_ocr::runtime_directory() {
+                        Ok(directory) => complyph_ocr::recognize(&bytes,&directory),
+                        Err(error) => Report::failure(format,Status::Unreadable,&error),
+                    }
+                } else { complyph_extract::extract(format,&bytes) }
+            }).unwrap_or_else(|_| {
                 Report::failure(format, Status::Unreadable, "This document uses content the reader could not process. The original is unchanged.")
             }),
             Err(_) => Report::failure(format, Status::Unreadable, "The local reader could not receive the document."),

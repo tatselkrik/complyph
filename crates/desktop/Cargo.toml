@@ -14,6 +14,7 @@ path = "src/main.rs"
 complyph-checks = { path = "../checks" }
 complyph-core = { path = "../core" }
 complyph-extract = { path = "../extract" }
+complyph-ocr = { path = "../ocr" }
 complyph-library = { path = "../library" }
 complyph-reports = { path = "../reports" }
 serde_json.workspace = true

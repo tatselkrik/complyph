@@ -1,5 +1,6 @@
 //! Private, local workspace data. This crate has no networking dependencies.
 
+pub mod folder_watch;
 pub mod migration;
 pub mod review_workflow;
 pub use review_workflow::{ReviewActionRequest, ReviewEvent, ReviewStatus, ReviewWorkflow};
@@ -13,7 +14,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i32 = 4;
+const SCHEMA_VERSION: i32 = 5;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -240,6 +241,9 @@ impl Workspace {
         }
         if version < 4 {
             review_workflow::migrate(&transaction)?;
+        }
+        if version < 5 {
+            folder_watch::migrate(&transaction)?;
         }
         transaction.commit()?;
         connection.pragma_update(None, "journal_mode", "WAL")?;
