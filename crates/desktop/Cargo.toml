@@ -15,6 +15,7 @@ complyph-checks = { path = "../checks" }
 complyph-core = { path = "../core" }
 complyph-extract = { path = "../extract" }
 complyph-library = { path = "../library" }
+complyph-reports = { path = "../reports" }
 serde_json.workspace = true
 chrono.workspace = true
 eframe.workspace = true

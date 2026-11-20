@@ -6,6 +6,7 @@ mod library_view;
 mod provision_view;
 mod reader;
 mod reader_view;
+mod review_tools;
 mod source_import;
 mod source_updates;
 mod text_navigation;
@@ -82,6 +83,17 @@ fn parse_arguments() -> Option<PathBuf> {
             }
             std::process::exit(0);
         }
+        Some(argument)
+            if argument == "--review-state"
+                || argument == "--review-action"
+                || argument == "--export-review-pdf" =>
+        {
+            if let Err(error) = diagnostic_review(argument.to_str().unwrap(), arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--data-dir" => {
             let Some(path) = arguments.next() else {
                 eprintln!("--data-dir requires a path");
@@ -95,7 +107,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }
@@ -104,6 +116,74 @@ fn parse_arguments() -> Option<PathBuf> {
             std::process::exit(2);
         }
         None => None,
+    }
+}
+
+fn diagnostic_review(mode: &str, arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
+    use std::io::Read;
+    let action = mode == "--review-action";
+    let base = if action { 5 } else { 3 };
+    let output_index = if action { 4 } else { 2 };
+    if !(arguments.len() == base || arguments.len() == base + 2)
+        || (action && arguments[1] != "--metadata")
+        || arguments[output_index - 1] != "--output"
+        || (arguments.len() > base && arguments[base] != "--data-dir")
+    {
+        return Err("Use --review-state ID --output NEW-JSON, --review-action ID --metadata JSON --output NEW-JSON, or --export-review-pdf ID --output NEW-PDF; optionally add --data-dir PATH.".into());
+    }
+    let id = arguments[0]
+        .to_str()
+        .and_then(|s| s.parse::<i64>().ok())
+        .filter(|id| *id > 0)
+        .ok_or("A positive saved review ID is required.")?;
+    let output = std::path::Path::new(&arguments[output_index]);
+    let json_output = if mode == "--export-review-pdf" {
+        if output.exists() {
+            return Err("Choose a new PDF filename; existing files are never overwritten.".into());
+        }
+        None
+    } else {
+        Some(
+            std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(output)
+                .map_err(|_| "Choose a new output file; existing files are never overwritten.")?,
+        )
+    };
+    let request = if action {
+        let mut bytes = Vec::new();
+        std::fs::File::open(&arguments[2])
+            .map_err(|e| e.to_string())?
+            .take(32 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() > 32 * 1024 {
+            return Err("The reviewer update exceeds its size limit.".into());
+        }
+        Some(
+            serde_json::from_slice::<complyph_core::ReviewActionRequest>(&bytes)
+                .map_err(|e| e.to_string())?,
+        )
+    } else {
+        None
+    };
+    let paths = if arguments.len() > base {
+        WorkspacePaths::under(PathBuf::from(&arguments[base + 1]))
+    } else {
+        WorkspacePaths::default_location().map_err(|e| e.to_string())?
+    };
+    let workspace = complyph_core::Workspace::open(&paths).map_err(|e| e.to_string())?;
+    if let Some(request) = request {
+        workspace
+            .append_review_action(id, &request)
+            .map_err(|e| e.to_string())?;
+    }
+    let state = workspace.review_workflow(id).map_err(|e| e.to_string())?;
+    if let Some(output) = json_output {
+        serde_json::to_writer_pretty(output, &state).map_err(|e| e.to_string())
+    } else {
+        complyph_reports::export_pdf(&state, output).map_err(|e| e.to_string())
     }
 }
 

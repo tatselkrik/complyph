@@ -60,6 +60,7 @@ impl CheckView {
         catalog: &LibraryCatalog,
         document: &Document,
         saved: Option<&SavedExtraction>,
+        tools: &mut crate::review_tools::ReviewTools,
     ) -> Option<ReviewAction> {
         if catalog
             .reference_has_downloaded_changes(complyph_checks::SOURCE_KEY)
@@ -127,7 +128,13 @@ impl CheckView {
         }
         if let Some(result) = &self.result {
             ui.add_space(12.0);
-            return show_review(ui, result, saved.map(|s| s.sha256.as_str()));
+            return show_review(
+                ui,
+                result,
+                saved.map(|s| s.sha256.as_str()),
+                workspace,
+                tools,
+            );
         }
         None
     }
@@ -153,13 +160,20 @@ pub fn show_review(
     ui: &mut Ui,
     saved: &SavedReview,
     current_hash: Option<&str>,
+    workspace: &Workspace,
+    tools: &mut crate::review_tools::ReviewTools,
 ) -> Option<ReviewAction> {
     let mut action = None;
     let can_jump = current_hash == Some(saved.review.document_sha256.as_str());
+    let workflow = workspace.review_workflow(saved.id);
     widgets::card().show(ui,|ui| {
         ui.set_min_width(ui.available_width());
         ui.label(RichText::new(format!("Findings · review #{}",saved.id)).font(heading(20.0)));
         widgets::muted(ui,&format!("{} supported numeric comparisons in this saved review. No overall compliance verdict is produced.",saved.review.findings.len()));
+        match &workflow {
+            Ok(state) => { tools.header(ui, workspace, state); tools.document(ui, workspace, state); }
+            Err(error) => { ui.colored_label(RED,error.to_string()); }
+        }
         if current_hash.is_some() && !can_jump {
             ui.colored_label(AMBER,"This document has changed since the saved review. Evidence quotes remain available; passage navigation is disabled. Run a new review for this version.");
         }else if !can_jump {widgets::muted(ui,"Open the connected review and wait for text reading to navigate document passages.");}
@@ -185,13 +199,13 @@ pub fn show_review(
             if ui.button("Open supporting provision offline").clicked(){
                 action=Some(ReviewAction::Provision{review:Box::new(saved.clone()),finding:index});
             }
+            if let Ok(state) = &workflow { tools.finding(ui, workspace, state, &finding.rule_id); }
         }
         ui.add_space(12.0);
         egui::CollapsingHeader::new("Scope and limitations").id_salt(("limits",saved.id)).show(ui,|ui|{ui.label(&saved.review.limitation);});
         egui::CollapsingHeader::new("Snapshot and rule identifiers").id_salt(("hashes",saved.id)).show(ui,|ui| {
             for text in [format!("Rules: {}",saved.review.engine),format!("Document SHA-256: {}",saved.review.document_sha256),format!("Source SHA-256: {}",saved.review.source_sha256),format!("Reading-text SHA-256: {}",saved.review.source_text_sha256)] {ui.add(egui::Label::new(text).wrap().selectable(true));}
         });
-        if ui.button("Copy report JSON").clicked() && let Ok(json)=serde_json::to_string_pretty(saved) {ui.ctx().copy_text(json);}
     });
     action
 }

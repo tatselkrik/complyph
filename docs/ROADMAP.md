@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.7.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.8.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.7.0
+## Available in 0.8.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -11,7 +11,7 @@ Status reflects ComplyPH 0.7.0. Checked items are available; unchecked items are
 - [x] Nineteen preserved references across seven compliance domains, with provenance and coverage gaps.
 - [x] Approved-URL source checks on Windows, daily while open; immutable downloaded-change history, change flags, local export and source-review notes.
 - [x] Manual PDF/DOCX legal-source intake with official citation URLs, domains, dates, user verification notes and immutable version history.
-- [x] Saved local review reports, connected reopening and report JSON copying/diagnostic export.
+- [x] Saved local reviews, connected reopening, document/finding notes, Unresolved/Acknowledged/Resolved follow-up history, offline PDF export and full-report JSON copying.
 - [x] Windows installation, workspace migration, protected `C:\ProgramData\ComplyPH` storage and preserving uninstall.
 
 ## Remaining work
@@ -30,12 +30,12 @@ Each new check requires reviewed source provisions, applicability and exception 
 
 ### 2. Better reports and review tracking
 
-Saved reports and JSON copying/diagnostic export are available. The following report features remain planned. Existing source-review notes concern downloaded legal references; they are separate from document/finding review notes.
+PDF reports, document/finding notes and status history are available in 0.8.0. Existing source-review notes concern downloaded legal references; they remain separate from document/finding notes. See [reports and tracking](REPORTS.md).
 
-- [ ] Export readable PDF reports with findings, evidence, scope, citations and document/source/rule versions.
-- [ ] Add reviewer notes to document reviews and individual findings.
-- [ ] Track issue statuses such as **unresolved**, **acknowledged** and **resolved**, with a history of reviewer actions.
-- [ ] Keep human review statuses separate from the original automated finding and its preserved evidence.
+- [x] Export readable PDF reports with findings, evidence, scope, citations and document/source/rule versions.
+- [x] Add reviewer notes to document reviews and individual findings.
+- [x] Track issue statuses such as **unresolved**, **acknowledged** and **resolved**, with a history of reviewer actions.
+- [x] Keep human review statuses separate from the original automated finding and its preserved evidence.
 - [ ] Compare revised document versions and retain the review history for each version.
 
 ### 3. Local OCR and folder monitoring
@@ -50,7 +50,7 @@ The current reader extracts supported PDF/DOCX text and identifies pages that ne
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.7.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.8.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

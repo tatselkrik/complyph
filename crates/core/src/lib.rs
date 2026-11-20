@@ -1,6 +1,8 @@
 //! Private, local workspace data. This crate has no networking dependencies.
 
 pub mod migration;
+pub mod review_workflow;
+pub use review_workflow::{ReviewActionRequest, ReviewEvent, ReviewStatus, ReviewWorkflow};
 
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
@@ -11,7 +13,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i32 = 3;
+const SCHEMA_VERSION: i32 = 4;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -23,6 +25,12 @@ pub enum WorkspaceError {
     Settings(#[from] serde_json::Error),
     #[error("{0}")]
     InvalidDocument(String),
+    #[error("{0}")]
+    InvalidReview(String),
+    #[error(
+        "This review or its tracking history changed. Refresh the history, check the latest status and submit again."
+    )]
+    ReviewConflict,
     #[error("This workspace uses a newer database version. Open it with a newer ComplyPH release.")]
     NewerDatabase,
     #[error("The operating system did not provide a local application-data directory.")]
@@ -229,6 +237,9 @@ impl Workspace {
                 value TEXT NOT NULL
             ); PRAGMA user_version = 3;",
             )?;
+        }
+        if version < 4 {
+            review_workflow::migrate(&transaction)?;
         }
         transaction.commit()?;
         connection.pragma_update(None, "journal_mode", "WAL")?;

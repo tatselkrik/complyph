@@ -45,7 +45,7 @@ pub fn import_into_empty(source: &Path, target: &Path) -> Result<WorkspacePaths>
         let input = Connection::open_with_flags(&private, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
         let count: i64 = input.query_row("SELECT COUNT(*) FROM documents", [], |r| r.get(0))?;
         let version: i32 = input.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-        if count != 0 || version > 3 {
+        if count != 0 || version > crate::SCHEMA_VERSION {
             return Err(WorkspaceError::InvalidDocument("The destination already has documents or a newer schema. It cannot be replaced or merged.".into()));
         }
         if version >= 3 {
@@ -54,6 +54,15 @@ pub fn import_into_empty(source: &Path, target: &Path) -> Result<WorkspacePaths>
             if count != 0 {
                 return Err(WorkspaceError::InvalidDocument(
                     "The destination has saved reports and cannot be replaced.".into(),
+                ));
+            }
+        }
+        if version >= 4 {
+            let count: i64 =
+                input.query_row("SELECT COUNT(*) FROM review_actions", [], |r| r.get(0))?;
+            if count != 0 {
+                return Err(WorkspaceError::InvalidDocument(
+                    "The destination has review history and cannot be replaced.".into(),
                 ));
             }
         }
@@ -123,7 +132,7 @@ pub fn import(source: &Path, target: &Path) -> Result<WorkspacePaths> {
     secure_directory(&stage)?;
     let result = (|| {
         for (relative, maximum) in [
-            ("private/workspace.sqlite3", 3),
+            ("private/workspace.sqlite3", crate::SCHEMA_VERSION),
             ("library/catalog.sqlite3", 4),
         ] {
             let original = source.join(relative);
@@ -275,7 +284,7 @@ mod tests {
             .unwrap();
         drop(workspace);
         let db = Connection::open(&source.database).unwrap();
-        db.execute_batch("DROP TABLE review_runs; PRAGMA user_version=2;")
+        db.execute_batch("DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; DROP TABLE review_runs; PRAGMA user_version=2;")
             .unwrap();
         drop(db);
         let before = fs::read(&source.database).unwrap();

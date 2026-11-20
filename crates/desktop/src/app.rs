@@ -83,6 +83,7 @@ pub struct ComplyApp {
     library_view: LibraryView,
     reader_view: crate::reader_view::ReaderView,
     check_view: crate::check_view::CheckView,
+    review_tools: crate::review_tools::ReviewTools,
     provision_view: crate::provision_view::ProvisionView,
     workspace_picker: FileDialog,
     import_source: Option<PathBuf>,
@@ -112,6 +113,7 @@ impl ComplyApp {
             library_view: LibraryView::default(),
             reader_view: crate::reader_view::ReaderView::default(),
             check_view: crate::check_view::CheckView::default(),
+            review_tools: crate::review_tools::ReviewTools::default(),
             provision_view: crate::provision_view::ProvisionView::default(),
             workspace_picker: FileDialog::new()
                 .title("Choose existing workspace folder")
@@ -383,7 +385,7 @@ impl ComplyApp {
         ui.painter().text(
             pos2(rect.left() + 25.0, rect.bottom() - 30.0),
             Align2::LEFT_CENTER,
-            concat!("LABOUR WORK AND REST / ", env!("CARGO_PKG_VERSION")),
+            concat!("REVIEW TRACKING / ", env!("CARGO_PKG_VERSION")),
             FontId::proportional(10.0),
             NAV_MUTED,
         );
@@ -719,6 +721,7 @@ impl ComplyApp {
                             catalog,
                             document,
                             self.reader_view.current(),
+                            &mut self.review_tools,
                         );
                     } else {
                         widgets::muted(
@@ -850,7 +853,7 @@ impl ComplyApp {
     }
 
     fn reports_page(&mut self, ui: &mut Ui) {
-        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Open a saved review beside its document and inspect the supporting provisions offline.");
+        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Open a saved review, record follow-up notes and statuses, or export a local PDF report.");
         let mut open = None;
         let mut action = None;
         if let Some(workspace) = &self.workspace {
@@ -880,7 +883,13 @@ impl ComplyApp {
                             if ui.button("Open connected review").clicked() {
                                 open = Some(saved.clone());
                             }
-                            if let Some(event) = crate::check_view::show_review(ui, &saved, None) {
+                            if let Some(event) = crate::check_view::show_review(
+                                ui,
+                                &saved,
+                                None,
+                                workspace,
+                                &mut self.review_tools,
+                            ) {
                                 action = Some(event);
                             }
                         });
@@ -977,7 +986,7 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Labour work and rest")).size(12.5).color(MUTED));
+            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Reviewer notes and PDF reports")).size(12.5).color(MUTED));
             ui.add_space(8.0);
             ui.label(RichText::new("Five source-cited labour checks are available. Other-domain rules remain planned. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
         });
@@ -1069,6 +1078,7 @@ impl eframe::App for ComplyApp {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.messages(ctx);
         self.reader_view.poll();
+        self.review_tools.tick(ctx, self.workspace.as_ref());
         if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
             self.choose_documents(ctx);
         }

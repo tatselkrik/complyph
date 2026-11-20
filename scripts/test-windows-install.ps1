@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.7.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.8.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -178,7 +178,7 @@ foreach ($name in $expected.Keys | Sort-Object) {
 import json, os, pathlib, sqlite3
 root = pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])
 with sqlite3.connect(root / 'private/workspace.sqlite3') as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0] == 3
+    assert db.execute('PRAGMA user_version').fetchone()[0] == 4
     original = db.execute('SELECT id,path,added_at FROM documents WHERE id=1').fetchone()
     assert original == (1, os.environ['COMPLYPH_SMOKE_ORIGINAL'], 1)
     prefs = json.loads(db.execute('SELECT value FROM preferences WHERE id=1').fetchone()[0])
@@ -206,7 +206,7 @@ foreach ($name in $checkCases.expected.Keys | Sort-Object) {
     if (($outcomes -join ',') -ne ($checkCases.expected[$name] -join ',')) { throw "Incorrect checking outcomes: $name" }
     if (!$saved.review.context.operative_terms_confirmed -or $saved.review.engine -ne 'complyph-labor-2') { throw 'Review audit context missing.' }
     if ((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash -ne $before) { throw 'Checking changed an original.' }
-    $checkResults += [ordered]@{ name=$name; outcomes=$outcomes; original_preserved=$true }
+    $checkResults += [ordered]@{ name=$name; review_id=$saved.id; outcomes=$outcomes; original_preserved=$true }
 }
 @'
 import os,pathlib,sqlite3
@@ -215,6 +215,62 @@ with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/
  assert db.execute('SELECT COUNT(*) FROM document_extractions').fetchone()[0]==11
 '@ | python -
 if ($LASTEXITCODE -ne 0) { throw 'Saved report/extraction persistence failed.' }
+# Exercise separate reviewer history and local PDF generation in the installed GUI binary.
+function Invoke-ReviewDiagnostic([string[]]$Arguments, [bool]$ShouldSucceed = $true) {
+    $info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $application; $info.UseShellExecute = $false
+    foreach ($argument in $Arguments) { $info.ArgumentList.Add($argument) }
+    $process = [Diagnostics.Process]::Start($info)
+    if (!$process.WaitForExit(45000)) { $process.Kill($true); throw 'Installed review tracking/export timed out.' }
+    if (($process.ExitCode -eq 0) -ne $ShouldSucceed) { throw ('Unexpected tracking/export result: ' + ($Arguments -join ' ')) }
+}
+$reviewId = ($checkResults | Where-Object { $_.name -eq 'Synthetic labour issues.docx' }).review_id
+$stateFile = Join-Path $fixtureRoot 'review-state.json'
+Invoke-ReviewDiagnostic @('--review-state',"$reviewId",'--output',$stateFile)
+$workflow = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+if ($workflow.events.Count -ne 0 -or $workflow.saved.review.findings.Count -ne 5) { throw 'New review inherited tracking history.' }
+$env:COMPLYPH_SMOKE_REVIEW_ID = "$reviewId"
+$env:COMPLYPH_SMOKE_REVIEW_ORIGINAL = Join-Path $fixtureRoot 'review-value-before.json'
+@'
+import os, pathlib, sqlite3
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/workspace.sqlite3') as db:
+ value=db.execute('SELECT value FROM review_runs WHERE id=?',(int(os.environ['COMPLYPH_SMOKE_REVIEW_ID']),)).fetchone()[0]
+ pathlib.Path(os.environ['COMPLYPH_SMOKE_REVIEW_ORIGINAL']).write_text(value,encoding='utf-8')
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Could not capture original automated review.' }
+$actionFile = Join-Path $fixtureRoot 'review-action.json'
+$revision = 0
+foreach ($step in @('document','acknowledged','resolved')) {
+    $rule = if ($step -eq 'document') { $null } else { 'PH-LAB-083-01' }
+    $newStatus = if ($step -eq 'document') { $null } else { $step }
+    $action = [ordered]@{ review_fingerprint=$workflow.review_fingerprint; rule_id=$rule; expected_revision=$revision; reviewer='José Example'; note="Fictional ₱500 $step follow-up. Original findings retained."; status=$newStatus }
+    $action | ConvertTo-Json | Set-Content -LiteralPath $actionFile -Encoding utf8NoBOM
+    $resultFile = Join-Path $fixtureRoot "review-$step.json"
+    Invoke-ReviewDiagnostic @('--review-action',"$reviewId",'--metadata',$actionFile,'--output',$resultFile)
+    $workflow = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
+    if ($step -ne 'document') { $revision = $workflow.events[-1].id }
+}
+if ($workflow.events.Count -ne 3 -or $workflow.events[-1].previous_status -ne 'acknowledged' -or $workflow.events[-1].new_status -ne 'resolved' -or $workflow.saved.review.findings[0].outcome -ne 'potential_issue') { throw 'Reviewer history or original result was changed.' }
+Invoke-ReviewDiagnostic @('--review-action',"$reviewId",'--metadata',$actionFile,'--output',(Join-Path $fixtureRoot 'review-stale.json')) $false
+$pdf = Join-Path $fixtureRoot 'synthetic-review.pdf'
+Invoke-ReviewDiagnostic @('--export-review-pdf',"$reviewId",'--output',$pdf)
+$pdfHash = (Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash
+Invoke-ReviewDiagnostic @('--export-review-pdf',"$reviewId",'--output',$pdf) $false
+if ((Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash -ne $pdfHash) { throw 'PDF overwrite refusal failed.' }
+$pdfReading = Join-Path $fixtureRoot 'pdf-reading.json'
+Invoke-ReviewDiagnostic @('--read-file',$pdf,'--output',$pdfReading)
+$reading = Get-Content -LiteralPath $pdfReading -Raw | ConvertFrom-Json
+$text = (($reading.report.units | ForEach-Object { $_.text }) -join ' ') -replace '\s+', ' '
+foreach ($needle in @('José','₱500','Acknowledged to Resolved','Human follow-up status: Resolved','Automated result: Potential issue','PH-LAB-083-01','PH-LAB-087-01','PH-LAB-086-01','PH-LAB-085-01','PH-LAB-091-01','complyph-pdf-1')) {
+    if (!$text.Contains($needle)) { throw "Missing exported PDF content: $needle" }
+}
+@'
+import os,pathlib,sqlite3
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/workspace.sqlite3') as db:
+ value=db.execute('SELECT value FROM review_runs WHERE id=?',(int(os.environ['COMPLYPH_SMOKE_REVIEW_ID']),)).fetchone()[0]
+ assert value==pathlib.Path(os.environ['COMPLYPH_SMOKE_REVIEW_ORIGINAL']).read_text(encoding='utf-8')
+ assert db.execute('SELECT COUNT(*) FROM review_actions').fetchone()[0]==3
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Tracking changed original findings or stale actions were accepted.' }
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 # Import a fictional public reference through the installed bounded reader.
 $sourceSample = Join-Path $installDirectory 'Samples/Synthetic employment.pdf'
@@ -267,14 +323,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.6.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.6.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.6.0/ComplyPH-Setup-0.6.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '1984ca3ea4720363a8a8759a79b47b5633e20d71149ed467d809e9301a7794cb') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.7.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.7.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.7.0/ComplyPH-Setup-0.7.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '9e2ab78c8c37cbea1ebe3bca7568cb2c339db1eb7aa8c95a6f1bb33d0b320d08') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.6.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.7.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -291,7 +347,8 @@ $result = [ordered]@{
     catalog_status_passed = $true; starter_source_count = $status.source_count; starter_domain_count = $status.domains.Count
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
-    private_schema = 3; validated_check_count = 5; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    private_schema = 4; validated_check_count = 5; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    installed_review_notes_passed = $true; installed_issue_tracking_passed = $true; installed_pdf_export_passed = $true; review_audit_history_preserved = $true
     public_schema = 4; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
     downloader_isolation_passed = $true; updater_no_approval_no_network_passed = $true
     public_https_probe_passed = $liveResponseObserved; public_https_probe_results = $liveProbeResults
@@ -299,4 +356,4 @@ $result = [ordered]@{
     interactive_windows_ui_tested = $false
 }
 $result | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $root 'dist/windows/windows-install-check.json') -Encoding utf8
-Write-Output 'Install/upgrades, ProgramData copy and ACL, reader/check cases, public source import, saved reports, and preservation passed.'
+Write-Output 'Install/upgrades, ProgramData copy and ACL, reader/check cases, public source import, reviewer history, offline PDF export, and preservation passed.'

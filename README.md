@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.7.0"><img src="https://img.shields.io/badge/version-0.7.0-142B49?style=flat-square" alt="Version 0.7.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.8.0"><img src="https://img.shields.io/badge/version-0.8.0-142B49?style=flat-square" alt="Version 0.8.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -29,6 +29,8 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 - **Offline legal provisions:** open the complete supporting article, related provisions or full preserved source from the exact version used by a saved review.
 - **Private document reader:** local extraction, text search, location navigation and content-hash-validated caching. Original files remain in place.
 - **Saved reports:** retain the confirmed scope, matched passages, outcomes, rule versions and document/source hashes; reopen a report beside its document.
+- **Reviewer notes and tracking:** add document-review and finding notes; track Unresolved, Acknowledged and Resolved follow-up with append-only local history. Original automated findings stay intact.
+- **Offline PDF export:** save findings, evidence, exact legal quotes, scope, identifiers and complete reviewer history in a readable report with embedded fonts. No printer or browser is required.
 - **Source update checks:** approve official publication URLs for daily checks while the Windows app is open, or check now. Keep downloaded changes and earlier versions, inspect failures, and record source reviews.
 - **Add legal source:** import local PDF/DOCX references with an official URL, issuing agency, compliance domains, issue/effective dates and verification notes. Retain original bytes and earlier versions.
 - **Traceable reference library:** 19 preserved references across seven domains, with source URLs, dates, integrity hashes, provenance labels and visible coverage gaps.
@@ -41,9 +43,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.7.0/ComplyPH-Setup-0.7.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.7.0/ComplyPH-Windows-x64-0.7.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.7.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/ComplyPH-Setup-0.8.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/ComplyPH-Windows-x64-0.8.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.8.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -53,7 +55,11 @@ Normal use requires no command prompt or development tools. The current Windows 
 2. Compare the extracted text with the original, then select **Check document** and establish each rule's applicability.
 3. Run the local review. Click a finding title or **Show passage** to navigate to its highlighted evidence.
 4. Select **Open supporting provision offline** to inspect the complete cited article and related provisions.
-5. Use **Reports → Open connected review** to return to a saved assessment. If the original has changed, passage navigation is disabled until a new review is made.
+5. Expand **Document review notes** or a finding’s **Reviewer notes and status**. Enter a reviewer name, note/reason and optional follow-up status, then **Save reviewer update**. Earlier entries remain visible.
+6. Select **Export PDF…** and choose a new local filename, or **Copy full report JSON**. Save pending notes first.
+7. Use **Reports → Open connected review** to return to a saved assessment. If the original has changed, passage navigation is disabled until a new review is made.
+
+A resolved follow-up status records a human decision and never changes the automated result or certifies compliance. Reviewer names are self-reported. Each saved review has separate tracking; a new review starts fresh. PDF exports contain private excerpts and notes, include all saved actions, and do not recheck current documents or laws. See [reports and tracking](docs/REPORTS.md).
 
 A matching numeric term is not a complete compliance verdict. Unclear applicability, unsupported wording, conflicting values and incomplete extraction remain unresolved. See [supported checks and validation](docs/VALIDATED_CHECKS.md).
 
@@ -93,13 +99,13 @@ Source documents and checking rules are maintained separately. See the [inventor
 
 ## Privacy and limitations
 
-Document text, file references, hashes and findings remain in the private local workspace. The public reference catalog is separate. The desktop reader and rule engine contain no HTTP client, AI service, analytics or document upload feature. A separate Windows AppContainer worker makes approved public-source GET requests; it cannot open the private workspace or ordinary original-document files. Opening a supporting provision uses the local catalog.
+Document text, file references, hashes, findings and reviewer history remain in the private local workspace. The public reference catalog is separate. The desktop reader and rule engine contain no HTTP client, AI service, analytics or document upload feature. A separate Windows AppContainer worker makes approved public-source GET requests; it cannot open the private workspace or ordinary original-document files. Opening a supporting provision uses the local catalog.
 
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The directory is restricted to its owning account, SYSTEM and Administrators. It is not a shared multi-user store, and SQLite is not encrypted by the app. Detected earlier workspaces are copied and checked, with the old data retained as backup. **Settings → Import an existing workspace** handles custom locations and refuses to overwrite a populated destination.
 
 Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. Scans need external OCR; images, text boxes, layout and revisions can affect coverage. The five numeric checks are technically tested, not qualified legal certification.
 
-Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, PDF reports and review tracking, local OCR, watched folders and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
+Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, document-version comparison, local OCR, watched folders and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
 
 ## Build from source
 
@@ -134,6 +140,7 @@ Developers can use `--data-dir PATH` for isolated storage. The Windows CI workfl
 | `crates/desktop` | Native interface, reader process and connected review |
 | `crates/core` | Private workspace, text cache, reports and migrations |
 | `crates/extract` | Memory-only PDF/DOCX parsing |
+| `crates/reports` | Offline PDF layout, bundled-font embedding and new-file export |
 | `crates/checks` | Deterministic rules and applicability gates |
 | `crates/library` | Public source snapshots, provenance and integrity |
 | `crates/paths` | Workspace discovery and permissions |

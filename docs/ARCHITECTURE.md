@@ -2,13 +2,14 @@
 
 ## Current implementation
 
-ComplyPH 0.7.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons and saved reports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. In-app OCR and folder monitoring remain future work.
+ComplyPH 0.8.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Five deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. In-app OCR and folder monitoring remain future work.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
 | `complyph-desktop` | Native workspace, file selection, source filters, reader, and original export | Uses both stores |
 | `complyph-core` | Private references, content snapshots, text cache, settings, and migrations | Owns private workspace |
 | `complyph-extract` | In-memory PDF/DOCX parsing and structured text locations | Receives bytes only; no file/network I/O |
+| `complyph-reports` | Pure local PDF rendering from a captured review/history, bundled fonts and atomic new-file export | Receives private snapshot; no HTTP/original-file access |
 | `complyph-checks` | Pure, source-pinned numeric rules with context gates; no I/O | Receives extraction/context values |
 | `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
 | `complyph-paths` | Shared current/legacy data-root discovery | File/directory existence and process-name checks; no document/database content reads |
@@ -21,13 +22,13 @@ The desktop and private-processing crates have no HTTP client or telemetry, AI i
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running review-app processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
 
 ```text
-private/workspace.sqlite3   Private document references, text caches, preferences and review runs; schema 3
+private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions; schema 4
 library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 4
 ```
 
 The installer detects a registered earlier installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
 
-Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and saved reports and preserves the original file. Private migration 1 → 2 adds the cache table; 2 → 3 adds review history without replacing existing document records or preferences. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
+Document references use canonical paths. Duplicate registration refreshes metadata without adding another entry. Removing an entry cascades to its text cache and saved reports and preserves the original file. Private migration 1 → 2 adds the cache table; 2 → 3 adds review history without replacing existing document records or preferences. Migration 3 → 4 adds separate reviewer actions and preserves original report JSON. Newer database schemas and malformed saved preferences are rejected without destructive replacement.
 
 ## Public source catalog
 
@@ -94,3 +95,13 @@ The desktop starts the packaged coordinator with the public-library directory on
 For each URL, the coordinator starts a resource-limited AppContainer process through STARTUPINFOEX security capabilities and an explicit inherited-handle list. The network child confirms its AppContainer token before reading a request or constructing an HTTP client. It has InternetClient capability, no private-network/library capabilities, an executable directory with read/execute access only and no catalog path. Its framed pipe protocol carries a small public request, a bounded response header and at most 32 MiB of body bytes. HTTPS uses Rustls/WebPKI; credentials, proxies, cookies and request bodies are excluded. The resolver rejects private/reserved addresses and passes the checked addresses directly to the connector. Redirects are same-origin HTTPS and limited to three. The parent verifies URL origin, payload type, size and hash before committing a change.
 
 Other-platform builds fail closed rather than creating an unconfined downloader. Source checks inspect selected URL bytes; they do not crawl other publications or establish legal currency. See [source updates](SOURCE_UPDATES.md).
+
+## Reviewer tracking and report export
+
+Private schema 4 stores `review_actions` separately from original `review_runs.value` JSON. Each action records a self-reported reviewer name, required note, time, optional rule ID and before/after status. The default human status is Unresolved, independent of the original automated outcome. Notes apply to one saved review; new reviews never inherit resolved statuses. Corrections and reopened issues append new entries. Deleting a document cascades through its reviews and tracking, preserving the original file.
+
+A fingerprint hashes the stored original JSON bytes and saved row identifiers/timestamp, so deserialization defaults do not invalidate historical reports and reused row IDs cannot accept stale actions. An immediate transaction checks that fingerprint and the latest revision for the targeted document-note/finding stream before appending. A stale editor must load and review the latest state; another finding’s update does not block an independent action. SQLite triggers reject in-place action changes and updates to a tracked review. This history is not an authenticated signature or tamper-proof log against a machine owner who can alter the database.
+
+PDF export captures the original review, document name and all actions in one read transaction. The renderer uses `lopdf` and embedded Lato TrueType fonts with explicit Unicode/GID mappings. A4 layout wraps text and paginates; limits are 200 pages and 8 MiB of input text. Unsupported glyphs fail explicitly, with complete JSON available as the alternative. An export worker receives only the captured DTO and destination path; it never opens the original or a legal catalog. A temporary file in the destination directory is completed and synced before new-file persistence; existing paths are refused. PDF strings are encoded as text, without actions, links, attachments, scripts or external resources. PDF reports identify the saved scope, evidence, legal quote, source/rule hashes and history cutoff; they do not establish current legal currency.
+
+The diagnostic routes `--review-state`, `--review-action` and `--export-review-pdf` exercise the same store/renderer as the native controls. JSON metadata is bounded and rejects unknown fields; a new output is required before an action is written. Normal use needs no command prompt. See [reports](REPORTS.md).

@@ -1,4 +1,4 @@
-ComplyPH 0.7.0 - Labour work and rest checks
+ComplyPH 0.8.0 - Reviewer notes and PDF reports
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -18,6 +18,20 @@ Reports > Open connected review restores a saved review beside its document.
 If the original differs from that review, passage navigation is disabled; saved
 quotes and the matching historical legal source remain available. A missing or
 mismatched legal snapshot is reported without substituting the latest version.
+
+Use Document review notes to record notes for a saved review. Each finding has
+Reviewer notes and status: Unresolved, Acknowledged or Resolved. Enter a reviewer
+name and note/reason, then Save reviewer update. Names are self-reported, not
+verified identities or signatures. Earlier entries remain visible; corrections are
+new notes. Resolved is a follow-up label and never changes the automated result.
+A new review has its own tracking history.
+
+Export PDF saves the original findings, scope, evidence, legal quotes, identifiers
+and complete saved history to a new local file. Save pending notes first. No
+browser, printer or internet is needed. Exports contain private excerpts and notes;
+store/share them deliberately. Lato fonts are embedded; unsupported scripts cause
+an explicit error. Copy full report JSON is the alternative for unsupported text
+or reports above 200 pages. Exports do not recheck current originals or laws.
 
 Read PDF/DOCX text locally, compare it with the original, then choose Check document.
 Confirm scope for normal daily working hours, ordinary-day overtime additional
@@ -59,7 +73,7 @@ old workspace only into an empty destination; existing data is preserved.
 
 This fixed path is restricted to its owning account, SYSTEM and Administrators;
 it is not a shared multi-user store. SQLite is not encrypted by the app. Removing
-a document entry deletes its cache and reports, preserving the original file.
+a document entry deletes its cache, reports and tracking history, preserving the original file.
 Uninstall preserves active data, backups and original documents.
 
 The desktop has no HTTP client, AI or document upload feature. The separate

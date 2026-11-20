@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.7.0'
+$version = '0.8.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -36,9 +36,10 @@ $zip = Join-Path $output "ComplyPH-Windows-x64-$version.zip"
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force
 $sourceCommit = (git -C $root rev-parse HEAD).Trim()
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Labour work and rest checks'
+    project = 'ComplyPH'; version = $version; milestone = 'Reviewer notes and PDF reports'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
-    document_text_reading = 'offline PDF and DOCX'; private_schema = 3
+    document_text_reading = 'offline PDF and DOCX'; private_schema = 4
+    reviewer_tracking = $true; pdf_export = $true; pdf_engine = 'complyph-pdf-1'
     connected_review = $true; offline_exact_provisions = $true
     manual_legal_source_import = $true; public_schema = 4
     source_update_checks = $true; downloader_isolation = 'Windows AppContainer InternetClient'; update_schedule = 'daily while desktop is open, approved URLs only'; source_change_review = $true

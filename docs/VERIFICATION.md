@@ -1,18 +1,25 @@
-# Verification — ComplyPH 0.7.0
+# Verification — ComplyPH 0.8.0
 
 ## Automated Rust checks
 
-The native Linux suite passes 65 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
+The native Linux suite passes 73 tests covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
 
 - Eight rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, actual five-finding PDF/DOCX fixtures, and earlier three-rule context/report compatibility.
-- Thirteen private-store tests cover retained references/preferences/caches, schema 1/2 → 3, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
-- Six executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
+- Seventeen private-store tests cover retained references/preferences/caches, schema 1/2/3 → 4, report persistence/deletion, original preservation, malformed/future databases, concurrency and migration. Migration tests include committed WAL data, unchanged old source bytes, v0.3 cached text, ambiguous/corrupt/future sources, populated destinations and rollback of explicit import into an unused destination.
+- Seven executable integration tests invoke the actual desktop binary and child reader: the seven reader fixtures, content-hash cache refresh/reuse, overwrite refusal, three checking fixtures and saved private report history; public-reference PDF/DOCX import, duplicate/version handling, status separation, failed-file rejection, private/original preservation and overwrite refusal.
 - Five parser tests cover independent reader outcomes, physical PDF pages, Word paragraph/table/header locations, XML/Unicode/entities/revisions, malformed documents and resource limits.
 - Nine desktop unit tests cover passage ranges, changed/missing evidence, Unicode/chunks, complete article boundaries, related-rule rendering, nested-pane visibility after a passage jump and cancellation/termination. The nested-pane regression reproduces the original off-screen viewport before the fix. Seventeen public-catalog tests cover all 19 sources, 14/3/2 provenance counts, tampering including provisional sources, export, idempotency, legacy schemas, concurrent import, historical source lookup and metadata-only bundle upgrades, manual URL/date/domain validation, comparison-note requirements, immutable manual history and bundled-source protection. Three path tests cover legacy discovery, ambiguity and empty directories.
+
+- Reviewer-history tests cover original JSON byte preservation, append-only triggers, note/status corrections, reopen/new-review separation, document deletion, concurrent stale updates, reused review IDs, required actor/reason limits, unknown fields and schema 3 → 4 compatibility.
+- Three PDF tests extract the generated PDF to verify every saved finding, evidence passage, legal quote, Unicode name/peso sign and status transition; exercise long-history pagination and margin bounds; check embedded fonts and absence of active PDF actions; and refuse overwrite, unsupported glyphs and oversized reports without partial output. Historical export works without opening an original file, and three-rule reports retain their original rule set.
+- The executable report integration invokes notes, acknowledgement/resolution, stale-action rejection, new-file refusal and PDF export through the actual desktop binary, then reads the PDF through its bounded child parser. Automated findings and original bytes remain unchanged.
 
 These are technical tests, not qualified legal certification. See [rule scope, independent cases and limitations](VALIDATED_CHECKS.md). Synthetic files contain no real employee/employer records.
 
 ## Offline observation
+
+The v0.8.0 PDF diagnostic was run under `strace -f -e trace=network` using the synthetic review and saved UI-created notes/status history. It exported the full three-page report with **zero observed network system calls**. PDF metadata confirms A4, embedded local fonts, no encryption and no JavaScript. Pages were rasterized and visually checked for readable layout and complete identifiers.
+
 
 The v0.7.0 five-rule diagnostic was run under `strace -f -e trace=network` using the synthetic baseline PDF and explicit five-rule scope. It produced five expected matching-term findings, saved the report and completed with **zero observed network system calls**.
 
@@ -30,6 +37,8 @@ The v0.6.0 source-update interface was exercised with an explicitly synthetic do
 
 The v0.7.0 native five-rule flow was checked with the synthetic baseline: meal/weekly-rest applicability controls and exception explanations, accuracy confirmation, saving and reopening a review, both new passage highlights, complete Articles 85 and 91, Article 92 exceptions and Book III Rules I/III. A smaller-window visibility issue was reproduced and fixed: passage navigation now brings the text viewport into the outer document pane as well as scrolling its inner text.
 
+The v0.8.0 native tracking workflow was checked with fictional data: required reviewer/name fields, a document-review note, finding Acknowledged → Resolved with reasons, saved history and centered PDF file selection. The exported report completed successfully. Reopening the connected review showed **Human follow-up: Resolved** beside the unchanged **Potential issue** and original evidence. The generated PDF was inspected separately; no private user employment data was used.
+
 ## Windows release gate
 
 GitHub Actions repeats formatting, all Rust tests and Clippy on Windows/MSVC, builds both executables with a static C runtime, packages NSIS/app ZIP and runs an isolated install test. Windows-specific ACL/process-enumeration code also passes a Linux-to-Windows GNU target type check; actual runtime permissions are checked on Windows.
@@ -37,15 +46,16 @@ GitHub Actions repeats formatting, all Rust tests and Clippy on Windows/MSVC, bu
 The isolated Windows test refuses pre-existing installations/data roots. It requires:
 
 1. Upgrade from hash-pinned earlier 0.1.0 desktop, registered installation/shortcut replacement and executable startup.
-2. Desktop migration of the legacy SQLite workspace to `%ProgramData%\ComplyPH`, retained source database bytes, migration marker, protected owner/SYSTEM/Administrators ACL, retained document references/preferences and private schema 3.
+2. Desktop migration of the legacy SQLite workspace to `%ProgramData%\ComplyPH`, retained source database bytes, migration marker, protected owner/SYSTEM/Administrators ACL, retained document references/preferences and private schema 4.
 3. Public catalog status of 19 sources in seven domains, with 14 agency downloads, 3 identity-checked uploads and 2 provisional copies; no successful runtime update is claimed.
 4. All seven installed reader cases through the real child worker, expected text/states/locations and preserved originals.
 5. All three installed checking cases, source pin/context audit data, expected findings and persisted private reports/caches.
-6. Installed public-source intake and duplicate handling, public schema 4, pending verification, unchanged private data and preserved source originals.
-7. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.6.0, and private/public/original preservation through uninstall.
-8. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
+6. Installed reviewer notes, acknowledged/resolved history, stale-action refusal, unchanged original review JSON, PDF export/overwrite refusal and re-reading all five findings, Unicode text and transitions through the installed child parser.
+7. Installed public-source intake and duplicate handling, public schema 4, pending verification, unchanged private data and preserved source originals.
+8. Reinstall location retention, fresh install, upgrade from hash-pinned ComplyPH 0.7.0, and private/public/original preservation through uninstall.
+9. Installed AppContainer denial of synthetic private-store, catalog and ordinary original-file canaries, an empty no-approval batch and certificate-validated HTTPS transport in a separate public-only probe catalog.
 
-The publisher accepts packages only from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
+The publisher accepts packages only from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, reviewer-history/PDF evidence, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
 
 Interactive Windows display scaling, assistive technology, account-specific permissions and every device's drag/drop behavior remain target-PC checks. The build is unsigned. No promise is made that extraction reproduces every font/layout/object/revision or that five matching numeric terms establish complete legal compliance.
 
