@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.11.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Twenty focused numeric comparisons across seven domains, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
+ComplyPH 0.12.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Twenty focused numeric comparisons across seven domains, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Reviewed source metadata/identity, comparison/adoption/restoration, rule revalidation and approved-page publication inventories are implemented. Online checks use Windows AppContainer or supported Linux Landlock/seccomp isolation. Bounded local PDF OCR and optional local folder intake are implemented.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ ComplyPH 0.11.0 is a native Rust desktop application using egui/eframe. It combi
 | `complyph-checks` | Pure, source-pinned numeric rules with context gates; no I/O | Receives extraction/context values |
 | `complyph-library` | Public catalog, domains, snapshots, provenance, integrity, and migration | No private-workspace dependency |
 | `complyph-paths` | Shared current/legacy data-root discovery | File/directory existence and process-name checks; no document/database content reads |
-| `complyph-updater` | Public-catalog coordinator, scheduler inputs and AppContainer-only HTTP worker | Public catalog only |
+| `complyph-updater` | Public-catalog coordinator, scheduler inputs and OS-confined HTTP worker | Public catalog only |
 
 The desktop and private-processing crates have no HTTP client or telemetry, AI integration, or runtime downloader. Source acquisition for the bundled collection is a maintainer activity involving public publications only.
 
@@ -24,7 +24,7 @@ Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with 
 
 ```text
 private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions and folder intake; schema 5
-library/catalog.sqlite3    Public sources, versions, domains, originals, and reading text; schema 4
+library/catalog.sqlite3    Public sources, versions, domains, originals, reading text, maintenance events, rule assessments and publication inventories; schema 5
 ```
 
 The installer detects a registered earlier installation and upgrades its existing installation directory. It replaces known legacy executable/shortcut branding and the uninstall registration. It does not remove original documents or application-data directories.
@@ -89,13 +89,13 @@ Supporting provisions are read by source key, raw hash and reading-text hash fro
 
 ## Source update coordinator
 
-Public schema 4 adds explicit URL approvals, per-source attempts/validators/leases, immutable downloaded bytes and review records. No watch is enabled during bundle import. A source's saved reference and its checking-rule pins remain unchanged by downloading or reviewing a candidate. SHA-256 is checked before exporting a downloaded copy or reusing a conditional-comparison body.
+Public schema 4 adds explicit URL approvals, per-source attempts/validators/leases, immutable downloaded bytes and review records. No watch is enabled during bundle import. Downloading or recording a legacy review note does not activate a candidate. Deliberate adoption changes the reference pointer; affected rules remain held until the required assessment. Checking thresholds remain trusted compiled Rust/data. SHA-256 is checked before exporting a downloaded copy or reusing a conditional-comparison body.
 
 The desktop starts the packaged coordinator with the public-library directory only. It polls due watches every minute and checks at most 20 per batch. A lease prevents duplicate concurrent requests; expired interrupted leases can retry. Completed attempts use a 24-hour daily interval; manual checks can retry failures sooner. The desktop owns a kill-on-close job for the coordinator and all descendants.
 
 For each URL, the coordinator starts a resource-limited AppContainer process through STARTUPINFOEX security capabilities and an explicit inherited-handle list. The network child confirms its AppContainer token before reading a request or constructing an HTTP client. It has InternetClient capability, no private-network/library capabilities, an executable directory with read/execute access only and no catalog path. Its framed pipe protocol carries a small public request, a bounded response header and at most 32 MiB of body bytes. HTTPS uses Rustls/WebPKI; credentials, proxies, cookies and request bodies are excluded. The resolver rejects private/reserved addresses and passes the checked addresses directly to the connector. Redirects are same-origin HTTPS and limited to three. The parent verifies URL origin, payload type, size and hash before committing a change.
 
-Other-platform builds fail closed rather than creating an unconfined downloader. Source checks inspect selected URL bytes; they do not crawl other publications or establish legal currency. See [source updates](SOURCE_UPDATES.md).
+Linux uses a separately confined Landlock ABI 3+/seccomp worker with protected DNS-only file access, cleared inherited descriptors/environment and parent-death/resource guards. Other unsupported platforms/kernels fail closed. Publication discovery inventories qualifying links from explicitly approved static HTML pages; it never follows those links or determines legal effect. Public schema 5 adds explicit active-version pointers, version-bound metadata/identity events, immutable candidate readings, reviewed adoption/restoration/dismissal, complete-provision dependencies, stale-safe rule assessments and durable legal-change holds. Updated profile activation remains separate from source adoption. Historical findings resolve their own immutable source hashes. See [maintenance](LIBRARY_MAINTENANCE.md). See [source updates](SOURCE_UPDATES.md).
 
 ## Reviewer tracking and report export
 

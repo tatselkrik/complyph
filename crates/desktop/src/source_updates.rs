@@ -31,6 +31,8 @@ pub struct SourceUpdates {
     changed: bool,
     export: FileDialog,
     export_id: Option<i64>,
+    compare_request: Option<i64>,
+    publication_count: usize,
 }
 impl Default for SourceUpdates {
     fn default() -> Self {
@@ -54,6 +56,8 @@ impl Default for SourceUpdates {
                 .show_hidden_option(false)
                 .as_modal(true),
             export_id: None,
+            compare_request: None,
+            publication_count: 0,
         }
     }
 }
@@ -70,13 +74,24 @@ fn time(value: Option<i64>) -> String {
 }
 
 impl SourceUpdates {
+    pub fn take_compare_request(&mut self) -> Option<i64> {
+        self.compare_request.take()
+    }
+    pub fn request_check(&mut self) {
+        self.request = Some(false);
+    }
     pub fn pending_for(&self, id: i64) -> usize {
         self.changes.get(&id).map_or(0, |changes| {
-            changes.iter().filter(|c| c.reviewed_at.is_none()).count()
+            changes.iter().filter(|c| c.decision.is_none()).count()
         })
     }
     pub fn load(&mut self, catalog: &LibraryCatalog) -> Result<(), complyph_library::LibraryError> {
         self.watches = catalog.update_watches()?;
+        self.publication_count = catalog
+            .publication_pages()?
+            .iter()
+            .filter(|p| p.enabled)
+            .count();
         self.changes.clear();
         for source in catalog.sources()? {
             self.changes
@@ -88,12 +103,12 @@ impl SourceUpdates {
         widgets::card().show(ui,|ui|{
             ui.label(RichText::new("Source update checks").font(heading(17.0)));
             let approved=self.watches.iter().filter(|w|w.enabled).count();
-            let pending=self.changes.values().flatten().filter(|c|c.reviewed_at.is_none()).count();
-            widgets::muted(ui,&format!("Approved URLs: {approved} · Downloads awaiting review: {pending}"));
-            if cfg!(windows){widgets::muted(ui,"Approved URLs are checked daily while the app is open. Missed checks run at the next launch. Approve a URL inside its source's local reader.");}
-            else{widgets::muted(ui,"Online checks require the Windows AppContainer downloader. This build keeps networking disabled.");}
+            let pending=self.changes.values().flatten().filter(|c|c.decision.is_none()).count();
+            widgets::muted(ui,&format!("Approved source URLs: {approved} · Publication pages: {} · Downloads awaiting a decision: {pending}",self.publication_count));
+            if cfg!(any(windows,target_os="linux")){widgets::muted(ui,"Only approved public sources and publication pages go online. Private documents stay on this device. Daily checks run while the app is open; missed checks run at the next launch. Unavailable operating-system protection keeps checks offline.");}
+            else{widgets::muted(ui,"This platform has no enabled OS-isolated downloader and stays offline.");}
             if self.receiver.is_some(){ui.horizontal(|ui|{ui.spinner();ui.label("Checking approved public sources…");});}
-            else if widgets::primary(ui,"Check approved sources now",approved>0 && cfg!(windows)).on_hover_text("Checks up to 20 approved URLs per batch. Document text is never used.").clicked(){self.request=Some(false);}
+            else if widgets::primary(ui,"Check approved sources now",(approved+self.publication_count)>0 && cfg!(any(windows,target_os="linux"))).on_hover_text("Checks up to 20 approved URLs/pages per batch. Document text is never used.").clicked(){self.request=Some(false);}
             if let Some(message)=&self.message{ui.label(RichText::new(message).color(AMBER));}
         });
         ui.add_space(10.0);
@@ -123,7 +138,7 @@ impl SourceUpdates {
             });
             if let Some(enabled)=action{
                 let result=if enabled{catalog.set_update_watch(id,url,true)}else{catalog.disable_update_watch(id)};
-                match result{Ok(())=>{self.changed=true;self.message=Some(if enabled && cfg!(windows){"URL approved. The next check will run while the app is open."}else if enabled{"URL approval saved. Online checks require the Windows build."}else{"Source checks disabled. Downloaded history is retained."}.into());},Err(e)=>self.message=Some(e.to_string())}
+                match result{Ok(())=>{self.changed=true;self.message=Some(if enabled && cfg!(windows){"URL approved. The next check will run while the app is open."}else if enabled{"URL approval saved. Online checks require supported operating-system confinement."}else{"Source checks disabled. Downloaded history is retained."}.into());},Err(e)=>self.message=Some(e.to_string())}
             }
             if let Some(w)=watch{
                 ui.label(format!("{} · last attempt: {}",if w.enabled{"Approved"}else{"Disabled"},time(w.last_attempt)));
@@ -137,8 +152,9 @@ impl SourceUpdates {
             for change in changes.iter().take(20){
                 widgets::card().show(ui,|ui|{
                     ui.label(RichText::new(format!("Downloaded {} · {} bytes",time(Some(change.downloaded_at)),change.bytes)).font(heading(14.0)));
-                    widgets::pill(ui,if change.reviewed_at.is_none(){"Awaiting source review"}else{"Review recorded"},AMBER,AMBER_TINT,false);
+                    widgets::pill(ui,change.decision.as_deref().unwrap_or("Adoption / dismissal decision needed"),AMBER,AMBER_TINT,false);
                     ui.add(egui::Label::new(format!("SHA-256: {}",change.content_sha256)).wrap().selectable(true));
+                    if widgets::primary(ui,"Compare and review candidate",true).clicked(){self.compare_request=Some(change.id);}
                     if widgets::secondary(ui,"Save downloaded copy…").clicked(){
                         let extension=match change.mime.as_str(){"application/pdf"=>"pdf","text/html"=>"html","text/plain"=>"txt",_=>"docx"};
                         self.export=FileDialog::new().title("Save downloaded source copy").default_size([760.0,500.0]).anchor(egui::Align2::CENTER_CENTER,[0.0,0.0]).show_devices(false).show_removable_devices(false).show_hidden_option(false).default_file_name(&format!("source-change-{}.{}",change.id,extension)).as_modal(true);
@@ -191,12 +207,18 @@ impl SourceUpdates {
                 }
             }
         }
-        if self.receiver.is_none() && cfg!(windows) && self.watches.iter().any(|w| w.enabled) {
+        if self.receiver.is_none()
+            && cfg!(any(windows, target_os = "linux"))
+            && (self.watches.iter().any(|w| w.enabled) || self.publication_count > 0)
+        {
             if Instant::now() >= self.next_due_poll {
                 self.next_due_poll = Instant::now() + Duration::from_secs(60);
                 if catalog
                     .due_source_ids(true)
                     .is_ok_and(|ids| !ids.is_empty())
+                    || catalog
+                        .due_publication_page_ids(true)
+                        .is_ok_and(|ids| !ids.is_empty())
                 {
                     self.request.get_or_insert(true);
                 }
@@ -266,6 +288,25 @@ fn run_checker(directory: PathBuf, due: bool, cancel: &AtomicBool) -> Result<Str
     {
         use std::os::windows::process::CommandExt;
         command.creation_flags(0x08000000);
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::os::unix::process::CommandExt;
+        let parent = std::process::id() as i32;
+        // SAFETY: only async-signal-safe syscalls run after fork. Check the
+        // parent again to close the race between parent exit and prctl.
+        unsafe {
+            command.pre_exec(move || {
+                if libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL) != 0
+                    || libc::getppid() != parent
+                {
+                    return Err(std::io::Error::other(
+                        "The desktop lifetime guard could not be established.",
+                    ));
+                }
+                Ok(())
+            });
+        }
     }
     let mut child = command
         .stdout(Stdio::piped())
@@ -345,12 +386,24 @@ fn run_checker(directory: PathBuf, due: bool, cancel: &AtomicBool) -> Result<Str
             .filter(|c| c["outcome"].as_str() == Some(name))
             .count()
     };
+    let discovery = report["discovery_checks"]
+        .as_array()
+        .ok_or("The publication discovery report is incomplete.")?;
+    let discovered = discovery
+        .iter()
+        .filter_map(|r| r["new_links"].as_u64())
+        .sum::<u64>();
+    let discovery_failed = discovery
+        .iter()
+        .filter(|r| r["outcome"].as_str() == Some("failed"))
+        .count();
     Ok(format!(
-        "{} sources checked: {} changed · {} unchanged · {} could not be checked. Review downloaded changes in each source's history.",
+        "{} sources checked: {} changed · {} unchanged · {} failed. {} publication pages scanned; {discovered} newly seen citations, {discovery_failed} failed scans. Review changes and discovered citations in Library maintenance.",
         checks.len(),
         count("changed"),
         count("unchanged"),
-        count("failed")
+        count("failed"),
+        discovery.len()
     ))
 }
 

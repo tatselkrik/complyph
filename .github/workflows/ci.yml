@@ -1,4 +1,4 @@
-name: Windows checks
+name: Desktop and downloader checks
 
 on:
   push:
@@ -10,6 +10,24 @@ permissions:
   contents: read
 
 jobs:
+  linux:
+    name: Verify Linux downloader isolation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      COMPLYPH_REQUIRE_LINUX_ISOLATION: "1"
+      RUST_TEST_THREADS: "2"
+    steps:
+      - name: Check out public source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+      - name: Test Linux confinement and public-library workflows
+        run: cargo test -p complyph-paths -p complyph-library -p complyph-checks -p complyph-updater --locked
+      - name: Check Linux Rust warnings
+        run: cargo clippy -p complyph-library -p complyph-checks -p complyph-updater --all-targets --locked -- -D warnings
   windows:
     name: Test, build, and install
     runs-on: windows-latest

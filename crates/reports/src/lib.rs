@@ -231,6 +231,35 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
         layout.heading(&format!("{}. {}", index + 1, finding.title))?;
         layout.body(&format!("Automated result: {}", finding.outcome.label()))?;
         layout.body(&finding.explanation)?;
+        if let Some(review) = &finding.library_review {
+            layout.body(&format!(
+                "Library rule assessment: {} · {}",
+                review.status, review.reason
+            ))?;
+            layout.muted(&format!(
+                "Active library source SHA-256: {}",
+                review.active_source_sha256
+            ))?;
+            layout.muted(&format!(
+                "Library decision token: {}",
+                review.decision_token
+            ))?;
+            if let Some(id) = review.assessment_id {
+                layout.muted(&format!("Rule assessment record: {id}"))?;
+            }
+            if let Some(actor) = &review.reviewed_by {
+                layout.body(&format!(
+                    "Library reviewer: {actor} · {}",
+                    review.reviewed_on.as_deref().unwrap_or("date not recorded")
+                ))?;
+            }
+            if let Some(basis) = &review.basis {
+                layout.body(&format!("Library assessment basis: {basis}"))?;
+            }
+            if let Some(test) = &review.test_reference {
+                layout.body(&format!("Rule evaluation reference: {test}"))?;
+            }
+        }
         layout.body(&format!(
             "Confirmed scope: {}",
             workflow

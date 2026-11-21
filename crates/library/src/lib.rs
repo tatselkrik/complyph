@@ -1,7 +1,14 @@
 //! Public official-source snapshots only. No private-workspace or HTTP dependency.
 mod bundled;
+mod comparison;
+mod discovery;
+mod maintenance;
 mod manual;
 mod updates;
+
+pub use comparison::*;
+pub use discovery::*;
+pub use maintenance::*;
 
 pub use manual::{ImportOutcome, ManualSourceFile, ManualSourceInput, ManualVerification};
 pub use updates::{
@@ -19,7 +26,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
 const MANIFEST: &str = include_str!("../../../library/starter/manifest.json");
-const SCHEMA_VERSION: i32 = 4;
+const SCHEMA_VERSION: i32 = 5;
 
 #[derive(Debug, Error)]
 pub enum LibraryError {
@@ -64,6 +71,7 @@ pub enum Provenance {
     ThirdParty,
     ManualPending,
     ManualIdentityChecked,
+    ReviewedDownload,
 }
 
 impl Provenance {
@@ -74,13 +82,16 @@ impl Provenance {
             Self::ThirdParty => "Provisional · third-party copy",
             Self::ManualPending => "Awaiting verification · manual import",
             Self::ManualIdentityChecked => "Identity checked · user reviewed",
+            Self::ReviewedDownload => "Official download · reviewed adoption",
         }
     }
 
     fn database_status(self) -> &'static str {
         match self {
             Self::AgencyDownload => "verified",
-            Self::UploadedIdentity | Self::ManualIdentityChecked => "needs_review",
+            Self::UploadedIdentity | Self::ManualIdentityChecked | Self::ReviewedDownload => {
+                "needs_review"
+            }
             Self::ThirdParty | Self::ManualPending => "unverified",
         }
     }
@@ -156,6 +167,7 @@ pub struct LibrarySummary {
     pub manually_imported_source_count: u64,
     pub awaiting_verification_count: u64,
     pub user_checked_source_count: u64,
+    pub reviewed_adoption_count: u64,
     pub approved_update_count: u64,
     pub pending_update_count: u64,
     pub bundled_verified_at: Option<i64>,
@@ -163,10 +175,11 @@ pub struct LibrarySummary {
     pub automatic_updates_available: bool,
     pub domains: Vec<DomainSummary>,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SourceRecord {
     pub id: i64,
     pub metadata: SourceMetadata,
+    pub identity_review: Option<SourceIdentityDecision>,
 }
 pub struct SourceSnapshot {
     pub metadata: SourceMetadata,
@@ -252,6 +265,11 @@ impl LibraryCatalog {
         if version < 4 {
             updates::migrate(&transaction)?;
         }
+        if version < 5 {
+            maintenance::migrate(&transaction)?;
+            discovery::migrate(&transaction)?;
+        }
+        transaction.pragma_update(None, "user_version", SCHEMA_VERSION)?;
         transaction.commit()?;
         let mut catalog = Self { connection };
         catalog.import_starter()?;
@@ -358,6 +376,10 @@ impl LibraryCatalog {
                  VALUES(?1,?2,?3,?4,?5)",
                 params![version_id,payload.raw,payload.text,serde_json::to_string(metadata)?,metadata.verified_at_unix],
             )?;
+            transaction.execute(
+                "INSERT OR IGNORE INTO active_source_versions(source_id,version_id) VALUES(?1,?2)",
+                params![source_id, version_id],
+            )?;
         }
         let imported_at = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -447,6 +469,7 @@ impl LibraryCatalog {
             manually_imported_source_count: awaiting_verification_count + user_checked_source_count,
             awaiting_verification_count,
             user_checked_source_count,
+            reviewed_adoption_count: count(Provenance::ReviewedDownload),
             bundled_verified_at,
             approved_update_count: self
                 .update_watches()?
@@ -455,25 +478,28 @@ impl LibraryCatalog {
                 .count() as u64,
             pending_update_count: self.pending_update_count()?,
             last_successful_check: self.last_successful_source_check()?,
-            automatic_updates_available: cfg!(windows),
+            automatic_updates_available: cfg!(any(windows, target_os = "linux")),
             domains,
         })
     }
 
     pub fn sources(&self) -> Result<Vec<SourceRecord>> {
         let mut statement = self.connection.prepare(
-            "SELECT s.id,p.metadata_json FROM sources s JOIN source_versions v ON v.source_id=s.id
-             JOIN source_snapshots p ON p.version_id=v.id
-             WHERE v.id=(SELECT v2.id FROM source_versions v2 JOIN source_snapshots p2 ON p2.version_id=v2.id
-                WHERE v2.source_id=s.id ORDER BY v2.retrieved_at DESC,v2.id DESC LIMIT 1) ORDER BY s.id"
+            "SELECT s.id,p.metadata_json FROM sources s JOIN active_source_versions a ON a.source_id=s.id
+             JOIN source_versions v ON v.id=a.version_id AND v.source_id=s.id
+             JOIN source_snapshots p ON p.version_id=v.id ORDER BY s.id"
         )?;
         let rows =
             statement.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))?;
         rows.map(|r| {
             let (id, metadata) = r?;
+            let mut metadata = serde_json::from_str(&metadata)?;
+            self.apply_annotations(id, &mut metadata)?;
+            let identity_review = self.source_identity_decision(id, &metadata.raw_sha256)?;
             Ok(SourceRecord {
                 id,
-                metadata: serde_json::from_str(&metadata)?,
+                metadata,
+                identity_review,
             })
         })
         .collect()
@@ -483,9 +509,9 @@ impl LibraryCatalog {
         let (metadata, raw, text): (String, Vec<u8>, String) = self
             .connection
             .query_row(
-                "SELECT p.metadata_json,p.raw_bytes,p.reading_text FROM source_versions v
-             JOIN source_snapshots p ON p.version_id=v.id WHERE v.source_id=?1
-             ORDER BY v.retrieved_at DESC,v.id DESC LIMIT 1",
+                "SELECT p.metadata_json,p.raw_bytes,p.reading_text FROM active_source_versions a
+             JOIN source_versions v ON v.id=a.version_id AND v.source_id=a.source_id
+             JOIN source_snapshots p ON p.version_id=v.id WHERE a.source_id=?1",
                 [source_id],
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
             )
@@ -595,7 +621,10 @@ mod tests {
         assert!(summary.domains.iter().all(|d| d.source_count > 0));
         assert!(summary.bundled_verified_at.is_some());
         assert_eq!(summary.last_successful_check, None);
-        assert_eq!(summary.automatic_updates_available, cfg!(windows));
+        assert_eq!(
+            summary.automatic_updates_available,
+            cfg!(any(windows, target_os = "linux"))
+        );
         let source = catalog.sources().unwrap().remove(0);
         let snapshot = catalog.snapshot(source.id).unwrap();
         assert!(snapshot.text.contains("442"));
@@ -735,6 +764,15 @@ mod tests {
         catalog.connection.execute("INSERT INTO source_versions(source_id,content_sha256,local_path,retrieved_at) VALUES (?1,?2,'synthetic',?3)",params![id,new.raw_sha256,new.acquired_at_unix+10000]).unwrap();
         let version = catalog.connection.last_insert_rowid();
         catalog.connection.execute("INSERT INTO source_snapshots(version_id,raw_bytes,reading_text,metadata_json,verified_at) VALUES (?1,?2,?3,?4,?5)",params![version,raw,text,serde_json::to_string(&new).unwrap(),new.verified_at_unix]).unwrap();
+        // Merely preserving newer bytes must not make them active.
+        assert_eq!(
+            catalog.snapshot(id).unwrap().metadata.raw_sha256,
+            old.metadata.raw_sha256
+        );
+        catalog.restore_preserved_version(id,&new.raw_sha256,&AdoptionReview{
+            reviewer:LibraryReviewer{actor:"Synthetic reviewer".into(),review_on:"2026-11-21".into(),basis:"Fictional version used to verify historical report citations; not a real legal adoption.".into()},
+            expected_active_sha256:old.metadata.raw_sha256.clone(),identity_confirmed:true,original_and_reading_compared:true,effectivity_and_scope_reviewed:true,
+        }).unwrap();
         assert_eq!(
             catalog
                 .snapshot_by_key("labor-code-reference")

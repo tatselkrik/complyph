@@ -1,4 +1,4 @@
-ComplyPH 0.11.0 - Initial checks across seven domains
+ComplyPH 0.12.0 - Initial checks across seven domains
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -119,3 +119,18 @@ Five cross-domain Word/PDF cases are included in Samples. Each new finding saves
 its own public source hashes and offline section locator. Old reports retain their
 original findings; ProgramData storage, source-update isolation and private data
 are preserved. No AI review is included.
+
+Library maintenance
+Open Legal library > Maintain library to edit version-bound metadata and identity
+decisions, compare source versions, adopt/restore reviewed copies and record rule
+revalidation. Each decision requires a reviewer, date and basis. Changed support
+keeps affected checks held; adopting a reference never rewrites numeric rules.
+Earlier snapshots, reports and source citations remain available.
+
+Discover official issuances inventories links from explicitly approved publication
+pages. Newly seen links are not automatically downloaded or verified as new laws.
+Use Add downloaded legal reference or Assess rule impact to continue deliberately.
+The initial twenty checks retain their supported periods; qualified legal review
+and broader coverage remain separate. See Library-maintenance.md for limits and
+workflow instructions. Private schema 5 and ProgramData storage remain unchanged;
+public schema 5 preserves previous catalog data while adding maintenance history.

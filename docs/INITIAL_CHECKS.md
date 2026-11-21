@@ -45,7 +45,7 @@ SSS uses the confirmed monthly salary credit, with the SS/MPF schedule and emplo
 
 ## Sources and assessment
 
-Assessment date: **21 November 2026**. All check sources are existing agency-downloaded, hash-pinned snapshots. The nineteen-reference starter bundle, its provenance labels, private schema 5, public schema 4 and `C:\ProgramData\ComplyPH` remain unchanged. No provisional source was promoted. The exact pins and section boundaries are committed in `crates/checks/src/initial_rules.json`; each new saved finding carries its own source key, raw/text hashes, official URL and provision locator. The review records the SHA-256 of the fourteen compiled additional-profile definitions, alongside its engine version. The original six comparisons remain identified by the engine and release source. Earlier reports keep their original findings and raw stored JSON.
+Assessment date: **21 November 2026**. All check sources are existing agency-downloaded, hash-pinned snapshots. The nineteen-reference starter bundle, its provenance labels, private schema 5, the then-current public schema 4 and `C:\ProgramData\ComplyPH` remain unchanged. No provisional source was promoted. The exact pins and section boundaries are committed in `crates/checks/src/initial_rules.json`; each new saved finding carries its own source key, raw/text hashes, official URL and provision locator. The review records the SHA-256 of the fourteen compiled additional-profile definitions, alongside its engine version. The original six comparisons remain identified by the engine and release source. Earlier reports keep their original findings and raw stored JSON.
 
 Current official corroboration consulted during assessment:
 
@@ -66,3 +66,5 @@ Independent tests transcribe thresholds separately and cover both sides of bound
 ## Completion boundary
 
 Roadmap item 1 is complete for this **initial twenty-check set**. Broader labour rules, OSH matrices, privacy-notice/security requirements, full tax/payroll calculations, remittance deadlines and other special regimes are future expansion. Source adoption/revalidation remains item 5; qualified legal review and broader reliability evaluation remain item 6. AI review remains unimplemented.
+
+In 0.12.0, [library maintenance](LIBRARY_MAINTENANCE.md) upgrades the public catalog to schema 5 without changing the initial numeric definitions. Current-source changes and metadata/identity/period assessments can hold an affected finding. Complete unchanged supporting text plus a reviewed scope/evaluation assessment can bind future findings to an adopted source; changed support requires a new tested profile. Earlier reports retain their original source versions and conclusions.

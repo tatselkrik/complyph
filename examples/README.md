@@ -39,3 +39,10 @@ Regenerate only the SIL cases with `python scripts/generate-sil-fixtures.py` (de
 `expected-initial.json` defines independent boundaries and five real document cases: a Word/PDF baseline, problematic stated values, ambiguous/conditional wording, and a separate lower-income Pag-IBIG worker. The main baseline establishes the higher employee band and excludes the lower band; the lower-income case reverses that choice. Fictional bases and dates are explicit. Documents are never legal templates or proof of actual worker eligibility.
 
 The development generator is `scripts/generate-initial-fixtures.py` (ReportLab plus Python standard library). The installed app needs neither Python nor ReportLab. All cases ship in Samples; selecting a document alone never establishes scope or starts a review automatically.
+
+## Fictional publication listings
+
+Synthetic publication listing.html and Synthetic updated publication listing.html
+are inert discovery fixtures with no real issuances. They exercise official-link
+resolution, duplicate/unsafe/hidden/script exclusion, initial inventory and one
+later newly seen citation. Parsing them never fetches their linked documents.

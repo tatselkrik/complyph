@@ -93,7 +93,7 @@ pub(crate) fn run_worker(
 ) -> Result<Report, String> {
     run_worker_mode(format, bytes, cancel, false)
 }
-fn run_worker_mode(
+pub(crate) fn run_worker_mode(
     format: Format,
     bytes: Vec<u8>,
     cancel: &AtomicBool,

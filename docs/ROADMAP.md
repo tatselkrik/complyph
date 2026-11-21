@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.11.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.12.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.11.0
+## Available in 0.12.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -16,7 +16,7 @@ Status reflects ComplyPH 0.11.0. Checked items are available; unchecked items ar
 - [x] Optional local watched-folder intake with pause/resume, stability checks, duplicate detection and persisted local history.
 - [x] Windows installation, workspace migration, protected `C:\ProgramData\ComplyPH` storage and preserving uninstall.
 
-## Remaining work
+## Six work areas
 
 ### 1. Initial validated checks across seven domains — complete technically
 
@@ -38,7 +38,7 @@ PDF reports, document/finding notes and status history have been available since
 
 ### 3. Local OCR and folder monitoring
 
-Local PDF OCR and optional nonrecursive folder intake are available in 0.11.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
+Local PDF OCR and optional nonrecursive folder intake are available in 0.12.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
 
 - [x] Read scanned PDF documents using local OCR, with page locations, low-confidence highlights, visible quality limits and separate text confirmation before checking.
 - [ ] Improve layout, font and embedded-content reading coverage.
@@ -48,7 +48,7 @@ Local PDF OCR and optional nonrecursive folder intake are available in 0.11.0. S
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.11.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.12.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.
@@ -66,17 +66,17 @@ The interface must make the privacy choice clear:
 
 Sending excerpts and redacting identifiers reduce disclosure; approved text still leaves the PC. Reduced context can also limit the AI review. This integration makes its own requests and does not automatically post into an existing ChatGPT/Codex conversation or access conversation history or memories. See OpenAI's [plan-usage integration](https://developers.openai.com/siwc/token-sharing-open-source) and [eligibility and usage controls](https://learn.chatgpt.com/docs/sign-in-with-chatgpt).
 
-### 5. Library maintenance
+### 5. Library maintenance — implemented
 
-Approved-URL checks, retained downloads and source-review notes are already implemented. The remaining work concerns assessing and adopting changes.
+The complete maintenance workflow is available in 0.12.0. See [library maintenance](LIBRARY_MAINTENANCE.md) for the reviewed actions, supported discovery scope and privacy boundary.
 
-- [ ] Add source metadata editing and deliberate source-verification workflows.
-- [ ] Add in-app comparison and reviewed promotion of downloaded reference candidates, preserving previous snapshots and historical report citations.
-- [ ] Discover new issuances through approved official publication pages, beyond checking the bytes at selected URLs.
-- [ ] Track reviewed legal changes that require particular checking rules to be revalidated before an updated rule is activated.
-- [ ] Expand downloader isolation support beyond Windows while keeping unsupported platforms' networking disabled.
+- [x] Edit version-bound source metadata, record identity/verification decisions and preserve their reviewer/date/basis history.
+- [x] Compare candidate and historical reference versions in-app; deliberately adopt or restore reviewed versions while preserving every earlier snapshot and historical report citation.
+- [x] Inventory qualifying issuance links from approved official publication pages, distinguish initial inventory from later discoveries and route citations to local source intake or rule-impact review.
+- [x] Track exact rule/source dependencies, hold affected checks, require unchanged-support/scope/evaluation gates for revalidation, retain legal-change holds across unrelated edits/upgrades and bind future findings to the adopted source.
+- [x] Add Linux Landlock ABI 3+/seccomp isolation alongside Windows AppContainer; fail closed on unsupported kernels/platforms.
 
-Retain the source updater's AppContainer boundary and public-only request protocol. Private document data must never become source-updater inputs. Optional AI submission uses its own explicit consent and data boundary.
+Discovery is a bounded official-page link inventory, not an exhaustive legal search or automatic effectivity determination. A changed requirement still needs a newly implemented and tested rule profile; source adoption does not rewrite thresholds. Qualified Philippine legal review remains under item 6. Private document data never becomes source-updater input.
 
 ### 6. Validation and desktop quality
 

@@ -27,7 +27,7 @@ pub enum ReviewAction {
 pub fn approved_source(catalog: &LibraryCatalog) -> Result<(), String> {
     for pin in complyph_checks::source_pins() {
         let source = catalog
-            .snapshot_by_key(&pin.key)
+            .snapshot_for_review(&pin.key, &pin.sha256, &pin.text_sha256)
             .map_err(|e| e.to_string())?;
         if source.metadata.provenance != complyph_library::Provenance::AgencyDownload
             || !pin.matches(&source.raw, &source.text)
@@ -38,7 +38,7 @@ pub fn approved_source(catalog: &LibraryCatalog) -> Result<(), String> {
             ));
         }
     }
-    Ok(())
+    crate::library_rules::register(catalog)
 }
 
 impl CheckView {
@@ -70,10 +70,10 @@ impl CheckView {
     ) -> Option<ReviewAction> {
         if complyph_checks::source_pins().iter().any(|p| {
             catalog
-                .reference_has_downloaded_changes(&p.key)
+                .reference_has_pending_downloads(&p.key)
                 .unwrap_or(false)
         }) {
-            ui.colored_label(AMBER,"An online publication change is saved for a rule source. Checks still cite their preserved profiles; review source and rule currency. See Legal library → Source updates and downloaded history.");
+            ui.colored_label(AMBER,"A source change awaits an adoption or dismissal decision. Affected checks are held for new reviews. Open Legal library → Maintain library to review it.");
         }
         if !self.visible {
             widgets::card().show(ui,|ui| {
@@ -131,7 +131,7 @@ impl CheckView {
                     approved_source(catalog)?;
                     let current=complyph_core::document_snapshot(&document.path).map_err(|e|e.to_string())?;
                     if current.sha256!=saved.sha256 { return Err("The original changed. Read it again before checking.".into()); }
-                    let review=complyph_checks::review(&saved.report,&saved.sha256,self.context.clone());
+                    let review=crate::library_rules::apply(catalog,complyph_checks::review(&saved.report,&saved.sha256,self.context.clone()))?;
                     workspace.save_review(document.id,review).map_err(|e|e.to_string())
                 })();
                 match result { Ok(review)=>{self.result=Some(review);self.error=None;},Err(error)=>self.error=Some(error) }
@@ -340,6 +340,16 @@ pub fn show_review(
             let color=match finding.outcome {Outcome::PotentialIssue=>RED,Outcome::StatedTermMeetsMinimum=>GREEN,_=>AMBER};
             ui.colored_label(color,finding.outcome.label());
             ui.label(&finding.explanation);
+            if let Some(review)=&finding.library_review {
+                egui::CollapsingHeader::new("Library rule assessment").id_salt(("rule-library-assessment",saved.id,&finding.rule_id)).show(ui,|ui|{
+                    ui.label(&review.reason);
+                    widgets::muted(ui,&format!("Active reference SHA-256: {}",review.active_source_sha256));
+                    widgets::muted(ui,&format!("Assessment token: {}",review.decision_token));
+                    if let Some(actor)=&review.reviewed_by {ui.label(format!("Reviewed by {actor} · {}",review.reviewed_on.as_deref().unwrap_or("not recorded")));}
+                    if let Some(basis)=&review.basis {ui.label(basis);}
+                    if let Some(test)=&review.test_reference {ui.label(format!("Evaluation: {test}"));}
+                });
+            }
             let scope=saved.review.context.applicability(&finding.rule_id);
             widgets::muted(ui,&format!("Confirmed scope: {}",scope.label()));
             if finding.rule_id=="PH-LAB-095-01" {

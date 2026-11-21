@@ -9,6 +9,14 @@ mod initial;
 pub use initial::{InitialRule, RuleScope, valid_date};
 pub use initial::{rules as initial_rules, sources as source_pins};
 pub const ENGINE: &str = "complyph-rules-1";
+/// All compiled numeric/scope logic, distinct from the additional-definition pack hash.
+pub fn compiled_profile_sha256() -> String {
+    let mut digest = Sha256::new();
+    digest.update(include_bytes!("lib.rs"));
+    digest.update(include_bytes!("initial.rs"));
+    digest.update(include_bytes!("initial_rules.json"));
+    format!("{:x}", digest.finalize())
+}
 pub const RULE_COUNT: usize = 20;
 pub const PACK_ID: &str = "initial-seven-domain-v1";
 pub fn rule_pack_sha256() -> String {
@@ -202,6 +210,20 @@ pub struct Finding {
     pub source: Option<SourceCitation>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provision: Option<ProvisionLocator>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub library_review: Option<LibraryRuleReview>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LibraryRuleReview {
+    pub status: String,
+    pub active_source_sha256: String,
+    pub decision_token: String,
+    pub assessment_id: Option<i64>,
+    pub reviewed_by: Option<String>,
+    pub reviewed_on: Option<String>,
+    pub basis: Option<String>,
+    pub test_reference: Option<String>,
+    pub reason: String,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Review {
@@ -460,7 +482,7 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
             Applicability::Covered if (rule.upper && values[0] > rule.threshold) || (!rule.upper && values[0] < rule.threshold) => (Outcome::PotentialIssue, "The explicit stated term is outside this rule's numeric threshold, subject to the confirmed scope. Check the cited evidence and legal context."),
             Applicability::Covered => (Outcome::StatedTermMeetsMinimum, "The explicit stated term meets this numeric threshold under the reviewer-confirmed scope. This does not establish full legal compliance or actual payment."),
         };
-        Finding { rule_id: rule.id.into(), title: rule.title.into(), article: rule.article.into(), legal_quote: rule.quote.into(), outcome, explanation: explanation.into(), evidence, source:None,provision:None }
+        Finding { rule_id: rule.id.into(), title: rule.title.into(), article: rule.article.into(), legal_quote: rule.quote.into(), outcome, explanation: explanation.into(), evidence, source:None,provision:None,library_review:None }
     }).collect();
     findings.extend(initial::evaluate(report, &context, readable));
     Review {

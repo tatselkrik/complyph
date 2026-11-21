@@ -36,7 +36,7 @@ The canonical citation URL identifies a manually imported source. A different fi
 
 PDF/DOCX intake uses the existing bounded reader: 32 MiB input, 300 PDF pages, 4 MiB extracted text, 12,000 text units and a 20-second worker deadline. Parser memory/CPU guards apply. Scans without selectable text, encrypted files and unreadable files are rejected without a partial source entry; use external OCR first. Mixed selectable/scanned pages can produce incomplete reading text with warnings. Compare the preview with the original, especially for tables, figures and omitted content. In-app OCR is not available.
 
-Automatic daily publication checks and downloading from a URL remain planned. Saving an official URL does not start a check or report the library as current.
+Daily checks of explicitly approved official URLs, retained downloads, reviewed comparison/adoption, metadata/identity history and approved-page publication discovery are implemented. Saving a citation alone does not approve networking or establish legal currency. See [library maintenance](LIBRARY_MAINTENANCE.md) and [source updates](SOURCE_UPDATES.md).
 
 ## Developer verification
 

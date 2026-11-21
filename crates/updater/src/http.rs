@@ -80,7 +80,7 @@ fn run(
         .timeout_connect(Some(Duration::from_secs(5)))
         .timeout_resolve(Some(Duration::from_secs(5)))
         .timeout_per_read(Some(Duration::from_secs(5)))
-        .user_agent("ComplyPH-source-check/0.7.0")
+        .user_agent(concat!("ComplyPH-source-check/", env!("CARGO_PKG_VERSION")))
         .build();
     let agent = ureq::Agent::with_parts(config, DefaultConnector::default(), PublicResolver);
     let mut current = original.clone();

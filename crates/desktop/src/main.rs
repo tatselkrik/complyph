@@ -3,6 +3,9 @@
 mod app;
 mod check_view;
 mod folder_watch;
+mod library_cli;
+mod library_maintenance;
+mod library_rules;
 mod library_view;
 mod provision_view;
 mod reader;
@@ -50,6 +53,13 @@ fn main() -> eframe::Result {
 fn parse_arguments() -> Option<PathBuf> {
     let mut arguments = std::env::args_os().skip(1);
     match arguments.next() {
+        Some(argument) if argument == "--library-action" => {
+            if let Err(error) = library_cli::run(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--watch-folder" => {
             if let Err(error) = diagnostic_watch(arguments.collect()) {
                 eprintln!("{error}");
@@ -130,7 +140,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --library-action --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }
@@ -388,7 +398,10 @@ fn diagnostic_check(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
     let review = workspace
         .save_review(
             document.id,
-            complyph_checks::review(&saved.report, &saved.sha256, context),
+            library_rules::apply(
+                &catalog,
+                complyph_checks::review(&saved.report, &saved.sha256, context),
+            )?,
         )
         .map_err(|e| e.to_string())?;
     serde_json::to_writer_pretty(output, &review).map_err(|e| e.to_string())

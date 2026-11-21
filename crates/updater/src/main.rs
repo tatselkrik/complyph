@@ -1,11 +1,13 @@
-//! Public catalog coordinator. Only its AppContainer child implements HTTP.
-#[cfg(any(windows, test))]
-#[cfg_attr(not(windows), allow(dead_code))]
+//! Public catalog coordinator. Only its OS-confined child implements HTTP.
+#[cfg(any(windows, target_os = "linux", test))]
+#[cfg_attr(not(any(windows, target_os = "linux")), allow(dead_code))]
 mod http;
 mod protocol;
 mod sandbox;
 
-use complyph_library::{CheckReceipt, LibraryCatalog, UpdateReply, default_library_directory};
+use complyph_library::{
+    CheckReceipt, DiscoveryReceipt, LibraryCatalog, UpdateReply, default_library_directory,
+};
 use protocol::{Reply, Request};
 use serde::Serialize;
 use std::path::PathBuf;
@@ -15,9 +17,21 @@ struct BatchReport {
     supported: bool,
     checks: Vec<CheckReceipt>,
     remaining_due: usize,
+    discovery_checks: Vec<DiscoveryReceipt>,
+    remaining_discovery_due: usize,
 }
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    if std::env::args().nth(1).as_deref() == Some("--linux-network-worker") {
+        match sandbox::enter_isolation() {
+            Ok(()) => worker(),
+            Err(message) => {
+                let _ = protocol::encode(&Reply::Failed { message }, &[], std::io::stdout().lock());
+            }
+        }
+        return;
+    }
     if std::env::args().nth(1).as_deref() == Some("--network-worker") {
         worker();
         return;
@@ -39,7 +53,13 @@ fn worker() {
                 }
                 Ok((
                     Reply::Probe {
-                        app_container: true,
+                        app_container: cfg!(windows),
+                        isolation: if cfg!(windows) {
+                            "windows_appcontainer"
+                        } else {
+                            "linux_landlock_seccomp"
+                        }
+                        .into(),
                         all_files_denied: files.iter().all(|p| std::fs::File::open(p).is_err()),
                         files_tested: files.len(),
                     },
@@ -47,11 +67,11 @@ fn worker() {
                 ))
             }
             Request::Fetch { .. } => {
-                #[cfg(windows)]
+                #[cfg(any(windows, target_os = "linux"))]
                 {
                     Ok(http::fetch(&request))
                 }
-                #[cfg(not(windows))]
+                #[cfg(not(any(windows, target_os = "linux")))]
                 {
                     Err("This platform has no enabled network worker.".into())
                 }
@@ -90,7 +110,7 @@ fn run() -> Result<(), String> {
             )),
             Some("--help" | "-h") => {
                 println!(
-                    "ComplyPH source updater\n\n--status  Read public catalog status without networking\n--check [--due]  Check approved source URLs; --due skips attempts within 24 hours\n--library-dir PATH  Use an explicit public catalog\n--self-test-isolation --probe-file PATH  Test denial of a synthetic file\n\nNetworking requires the Windows AppContainer. No private workspace is opened."
+                    "ComplyPH source updater\n\n--status  Read public catalog status without networking\n--check [--due]  Check approved source URLs; --due skips attempts within 24 hours\n--library-dir PATH  Use an explicit public catalog\n--self-test-isolation --probe-file PATH  Test denial of a synthetic file\n\nNetworking requires Windows AppContainer or supported Linux Landlock ABI 3+/seccomp confinement. Unsupported platforms/kernels stay offline. No private workspace is opened."
                 );
                 return Ok(());
             }
@@ -105,13 +125,13 @@ fn run() -> Result<(), String> {
         let (reply, _) = launcher.run(&Request::Probe { files })?;
         match reply {
             Reply::Probe {
-                app_container: true,
                 all_files_denied: true,
                 ..
             } => println!(
                 "{}",
                 serde_json::to_string(&reply).map_err(|e| e.to_string())?
             ),
+            Reply::Failed { message } => return Err(message),
             _ => {
                 return Err(
                     "The downloader isolation probe failed. Networking must remain disabled."
@@ -147,9 +167,16 @@ fn run() -> Result<(), String> {
         );
         return Ok(());
     }
-    let ids = catalog.due_source_ids(due).map_err(|e| e.to_string())?;
+    let mut ids = catalog.due_source_ids(due).map_err(|e| e.to_string())?;
+    let page_ids = catalog
+        .due_publication_page_ids(due)
+        .map_err(|e| e.to_string())?;
+    if !page_ids.is_empty() {
+        ids.truncate(10);
+    }
     let mut checks = Vec::new();
-    if !ids.is_empty() {
+    let mut discovery_checks = Vec::new();
+    if !ids.is_empty() || !page_ids.is_empty() {
         let launcher = sandbox::Launcher::new();
         for id in ids {
             let Some(target) = catalog
@@ -198,10 +225,59 @@ fn run() -> Result<(), String> {
                     .map_err(|e| e.to_string())?,
             );
         }
+        for id in page_ids {
+            let Some(target) = catalog
+                .claim_publication_page(id, due)
+                .map_err(|e| e.to_string())?
+            else {
+                continue;
+            };
+            let result = match &launcher {
+                Ok(launcher) => launcher.run(&Request::Fetch {
+                    url: target.url.clone(),
+                    etag: None,
+                    last_modified: None,
+                }),
+                Err(error) => Err(error.clone()),
+            };
+            let reply = match result {
+                Ok((
+                    Reply::Download {
+                        resolved_url,
+                        mime,
+                        etag,
+                        last_modified,
+                    },
+                    bytes,
+                )) => UpdateReply::Download {
+                    resolved_url,
+                    mime,
+                    etag,
+                    last_modified,
+                    bytes,
+                },
+                Ok((Reply::Failed { message }, _)) | Err(message) => {
+                    UpdateReply::Failed { message }
+                }
+                _ => UpdateReply::Failed {
+                    message: "Publication discovery needs a complete HTML response.".into(),
+                },
+            };
+            discovery_checks.push(
+                catalog
+                    .finish_publication_page(&target, reply)
+                    .map_err(|e| e.to_string())?,
+            );
+        }
     }
     let report = BatchReport {
-        supported: cfg!(windows),
+        supported: cfg!(any(windows, target_os = "linux")),
         checks,
+        discovery_checks,
+        remaining_discovery_due: catalog
+            .due_publication_page_ids(true)
+            .map_err(|e| e.to_string())?
+            .len(),
         remaining_due: catalog
             .due_source_ids(true)
             .map_err(|e| e.to_string())?

@@ -1,41 +1,47 @@
 # Source update checks
 
-ComplyPH checks explicitly approved official URLs and preserves changed downloads for review. Private documents are not updater inputs. The Windows release uses an AppContainer network worker; other-platform builds keep online checks disabled.
+ComplyPH checks explicitly approved official URLs and preserves changed downloads for review. It can also inventory publication links from separately approved agency pages. Private documents are never updater inputs. Windows uses AppContainer; supported Linux kernels use Landlock/seccomp. Unsupported platforms or unavailable isolation stay offline.
 
 ## Approve and check
 
 1. Open **Legal library → Read local snapshot → Source updates and downloaded history**.
-2. Inspect the official publication URL. Use a supported agency's HTTPS URL; it can be the source file or a publication index that you want to monitor.
-3. Select **Approve daily checks**. No source is enabled by default, and importing a reference does not approve its URL.
-4. The app checks due URLs while it is open. **Check approved sources now** runs an immediate batch, including retries of earlier failures.
-5. Use **Update review needed** to find sources with changed downloads. Open their history, **Save downloaded copy…** to a new local file, compare it with the saved reference, and record your source review notes.
+2. Inspect the official source URL and choose **Approve daily checks**. Use the actual publication URL for reference versions; **Discover official issuances** separately configures publication/listing pages.
+3. No URL or publication page is approved by default. Importing a source or editing its citation does not approve a network request.
+4. The open desktop checks due approvals. **Check approved sources now** runs an immediate batch, including earlier failures.
+5. Use **Update review needed → Compare and review candidate** to inspect, read and deliberately adopt or dismiss changed bytes. See the [maintenance guide](LIBRARY_MAINTENANCE.md).
 
-The supported agency roots are `dole.gov.ph`, `senate.gov.ph`, `privacy.gov.ph`, `bir.gov.ph`, `sss.gov.ph`, `philhealth.gov.ph`, `pagibigfund.gov.ph` and `officialgazette.gov.ph`, including their subdomains. Third-party mirrors and social-media URLs cannot be enabled. An imported mirror can instead use an explicitly approved official publication page.
+Allowed agency roots are dole.gov.ph, senate.gov.ph, privacy.gov.ph, bir.gov.ph, sss.gov.ph, philhealth.gov.ph, pagibigfund.gov.ph and officialgazette.gov.ph, including their subdomains. Third-party mirrors and social-media URLs cannot be enabled. A mirror reference may use a separately approved official URL after reviewing its identity.
 
-**Disable checks** stops future requests and retains earlier downloads. Approval is separate from agency-download verification, source identity, applicability and checking-rule coverage.
+**Disable checks** stops future requests and retains downloads. Approval remains separate from source identity, legal applicability and checking-rule coverage.
 
 ## Schedule and outcomes
 
-Daily means an attempt no more often than every 24 hours while the desktop is open. A missed/interrupted check becomes due after the next launch and expiry of its short worker lease. There is no installed background service or task that runs with ComplyPH closed. A batch handles up to 20 URLs; further due sources are picked up by subsequent batches. Manual checks can retry sooner.
+A completed attempt becomes due after 24 hours while the desktop is open. Interrupted leases can retry after expiry; missed checks are handled at the next launch. There is no background service when the app is closed. Manual checks can retry sooner.
 
-Each source shows its last attempt, last successful check and any failure. A failed request does not advance its successful-check date. HTTP errors, connection/TLS/time limits, unexpected redirects and invalid/oversized bodies leave saved references and history intact.
+A batch makes at most twenty source/page requests. When publication pages are due, it handles up to ten source URLs and ten pages; further due entries are picked up by later batches. Short-lived leases prevent concurrent duplicate work, and late/revoked responses cannot commit.
 
-The first successful response is compared with the preserved reference bytes. Later responses are compared with the last preserved server response. Matching bytes and valid 304 responses retain the existing copy; a different hash saves an immutable downloaded version and flags it for review. Repeated identical bodies do not duplicate a version. Returning to an earlier body is recorded as a change without deleting intervening versions. Interrupted/stale workers cannot commit after approval changes or a newer lease takes over.
+Source and page status show attempts, successful checks and failures. HTTP/TLS/time/size/origin failures retain earlier references and do not advance the successful-check date. Different source bytes are saved immutably with their URL, resolved URL, time, MIME type, size and SHA-256. Identical bodies do not duplicate a version; a valid conditional 304 retains the previous copy. Returning to earlier bytes does not erase intervening versions.
 
-## Review and legal currency
+## Reviewed changes and rule currency
 
-Downloads are public-reference candidates with their URL, resolved URL, time, type, byte count and SHA-256 hash. Earlier reference snapshots, downloads, citations and report hashes remain available. Export checks integrity and refuses to overwrite an existing destination. A recorded review note is retained with its time.
+A download is a reference candidate. Metadata editing, identity review, textual comparison, adoption/restoration, dismissal and rule assessment are separate deliberate local actions with a reviewer/date/basis history. Old review notes remain, but do not substitute for a new adoption/dismissal decision.
 
-Recording a review does not promote a download to a verified agency reference, replace the reader's curated text or update an automated rule. The six numeric checks continue to cite their pinned source. If that publication has downloaded changes, Review displays a source-currency warning; existing reports still open their exact historical provisions. Updating a checking rule requires separate source/rule validation.
+Source changes hold affected checks until the appropriate decision/revalidation. A complete unchanged supporting provision plus applicability/amendment/evaluation review can revalidate an existing compiled profile against the adopted source. Changed supporting text needs a new reviewed/tested rule implementation; editing source metadata cannot change numeric thresholds or legal-period support. Recorded future effectivity also prevents premature activation. Earlier reports continue opening their exact historical offline source.
 
-A webpage layout, navigation or protection-page change can alter bytes without amending the law. An unchanged URL does not prove that an agency published no other issuance. These checks do not crawl linked pages, discover all new laws, determine effectivity dates or reconcile amendments. Approving a publication index can help surface new links for human review. In-app source-diff interpretation and reviewed promotion of downloaded references remain future work.
+## Official publication discovery
 
-## Privacy and limits
+Approve an official HTML listing in **Publication discovery**. Scans preserve page versions and qualifying official PDF/DOCX/issuance links. Initial inventory is distinguished from later newly seen links; neither establishes a new enactment or issue/effective date. Links can be dismissed/reopened with notes, used to prefill local Add legal source, or attached to a particular rule-impact assessment.
 
-The coordinator opens the public catalog only. Its AppContainer child receives a small request containing the approved public URL and optional cache validators from that server. It receives no document path, text, hash, report, employer/employee data or review note. Requests are GET with no body, cookies, authentication or inherited proxy credentials. TLS validation remains enabled.
+Discovery does not follow the links, fetch their documents, execute page scripts or crawl other archives. It accepts UTF-8 HTML up to 1 MiB and inventories up to 500 qualifying unique links per page. Limits, empty/static results and failures are visible. Dynamic portals, unlinked issuances and unsupported pages require manual intake or another explicitly approved page. This is bounded inventory, not exhaustive legal research.
 
-Windows provides the filesystem/network capability boundary. The child has InternetClient capability without private-network or document-library capabilities. It uses a read/execute-only temporary copy of application code and an explicit inherited-pipe list; it cannot inherit database/document handles. Tests verify denial of synthetic private-store, public-catalog and original-file canaries. Job objects stop the coordinator and its descendants when the desktop exits. The child also verifies its AppContainer token before constructing the HTTP client, so launching worker mode directly cannot bypass confinement.
+## Privacy boundary
 
-The Rust HTTP policy further restricts requests to approved agency HTTPS origins on port 443. DNS answers containing private, loopback, link-local, reserved or mapped local addresses are rejected, and the checked addresses are passed directly to the connector. Redirects must stay on the same origin and are limited to three. Responses have a 16 KiB header limit and 32 MiB body limit; the worker has a 30-second wall deadline, CPU/memory limits and one-process limit. Unsupported payloads and compressed responses are rejected. Source downloads are preserved as PDF, DOCX, HTML or UTF-8 plain text; active HTML is never rendered by the app. External software used to open an exported file operates independently.
+The coordinator opens the public catalog only. Its network child receives an approved public URL and optional ETag/Last-Modified values from that server. Requests are HTTPS GET without a body, cookies, authentication or inherited proxy credentials. Document paths, text, hashes, findings, employer/employee information and reviewer notes are not request inputs. TLS validation remains enabled.
 
-The public database migrates to schema 4. Private schema 3, `C:\ProgramData\ComplyPH`, original documents and earlier source/rule pins are preserved. Agency servers necessarily see normal IP/TLS connection metadata, the approved URL, the app user-agent and their own conditional-request headers. See [Privacy](../PRIVACY.md) and [verification](VERIFICATION.md).
+Windows confines the worker in AppContainer with InternetClient capability, read/execute access to application code and an explicit inherited-pipe list. It cannot inherit document/catalog handles. File-denial probes cover synthetic private-store, public-catalog and original-file canaries; job objects stop the coordinator/descendants with the desktop. The child verifies its token before reading a request or creating an HTTP client.
+
+Linux source builds require working Landlock ABI 3+ and seccomp. Before input/HTTP, the worker applies deny-by-default filesystem access, permitting only exact protected system DNS/NSS runtime files. Its environment and nonstandard inherited descriptors are cleared; seccomp blocks Unix sockets, child executables and process-memory/handle bypasses. Time/CPU/memory limits and parent-death guards bound its lifetime. Unavailable confinement fails before an online request. Release CI exercises real file denial on Linux x86-64.
+
+The HTTP policy further requires approved agency HTTPS origins on port 443. DNS answers containing private/reserved/local addresses are rejected; the checked addresses are used directly by the connector. Redirects stay on the approved origin and are limited to three. Responses have a 16 KiB header and 32 MiB body limit, with time/resource bounds. Unsupported/compressed responses are rejected. Public PDF/DOCX/HTML/UTF-8 text is preserved; active HTML is never rendered. Other software opening exported originals operates independently.
+
+Public schema 5 preserves earlier source versions, approvals, downloads and notes while adding reviewed maintenance/discovery. Private schema 5, C:\ProgramData\ComplyPH and original documents remain unchanged. Agencies see normal IP/TLS metadata, the approved URL, app user-agent and their own conditional-request headers. See [Privacy](../PRIVACY.md) and [verification](VERIFICATION.md).

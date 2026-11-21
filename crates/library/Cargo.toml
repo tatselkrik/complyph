@@ -16,6 +16,8 @@ sha2.workspace = true
 thiserror.workspace = true
 chrono.workspace = true
 url.workspace = true
+scraper = "=0.25.0"
+similar = "=2.7.0"
 
 [dev-dependencies]
 tempfile.workspace = true

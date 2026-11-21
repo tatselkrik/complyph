@@ -304,6 +304,7 @@ impl LibraryCatalog {
         let version_id = transaction.last_insert_rowid();
         transaction.execute("INSERT INTO source_snapshots(version_id,raw_bytes,reading_text,metadata_json,verified_at)
             VALUES(?1,?2,?3,?4,?5)", params![version_id, file.raw, file.reading_text, serde_json::to_string(&metadata)?, metadata.verified_at_unix])?;
+        transaction.execute("INSERT INTO active_source_versions(source_id,version_id) VALUES(?1,?2) ON CONFLICT(source_id) DO UPDATE SET version_id=excluded.version_id",params![source_id,version_id])?;
         transaction.commit()?;
         Ok(ImportOutcome {
             source_id,

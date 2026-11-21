@@ -32,6 +32,7 @@ jobs:
           set -euo pipefail
           [[ "$VERIFIED_RUN_ID" =~ ^[0-9]+$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN_ID" > verified-run.json
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/actions/runs/$VERIFIED_RUN_ID/jobs?filter=latest" > verified-jobs.json
           python3 - <<'PY'
           import json, os, re
           from pathlib import Path
@@ -41,6 +42,10 @@ jobs:
           assert run['head_branch'] == 'main' and run['event'] == 'push'
           assert run['path'] == '.github/workflows/ci.yml'
           assert re.fullmatch('[0-9a-f]{40}', run['head_sha'])
+          jobs = [job for page in json.loads(Path('verified-jobs.json').read_text()) for job in page['jobs']]
+          for name in ('Test, build, and install', 'Verify Linux downloader isolation'):
+              matches = [job for job in jobs if job['name'] == name]
+              assert len(matches) == 1 and matches[0]['conclusion'] == 'success', name
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write('sha=' + run['head_sha'] + '\n')
           with open(os.environ['GITHUB_ENV'], 'a') as output:
@@ -85,7 +90,20 @@ jobs:
           assert check['downloader_isolation_passed'] is True
           assert check['updater_no_approval_no_network_passed'] is True
           assert check['public_https_probe_passed'] is True
-          assert manifest['public_schema'] == check['public_schema'] == 4
+          assert manifest['public_schema'] == check['public_schema'] == 5
+          assert manifest['library_maintenance'] is True and check['installed_library_maintenance_passed'] is True
+          for name in ('source_metadata_editing', 'reviewed_source_adoption', 'source_version_comparison', 'official_publication_discovery', 'rule_revalidation_tracking', 'linux_downloader_support'):
+              assert manifest[name] is True, name
+          maintenance = check['library_maintenance']
+          assert maintenance['public_schema'] == 5
+          assert manifest['library_maintenance_workflow_cases'] == len(maintenance['workflow_cases']) == 6
+          assert {case['name'] for case in maintenance['workflow_cases']} == {'metadata_and_identity','reviewed_version_lifecycle','source_rule_revalidation','changed_support_and_stale_guards','durable_legal_hold','official_publication_discovery'}
+          assert all(case['passed'] is True for case in maintenance['workflow_cases'])
+          for name in ('installed_metadata_history_passed', 'installed_source_identity_passed', 'installed_source_comparison_passed', 'installed_reviewed_adoption_passed', 'installed_rule_revalidation_passed', 'installed_legal_hold_persistence_passed', 'installed_publication_discovery_passed', 'maintenance_reports_preserved', 'maintenance_private_boundary_passed', 'maintenance_pdf_citations_passed'):
+              assert maintenance['checks'][name] is True, name
+          assert manifest['synthetic_publication_fixture_count'] == maintenance['synthetic_publication_fixture_count'] == 2
+          compiled = hashlib.sha256(b''.join(Path(path).read_bytes() for path in ('crates/checks/src/lib.rs','crates/checks/src/initial.rs','crates/checks/src/initial_rules.json'))).hexdigest()
+          assert manifest['compiled_rule_profile_sha256'] == compiled
           assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
           assert manifest['private_schema'] == check['private_schema'] == 5
           assert manifest['reviewer_tracking'] is True and manifest['pdf_export'] is True and manifest['pdf_engine'] == 'complyph-pdf-1'
@@ -175,7 +193,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Initial checks across seven domains" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Reviewed library maintenance" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

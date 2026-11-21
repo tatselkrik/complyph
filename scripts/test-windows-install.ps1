@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.11.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.12.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -429,12 +429,19 @@ if ($LASTEXITCODE -ne 0 -or $manualStatus.source_count -ne 20 -or $manualStatus.
 @'
 import os,pathlib,sqlite3
 with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'library/catalog.sqlite3') as db:
- assert db.execute('PRAGMA user_version').fetchone()[0]==4
+ assert db.execute('PRAGMA user_version').fetchone()[0]==5
  assert db.execute('SELECT COUNT(*) FROM source_versions').fetchone()[0]==20
 '@ | python -
 if ($LASTEXITCODE -ne 0) { throw 'Public source migration or duplicate persistence failed.' }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Reference import changed the private workspace.' }
 if ((Get-FileHash -LiteralPath $sourceSample -Algorithm SHA256).Hash -ne $sourceHash) { throw 'Reference import changed the original.' }
+$maintenanceOutput = Join-Path $fixtureRoot 'library-maintenance.json'
+& python (Join-Path $root 'scripts/test-library-maintenance.py') '--app' $application '--samples' (Join-Path $installDirectory 'Samples') '--work' (Join-Path $fixtureRoot 'library-maintenance') '--output' $maintenanceOutput
+if ($LASTEXITCODE -ne 0) { throw 'Installed library maintenance failed.' }
+$maintenance = Get-Content -LiteralPath $maintenanceOutput -Raw | ConvertFrom-Json
+if ($maintenance.public_schema -ne 5 -or $maintenance.workflow_cases.Count -ne 6 -or @($maintenance.workflow_cases | Where-Object { !$_.passed }).Count -gt 0) { throw 'Incomplete maintenance workflow evidence.' }
+foreach ($check in $maintenance.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed maintenance check: $($check.Name)" } }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Library maintenance changed the default private workspace.' }
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
@@ -459,14 +466,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.10.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.10.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.10.0/ComplyPH-Setup-0.10.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4c4587507bb56a03925a8304bd66b14726d3e44c5410e8521d70e1d7ddc1335b') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.11.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.11.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.11.0/ComplyPH-Setup-0.11.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'f20f2e25aeb2c648b1a279c6afa09421a24b92c695aa1fc7e1da847d0d5e4ea7') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.10.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.11.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -489,7 +496,8 @@ $result = [ordered]@{
     installed_ocr_passed = $true; ocr_confirmation_gate_passed = $true; ocr_originals_preserved = $true; synthetic_ocr_fixture_count = $ocrResults.Count; ocr_results = $ocrResults
     watched_folder_intake_passed = $true; no_auto_review_from_watch_passed = $true
     installed_review_notes_passed = $true; installed_issue_tracking_passed = $true; installed_pdf_export_passed = $true; review_audit_history_preserved = $true
-    public_schema = 4; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
+    public_schema = 5; installed_source_import_passed = $true; manual_source_count = $manualStatus.manually_imported_source_count; awaiting_verification_count = $manualStatus.awaiting_verification_count
+    installed_library_maintenance_passed = $true; library_maintenance = $maintenance
     downloader_isolation_passed = $true; updater_no_approval_no_network_passed = $true
     public_https_probe_passed = $liveResponseObserved; public_https_probe_results = $liveProbeResults
     synthetic_fixture_count = $readerResults.Count; reader_results = $readerResults

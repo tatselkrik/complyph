@@ -108,6 +108,29 @@ fn sections(text: &str, rule: &str, quote: &str) -> Result<Vec<Section>, String>
     }
     Ok(sections)
 }
+pub(crate) fn dependency_boundaries(
+    text: &str,
+    rule: &str,
+    quote: &str,
+) -> Result<Vec<complyph_library::ProvisionBoundary>, String> {
+    use sha2::{Digest, Sha256};
+    sections(text, rule, quote)?
+        .into_iter()
+        .map(|section| {
+            let body = &text[section.range.clone()];
+            let end: String = text[section.range.end..].chars().take(96).collect();
+            if body.is_empty() || end.is_empty() {
+                return Err("The complete supporting boundary is missing.".into());
+            }
+            Ok(complyph_library::ProvisionBoundary {
+                title: section.title,
+                start: body.chars().take(96).collect(),
+                end,
+                text_sha256: format!("{:x}", Sha256::digest(body.as_bytes())),
+            })
+        })
+        .collect()
+}
 impl ProvisionView {
     pub fn open(&mut self, catalog: &LibraryCatalog, saved: &SavedReview, index: usize) {
         self.open = true;

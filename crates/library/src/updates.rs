@@ -118,6 +118,8 @@ pub struct DownloadedChange {
     pub mime: String,
     pub reviewed_at: Option<i64>,
     pub review_note: Option<String>,
+    #[serde(default)]
+    pub decision: Option<String>,
 }
 
 fn now() -> i64 {
@@ -359,7 +361,7 @@ impl LibraryCatalog {
     }
 
     pub fn downloaded_changes(&self, source_id: i64) -> Result<Vec<DownloadedChange>> {
-        let mut stmt = self.connection.prepare("SELECT id,source_id,url,resolved_url,downloaded_at,content_sha256,baseline_sha256,length(raw_bytes),mime,reviewed_at,review_note FROM downloaded_source_changes WHERE source_id=?1 ORDER BY id DESC")?;
+        let mut stmt = self.connection.prepare("SELECT id,source_id,url,resolved_url,downloaded_at,content_sha256,baseline_sha256,length(raw_bytes),mime,reviewed_at,review_note,(SELECT decision FROM candidate_decisions d WHERE d.change_id=downloaded_source_changes.id ORDER BY d.id DESC LIMIT 1) FROM downloaded_source_changes WHERE source_id=?1 ORDER BY id DESC")?;
         Ok(stmt
             .query_map([source_id], |r| {
                 Ok(DownloadedChange {
@@ -374,6 +376,7 @@ impl LibraryCatalog {
                     mime: r.get(8)?,
                     reviewed_at: r.get(9)?,
                     review_note: r.get(10)?,
+                    decision: r.get(11)?,
                 })
             })?
             .collect::<std::result::Result<_, _>>()?)
@@ -415,7 +418,7 @@ impl LibraryCatalog {
 
     pub fn pending_update_count(&self) -> Result<u64> {
         Ok(self.connection.query_row(
-            "SELECT COUNT(*) FROM downloaded_source_changes WHERE reviewed_at IS NULL",
+            "SELECT COUNT(*) FROM downloaded_source_changes c WHERE NOT EXISTS(SELECT 1 FROM candidate_decisions d WHERE d.change_id=c.id)",
             [],
             |r| r.get::<_, i64>(0),
         )? as u64)
@@ -423,6 +426,9 @@ impl LibraryCatalog {
 
     pub fn reference_has_downloaded_changes(&self, key: &str) -> Result<bool> {
         Ok(self.connection.query_row("SELECT EXISTS(SELECT 1 FROM downloaded_source_changes c JOIN sources s ON s.id=c.source_id WHERE s.stable_key=?1)",[key],|r|r.get(0))?)
+    }
+    pub fn reference_has_pending_downloads(&self, key: &str) -> Result<bool> {
+        Ok(self.connection.query_row("SELECT EXISTS(SELECT 1 FROM downloaded_source_changes c JOIN sources s ON s.id=c.source_id WHERE s.stable_key=?1 AND NOT EXISTS(SELECT 1 FROM candidate_decisions d WHERE d.change_id=c.id))",[key],|r|r.get(0))?)
     }
 
     pub fn last_successful_source_check(&self) -> Result<Option<i64>> {
@@ -623,6 +629,12 @@ mod tests {
                 .mark_download_reviewed(change.id, "replace audit note")
                 .is_err()
         );
+        // A legacy note alone is not an adoption/no-impact decision.
+        assert_eq!(catalog.pending_update_count().unwrap(), 2);
+        catalog.dismiss_candidate(change.id,&original_hash,&LibraryReviewer{
+            actor:"Synthetic reviewer".into(),review_on:"2026-11-21".into(),
+            basis:"Fictional downloader test; the candidate is unsuitable and has no effect on real rules.".into(),
+        }).unwrap();
         assert_eq!(catalog.pending_update_count().unwrap(), 1);
         drop(catalog);
         let catalog = LibraryCatalog::open(&temp.path().join("library")).unwrap();
@@ -702,6 +714,7 @@ mod tests {
     fn schema_three_catalogs_retain_their_snapshots_when_update_tables_are_added() {
         let (temp, catalog, id, _) = setup();
         let snapshot = catalog.snapshot(id).unwrap();
+        crate::maintenance::remove_new_tables_for_legacy_fixture(&catalog.connection);
         catalog.connection.execute_batch("DROP TABLE source_update_checks;DROP TABLE source_update_watches;DROP TABLE downloaded_source_changes;PRAGMA user_version=3;").unwrap();
         drop(catalog);
         let catalog = LibraryCatalog::open(&temp.path().join("library")).unwrap();

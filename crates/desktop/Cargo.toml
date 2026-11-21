@@ -18,7 +18,9 @@ complyph-ocr = { path = "../ocr" }
 complyph-library = { path = "../library" }
 complyph-reports = { path = "../reports" }
 serde_json.workspace = true
+serde.workspace = true
 chrono.workspace = true
+sha2.workspace = true
 eframe.workspace = true
 egui-file-dialog.workspace = true
 

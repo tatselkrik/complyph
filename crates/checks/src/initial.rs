@@ -171,7 +171,7 @@ pub(crate) fn evaluate(report: &Report, context: &Context, readable: bool) -> Ve
             if issue {(Outcome::PotentialIssue,"The stated term differs from the supported requirement under the confirmed scope and review-period profile. Inspect the evidence and full provision; actual implementation is not determined.".into())}
             else {(Outcome::StatedTermMeetsMinimum,"The stated term matches this supported numeric requirement under reviewer-confirmed facts and period. This does not establish full compliance, actual payment, attendance, notification or employer performance.".into())}
         };
-        Finding{rule_id:rule.id.clone(),title:rule.title.clone(),article:rule.article.clone(),legal_quote:rule.quote.clone(),outcome,explanation,evidence,source:Some(rule.source.clone()),provision:Some(rule.provision.clone())}
+        Finding{rule_id:rule.id.clone(),title:rule.title.clone(),article:rule.article.clone(),legal_quote:rule.quote.clone(),outcome,explanation,evidence,source:Some(rule.source.clone()),provision:Some(rule.provision.clone()),library_review:None}
     }).collect()
 }
 

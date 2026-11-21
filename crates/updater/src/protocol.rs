@@ -2,7 +2,7 @@ use complyph_library::MAX_DOWNLOAD_BYTES;
 use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "linux", test))]
 pub const MAX_WIRE_BYTES: usize = MAX_DOWNLOAD_BYTES + 8196;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,6 +34,7 @@ pub enum Reply {
     },
     Probe {
         app_container: bool,
+        isolation: String,
         all_files_denied: bool,
         files_tested: usize,
     },
@@ -52,7 +53,7 @@ pub fn encode(reply: &Reply, body: &[u8], mut output: impl Write) -> Result<(), 
         .map_err(|_| "The downloader result could not be written.".into())
 }
 
-#[cfg(any(windows, test))]
+#[cfg(any(windows, target_os = "linux", test))]
 pub fn decode(bytes: &[u8]) -> Result<(Reply, Vec<u8>), String> {
     if bytes.len() < 4 || bytes.len() > MAX_WIRE_BYTES {
         return Err("The downloader returned an invalid response size.".into());

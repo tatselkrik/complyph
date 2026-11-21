@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.11.0"><img src="https://img.shields.io/badge/version-0.11.0-142B49?style=flat-square" alt="Version 0.11.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.12.0"><img src="https://img.shields.io/badge/version-0.12.0-142B49?style=flat-square" alt="Version 0.12.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -36,7 +36,10 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 - **Saved reports:** retain the confirmed scope, matched passages, outcomes, rule versions and document/source hashes; reopen a report beside its document.
 - **Reviewer notes and tracking:** add document-review and finding notes; track Unresolved, Acknowledged and Resolved follow-up with append-only local history. Original automated findings stay intact.
 - **Offline PDF export:** save findings, evidence, exact legal quotes, scope, identifiers and complete reviewer history in a readable report with embedded fonts. No printer or browser is required.
-- **Source update checks:** approve official publication URLs for daily checks while the Windows app is open, or check now. Keep downloaded changes and earlier versions, inspect failures, and record source reviews.
+- **Source update checks:** approve official URLs for daily checks while the app is open, or check now. Windows and supported Linux builds confine the network worker; unavailable protection keeps checks offline.
+- **Reviewed library maintenance:** edit version-bound metadata and identity decisions, compare references side by side, adopt or restore a reviewed version, and retain every earlier snapshot.
+- **Rule revalidation:** hold affected checks after source changes, preserve legal-change assessments and bind revalidated findings to exact adopted sources.
+- **Official publication discovery:** inventory issuance links from approved agency pages, distinguish initial inventory from later links, and route references into manual intake or rule-impact assessment.
 - **Add legal source:** import local PDF/DOCX references with an official URL, issuing agency, compliance domains, issue/effective dates and verification notes. Retain original bytes and earlier versions.
 - **Traceable reference library:** 19 preserved references across seven domains, with source URLs, dates, integrity hashes, provenance labels and visible coverage gaps.
 - **Safe workspace storage:** Windows data at `C:\ProgramData\ComplyPH`, automatic migration from detected earlier workspaces and a folder picker for custom locations.
@@ -48,9 +51,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.11.0/ComplyPH-Setup-0.11.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.11.0/ComplyPH-Windows-x64-0.11.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.11.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/ComplyPH-Setup-0.12.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/ComplyPH-Windows-x64-0.12.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -104,19 +107,21 @@ A user-recorded identity check is distinct from a verified agency download. Impo
 
 Open a source's **Read local snapshot → Source updates and downloaded history**. Inspect the proposed official URL and select **Approve daily checks**. Use **Check approved sources now** on the library page for an immediate batch. Approval is separate from source verification; no URLs are enabled by default.
 
-New response bytes are preserved locally with their hashes and flagged for review. Use **Update review needed** to filter the library, save a downloaded copy for comparison and record your review notes. Existing reference text, earlier downloads and report citations remain available. Downloads never silently replace a curated reference or activate new checking rules. See [source updates and privacy boundaries](docs/SOURCE_UPDATES.md).
+New response bytes are preserved locally with their hashes and flagged for review. Use **Update review needed → Compare and review candidate** to inspect highlighted differences, read complete sections, compare the original and deliberately adopt or dismiss the candidate. **Maintain library** also provides metadata/identity editing, preserved-version restoration, rule revalidation and the source audit history. Earlier downloads and report citations remain available; a download never silently activates a source or checking rule.
+
+Use **Discover official issuances** to approve publication pages. Newly seen links are citations with unestablished publication/effectivity dates; they are not fetched automatically. **Add downloaded legal reference…** opens the existing local source intake, and **Assess rule impact…** links the citation to a reviewed rule assessment. See the [maintenance guide](docs/LIBRARY_MAINTENANCE.md) and [source update controls](docs/SOURCE_UPDATES.md).
 
 Source documents and checking rules are maintained separately. See the [inventory](library/README.md), [source assessment](library/ADDITIONS.md) and [provenance manifest](library/starter/manifest.json).
 
 ## Privacy and limitations
 
-Document text, file references, hashes, findings and reviewer history remain in the private local workspace. The public reference catalog is separate. The desktop reader and rule engine contain no HTTP client, AI service, analytics or document upload feature. A separate Windows AppContainer worker makes approved public-source GET requests; it cannot open the private workspace or ordinary original-document files. Opening a supporting provision uses the local catalog.
+Document text, file references, hashes, findings and reviewer history remain in the private local workspace. The public reference catalog is separate. The desktop reader and rule engine contain no HTTP client, AI service, analytics or document upload feature. A separate OS-confined worker makes approved public-source GET requests and cannot open the private workspace or ordinary original-document files. Opening a supporting provision uses the local catalog.
 
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The directory is restricted to its owning account, SYSTEM and Administrators. It is not a shared multi-user store, and SQLite is not encrypted by the app. Detected earlier workspaces are copied and checked, with the old data retained as backup. **Settings → Import an existing workspace** handles custom locations and refuses to overwrite a populated destination.
 
 Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. PDF OCR is available for up to 20 pages per run, with a 120-second elapsed limit and explicit human confirmation. Recognition estimates do not establish text accuracy. Images, text boxes, layout and revisions can affect coverage. The initial checks are technically tested, not qualified legal certification.
 
-Source checks require the Windows AppContainer and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; there is no background service when the app is closed. Other-platform builds keep networking disabled. More validated checks, document-version comparison, library promotion/comparison and optional AI review remain planned. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md) for current behavior and remaining work.
+Source checks require Windows AppContainer or supported Linux Landlock/seccomp confinement and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; no background service runs with the app closed. Other unsupported platforms/kernels remain offline. Publication discovery is bounded to approved UTF-8 HTML pages and qualifying links; it does not establish that every relevant issuance was found. Broader rule coverage, revised-document comparisons, reading-layout improvements, qualified legal review and optional AI review remain future work. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Build from source
 

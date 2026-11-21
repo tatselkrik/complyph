@@ -131,6 +131,10 @@ impl SourceImportView {
         *self = Self::default();
         self.open = true;
     }
+    pub fn start_prefilled(&mut self, input: ManualSourceInput) {
+        self.start();
+        self.input = input;
+    }
 
     pub fn show(&mut self, ctx: &egui::Context, directory: &Path) -> Option<ImportOutcome> {
         if let Some(receiver) = &self.receiver {

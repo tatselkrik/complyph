@@ -25,6 +25,7 @@ pub struct LibraryView {
     message: Option<String>,
     import: crate::source_import::SourceImportView,
     updates: crate::source_updates::SourceUpdates,
+    maintenance: crate::library_maintenance::LibraryMaintenance,
 }
 
 impl Default for LibraryView {
@@ -47,6 +48,7 @@ impl Default for LibraryView {
             message: None,
             import: crate::source_import::SourceImportView::default(),
             updates: crate::source_updates::SourceUpdates::default(),
+            maintenance: crate::library_maintenance::LibraryMaintenance::default(),
         }
     }
 }
@@ -55,6 +57,9 @@ impl LibraryView {
     pub fn load(&mut self, catalog: &LibraryCatalog) -> Result<(), LibraryError> {
         self.sources = catalog.sources()?;
         self.updates.load(catalog)?;
+        self.maintenance
+            .load(catalog)
+            .map_err(LibraryError::InvalidImport)?;
         Ok(())
     }
 
@@ -68,6 +73,14 @@ impl LibraryView {
             return;
         }
         self.updates.overview(ui);
+        ui.horizontal_wrapped(|ui| {
+            if widgets::secondary(ui, "Maintain library").clicked() {
+                self.maintenance.open(catalog, None, false);
+            }
+            if widgets::secondary(ui, "Discover official issuances").clicked() {
+                self.maintenance.open(catalog, None, true);
+            }
+        });
         let Ok(manifest) = starter_manifest() else {
             ui.colored_label(RED, "Source metadata is unavailable.");
             return;
@@ -109,6 +122,15 @@ impl LibraryView {
                     summary.user_checked_source_count
                 ))
                 .color(AMBER),
+            );
+        }
+        if summary.reviewed_adoption_count > 0 {
+            widgets::muted(
+                ui,
+                &format!(
+                    "{} active reviewed source adoption(s)",
+                    summary.reviewed_adoption_count
+                ),
             );
         }
         ui.add_space(10.0);
@@ -199,6 +221,9 @@ impl LibraryView {
                     if verified { GREEN_TINT } else { AMBER_TINT },
                     false,
                 );
+                if let Some(identity) = source.identity_review {
+                    widgets::pill(ui, identity.label(), AMBER, AMBER_TINT, false);
+                }
                 if pending > 0 {
                     widgets::pill(
                         ui,
@@ -234,7 +259,7 @@ impl LibraryView {
                         .collect();
                     self.reader = Some(Reader {
                         id,
-                        metadata: snapshot.metadata,
+                        metadata: catalog.display_metadata(id).unwrap_or(snapshot.metadata),
                         pages,
                         page: 0,
                         find: String::new(),
@@ -260,7 +285,7 @@ impl LibraryView {
                     widgets::muted(ui, &reference.note);
                     ui.add(egui::Label::new(&reference.url).wrap().selectable(true));
                 }
-                ui.label(RichText::new("Source checks inspect approved URLs only; they do not discover every new law or resolve these coverage gaps. Downloaded changes require review and do not update checking rules automatically.").color(AMBER));
+                ui.label(RichText::new("Source checks inspect approved URLs and publication pages only. Publication discovery is a bounded link inventory, not a complete legal search. Downloaded changes require reviewed adoption; affected profiles require rule assessment.").color(AMBER));
             });
         });
     }
@@ -340,17 +365,26 @@ impl LibraryView {
                 "Preserved copy SHA-256: {}",
                 reader.metadata.raw_sha256
             ));
-            if !reader.metadata.provenance.is_manual()
-                && let Some(url) = &reader.metadata.official_reference_url
+            if let Some(url) = &reader.metadata.official_reference_url
+                && (!reader.metadata.provenance.is_manual() || url != &reader.metadata.source_url)
             {
-                ui.label("Official corroboration URL:");
+                ui.label("Official citation / corroboration (current metadata):");
                 ui.add(egui::Label::new(url).wrap().selectable(true));
             }
             widgets::muted(ui, &reader.metadata.extraction);
-            widgets::muted(ui, &reader.metadata.verification_scope);
+            widgets::muted(
+                ui,
+                &format!(
+                    "Acquisition verification notes: {}",
+                    reader.metadata.verification_scope
+                ),
+            );
         });
         self.updates
             .source(ui, catalog, reader.id, &reader.metadata);
+        if widgets::secondary(ui, "Edit metadata, compare versions and review rules").clicked() {
+            self.maintenance.open(catalog, Some(reader.id), false);
+        }
         ui.add_space(12.0);
         ui.horizontal(|ui| {
             ui.add(
@@ -474,6 +508,25 @@ impl LibraryView {
             ctx.request_repaint();
             return true;
         }
-        self.updates.tick(ctx, catalog, directory)
+        if let Some(id) = self.updates.take_compare_request() {
+            self.maintenance.open_candidate(catalog, id);
+        }
+        let maintained = self.maintenance.show(ctx, catalog, directory);
+        if std::mem::take(&mut self.maintenance.request_check) {
+            self.updates.request_check();
+        }
+        if let Some(input) = self.maintenance.import_request.take() {
+            self.import.start_prefilled(input);
+        }
+        let updated = self.updates.tick(ctx, catalog, directory);
+        if maintained || updated {
+            if let Err(error) = self.load(catalog) {
+                self.message = Some(error.to_string());
+            }
+            if maintained {
+                self.reader = None;
+            }
+        }
+        maintained || updated
     }
 }

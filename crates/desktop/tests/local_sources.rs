@@ -92,7 +92,10 @@ fn executable_imports_pdf_and_docx_locally_with_history_and_separate_verificatio
     assert_eq!(summary.awaiting_verification_count, 1);
     assert_eq!(summary.user_checked_source_count, 1);
     assert_eq!(summary.manually_imported_source_count, 2);
-    assert_eq!(summary.automatic_updates_available, cfg!(windows));
+    assert_eq!(
+        summary.automatic_updates_available,
+        cfg!(any(windows, target_os = "linux"))
+    );
     assert_eq!(summary.last_successful_check, None);
     assert!(
         catalog
