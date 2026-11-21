@@ -83,7 +83,9 @@ pub fn enter_isolation() -> Result<(), String> {
                     continue;
                 };
                 if !metadata.is_file() || metadata.uid() != 0 || metadata.mode() & 0o022 != 0 {
-                    return Err("A Linux DNS/NSS runtime file is not protected by the system owner. Networking remains disabled.".into());
+                    return Err(format!(
+                        "Linux source isolation refused an unprotected DNS/NSS runtime file ({path}). Networking remains disabled."
+                    ));
                 }
                 let name = std::ffi::CString::new(path).expect("fixed system path");
                 // SAFETY: valid NUL-terminated fixed path; fd is closed below.

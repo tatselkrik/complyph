@@ -24,6 +24,16 @@ jobs:
           persist-credentials: false
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install 1.100.0 --profile minimal --component clippy
+      - name: Protect the CI resolver runtime files
+        run: |
+          set -euo pipefail
+          for file in /etc/resolv.conf /etc/hosts /etc/nsswitch.conf /etc/gai.conf /etc/host.conf /lib/x86_64-linux-gnu/libnss_dns.so.2 /lib/x86_64-linux-gnu/libnss_files.so.2; do
+            if [ -f "$file" ]; then
+              stat -Lc '%n %U:%G %a' "$file"
+              sudo chown root:root "$file"
+              sudo chmod go-w "$file"
+            fi
+          done
       - name: Test Linux confinement and public-library workflows
         run: cargo test -p complyph-paths -p complyph-library -p complyph-checks -p complyph-updater --locked
       - name: Check Linux Rust warnings
