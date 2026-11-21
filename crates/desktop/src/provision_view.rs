@@ -119,14 +119,41 @@ impl ProvisionView {
                 .findings
                 .get(index)
                 .ok_or("This saved finding is unavailable.")?;
-            let snapshot = catalog
-                .snapshot_for_review(
+            let (key, raw_hash, text_hash) = if let Some(source) = &finding.source {
+                (&source.key, &source.sha256, &source.text_sha256)
+            } else {
+                (
                     &saved.review.source_key,
                     &saved.review.source_sha256,
                     &saved.review.source_text_sha256,
                 )
+            };
+            let snapshot = catalog
+                .snapshot_for_review(key, raw_hash, text_hash)
                 .map_err(|e| e.to_string())?;
-            let sections = sections(&snapshot.text, &finding.rule_id, &finding.legal_quote)?;
+            let sections = if let Some(locator) = &finding.provision {
+                let markers: Vec<_> = snapshot.text.match_indices(&locator.start).collect();
+                let [(start, _)] = markers.as_slice() else {
+                    return Err("The saved provision boundary is unavailable or ambiguous; no substitute was opened.".into());
+                };
+                let end = snapshot.text[start + locator.start.len()..]
+                    .find(&locator.end)
+                    .map(|n| start + locator.start.len() + n)
+                    .ok_or("The saved provision ending is unavailable.")?;
+                if finding.legal_quote.trim().is_empty()
+                    || !snapshot.text[*start..end].contains(&finding.legal_quote)
+                {
+                    return Err(
+                        "The saved quote does not match the exact preserved section.".into(),
+                    );
+                }
+                vec![Section {
+                    title: locator.title.clone(),
+                    range: *start..end,
+                }]
+            } else {
+                sections(&snapshot.text, &finding.rule_id, &finding.legal_quote)?
+            };
             Ok(OpenSource {
                 title: snapshot.metadata.title,
                 provenance: snapshot.metadata.provenance.label().into(),
@@ -200,6 +227,48 @@ impl ProvisionView {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn every_initial_finding_opens_and_renders_its_own_exact_preserved_source() {
+        let temp = tempfile::tempdir().unwrap();
+        let catalog = LibraryCatalog::open(temp.path()).unwrap();
+        let input = complyph_extract::Report {
+            engine: complyph_extract::ENGINE.into(),
+            ocr: None,
+            format: complyph_extract::Format::Docx,
+            status: complyph_extract::Status::Ready,
+            summary: "Synthetic".into(),
+            warnings: vec![],
+            units: vec![],
+        };
+        let review = complyph_checks::review(&input, "synthetic", Default::default());
+        let mut saved = SavedReview {
+            id: 1,
+            document_id: 1,
+            created_at: 0,
+            review,
+        };
+        let ctx = egui::Context::default();
+        for index in 6..saved.review.findings.len() {
+            let finding = &saved.review.findings[index];
+            let mut view = ProvisionView::default();
+            view.open(&catalog, &saved, index);
+            assert!(
+                view.error.is_none(),
+                "{}: {:?}",
+                finding.rule_id,
+                view.error
+            );
+            let source = view.source.as_ref().unwrap();
+            assert_eq!(source.hash, finding.source.as_ref().unwrap().sha256);
+            assert!(source.text[source.sections[0].range.clone()].contains(&finding.legal_quote));
+            let mut output = ctx.run_ui(egui::RawInput::default(), |ui| view.show(ui.ctx()));
+            output.textures_delta.clear();
+        }
+        saved.review.findings[7].legal_quote = "tampered quote".into();
+        let mut view = ProvisionView::default();
+        view.open(&catalog, &saved, 7);
+        assert!(view.error.is_some() && view.source.is_none());
+    }
     #[test]
     fn exact_articles_and_related_rules_preserve_full_provisions_and_boundaries() {
         let text = include_str!("../../../library/starter/text/labor-code-reference.txt");

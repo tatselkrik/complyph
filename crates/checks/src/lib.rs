@@ -5,14 +5,21 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::sync::LazyLock;
 
-pub const ENGINE: &str = "complyph-labor-4";
-pub const RULE_COUNT: usize = RULES.len();
+mod initial;
+pub use initial::{InitialRule, RuleScope, valid_date};
+pub use initial::{rules as initial_rules, sources as source_pins};
+pub const ENGINE: &str = "complyph-rules-1";
+pub const RULE_COUNT: usize = 20;
+pub const PACK_ID: &str = "initial-seven-domain-v1";
+pub fn rule_pack_sha256() -> String {
+    format!("{:x}", Sha256::digest(include_bytes!("initial_rules.json")))
+}
 pub const SOURCE_KEY: &str = "labor-code-reference";
 pub const SOURCE_SHA256: &str = "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0";
 pub const SOURCE_TEXT_SHA256: &str =
     "c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f";
 pub const SOURCE_URL: &str = "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974";
-pub const LIMITATION: &str = "Six stated numeric terms only. This is not a compliance opinion. Eligibility, actual hours/payments/rest/leave, amendments, shortened paid meals, rest-day exceptions, SIL service/exemptions/equivalent benefits, leave valuation/commutation, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
+pub const LIMITATION: &str = "Twenty focused numeric terms across seven domains. New profiles require reviewer-confirmed coverage, exceptions, period and basis. These are initial coverage profiles, not full-domain assessments. This is not a compliance opinion. Eligibility, actual hours/payments/rest/leave, amendments, shortened paid meals, rest-day exceptions, SIL service/exemptions/equivalent benefits, leave valuation/commutation, special arrangements, other laws and more favourable contract/CBA terms require human review. Text and source hashes identify the snapshots used; they do not establish legal currency.";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -113,6 +120,8 @@ pub struct Context {
     /// Earlier contexts must not silently establish service or exception facts.
     #[serde(default)]
     pub service_incentive_leave: SilScope,
+    #[serde(default)]
+    pub additional_checks: std::collections::BTreeMap<String, RuleScope>,
 }
 impl Context {
     /// Resolve by stable rule ID so historical/reordered findings retain their scope.
@@ -124,7 +133,12 @@ impl Context {
             "PH-LAB-085-01" => self.meal_period,
             "PH-LAB-091-01" => self.weekly_rest,
             "PH-LAB-095-01" => self.service_incentive_leave.applicability(),
-            _ => Applicability::Unknown,
+            _ => initial_rules()
+                .iter()
+                .find(|r| r.id == rule_id)
+                .and_then(|_| self.additional_checks.get(rule_id))
+                .map(RuleScope::applicability)
+                .unwrap_or_default(),
         }
     }
 }
@@ -156,6 +170,25 @@ pub struct Evidence {
     pub text: String,
     pub hundredths: Option<u32>,
 }
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceCitation {
+    pub key: String,
+    pub sha256: String,
+    pub text_sha256: String,
+    pub url: String,
+}
+impl SourceCitation {
+    pub fn matches(&self, raw: &[u8], text: &str) -> bool {
+        format!("{:x}", Sha256::digest(raw)) == self.sha256
+            && format!("{:x}", Sha256::digest(text.as_bytes())) == self.text_sha256
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProvisionLocator {
+    pub title: String,
+    pub start: String,
+    pub end: String,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Finding {
     pub rule_id: String,
@@ -165,11 +198,17 @@ pub struct Finding {
     pub outcome: Outcome,
     pub explanation: String,
     pub evidence: Vec<Evidence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<SourceCitation>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provision: Option<ProvisionLocator>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Review {
     pub engine: String,
     pub document_sha256: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rule_pack_sha256: Option<String>,
     pub source_key: String,
     pub source_sha256: String,
     pub source_text_sha256: String,
@@ -396,7 +435,7 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
                     .iter()
                     .any(|s| FOLLOWING_CONDITION.is_match(s))
         });
-    let findings = RULES.iter().enumerate().map(|(i, rule)| {
+    let mut findings:Vec<Finding> = RULES.iter().enumerate().map(|(i, rule)| {
         let (patterns, topic) = &MATCHERS[i];
         let mut evidence = vec![];
         let sil=rule.id=="PH-LAB-095-01";
@@ -421,11 +460,13 @@ pub fn review(report: &Report, document_sha256: &str, context: Context) -> Revie
             Applicability::Covered if (rule.upper && values[0] > rule.threshold) || (!rule.upper && values[0] < rule.threshold) => (Outcome::PotentialIssue, "The explicit stated term is outside this rule's numeric threshold, subject to the confirmed scope. Check the cited evidence and legal context."),
             Applicability::Covered => (Outcome::StatedTermMeetsMinimum, "The explicit stated term meets this numeric threshold under the reviewer-confirmed scope. This does not establish full legal compliance or actual payment."),
         };
-        Finding { rule_id: rule.id.into(), title: rule.title.into(), article: rule.article.into(), legal_quote: rule.quote.into(), outcome, explanation: explanation.into(), evidence }
+        Finding { rule_id: rule.id.into(), title: rule.title.into(), article: rule.article.into(), legal_quote: rule.quote.into(), outcome, explanation: explanation.into(), evidence, source:None,provision:None }
     }).collect();
+    findings.extend(initial::evaluate(report, &context, readable));
     Review {
         engine: ENGINE.into(),
         document_sha256: document_sha256.into(),
+        rule_pack_sha256: Some(rule_pack_sha256()),
         source_key: SOURCE_KEY.into(),
         source_sha256: SOURCE_SHA256.into(),
         source_text_sha256: SOURCE_TEXT_SHA256.into(),

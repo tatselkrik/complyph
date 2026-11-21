@@ -31,7 +31,7 @@ fn real_pdf_word_sil_cases_preserve_scope_locations_originals_and_exported_basis
         let saved: SavedReview = serde_json::from_slice(&fs::read(output).unwrap()).unwrap();
         let expected: Outcome = serde_json::from_value(case["outcome"].clone()).unwrap();
         assert_eq!(saved.review.engine, complyph_checks::ENGINE);
-        assert_eq!(saved.review.findings.len(), 6);
+        assert_eq!(saved.review.findings.len(), complyph_checks::RULE_COUNT);
         assert!(
             saved.review.findings[..5]
                 .iter()

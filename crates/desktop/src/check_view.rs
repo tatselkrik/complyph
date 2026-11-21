@@ -25,13 +25,18 @@ pub enum ReviewAction {
 }
 
 pub fn approved_source(catalog: &LibraryCatalog) -> Result<(), String> {
-    let source = catalog
-        .snapshot_by_key(complyph_checks::SOURCE_KEY)
-        .map_err(|e| e.to_string())?;
-    if source.metadata.provenance != complyph_library::Provenance::AgencyDownload
-        || !complyph_checks::source_is_approved(&source.raw, &source.text)
-    {
-        return Err("These rules require their pinned, verified agency reference. Restore the matching library before running them.".into());
+    for pin in complyph_checks::source_pins() {
+        let source = catalog
+            .snapshot_by_key(&pin.key)
+            .map_err(|e| e.to_string())?;
+        if source.metadata.provenance != complyph_library::Provenance::AgencyDownload
+            || !pin.matches(&source.raw, &source.text)
+        {
+            return Err(format!(
+                "The initial rule pack requires its pinned agency reference {}. Restore the matching library before running it.",
+                pin.key
+            ));
+        }
     }
     Ok(())
 }
@@ -63,11 +68,12 @@ impl CheckView {
         saved: Option<&SavedExtraction>,
         tools: &mut crate::review_tools::ReviewTools,
     ) -> Option<ReviewAction> {
-        if catalog
-            .reference_has_downloaded_changes(complyph_checks::SOURCE_KEY)
-            .unwrap_or(false)
-        {
-            ui.colored_label(AMBER,"An online publication change is saved for this rule source. These checks still cite the preserved version; review source and rule currency before relying on the findings. See Legal library → Source updates and downloaded history.");
+        if complyph_checks::source_pins().iter().any(|p| {
+            catalog
+                .reference_has_downloaded_changes(&p.key)
+                .unwrap_or(false)
+        }) {
+            ui.colored_label(AMBER,"An online publication change is saved for a rule source. Checks still cite their preserved profiles; review source and rule currency. See Legal library → Source updates and downloaded history.");
         }
         if !self.visible {
             widgets::card().show(ui,|ui| {
@@ -96,7 +102,7 @@ impl CheckView {
         if self.editing || self.result.is_none() {
             widgets::card().show(ui, |ui| {
             ui.set_min_width(ui.available_width());
-            ui.label(RichText::new(format!("{} focused labour checks",complyph_checks::RULE_COUNT)).font(heading(21.0)));
+            ui.label(RichText::new(format!("{} focused checks · seven domains",complyph_checks::RULE_COUNT)).font(heading(21.0)));
             widgets::muted(ui,"Confirm applicability for the period you are reviewing. The app cannot establish coverage from the document or a job title.");
             scope(ui,"Normal daily working hours", &mut self.context.normal_hours,
                 "Covered adult employment under Articles 82–85; standard eight-hour arrangement; stated hours are net working time, not a shift including unpaid meals. Excludes compressed/flexible schedules and special-sector or health-personnel arrangements.");
@@ -109,14 +115,15 @@ impl CheckView {
             scope(ui,"Consecutive weekly rest period", &mut self.context.weekly_rest,
                 "Covered employment under Articles 82 and 91 and Book III, Rule III; uninterrupted weekly rest after every six consecutive normal work days. Confirm that Article 92/implementing-rule rest-day work exceptions and special-sector arrangements do not govern the term being checked. This does not assess actual schedules, religious preference, rest-day work or premium pay.");
             sil_scope(ui,&mut self.context.service_incentive_leave);
-            widgets::muted(ui,"For all rules, establish Article 82 exclusions (including managerial, field, dependent family, domestic/personal service and qualifying paid-by-results workers), applicable amendments, contracts and CBAs. Leave scope unestablished when unsure.");
+            additional_scopes(ui,&mut self.context.additional_checks);
+            widgets::muted(ui,"For labour checks, establish Article 82 exclusions (including managerial, field, dependent family, domestic/personal service and qualifying paid-by-results workers), applicable amendments, contracts and CBAs. Leave scope unestablished when unsure.");
             ui.add_space(10.0);
             ui.checkbox(&mut self.context.operative_terms_confirmed,"I compared the extracted text with the original; these are operative policy terms, not examples or quotations.");
             if saved.is_some_and(|s|s.report.ocr.is_some()) {
                 ui.colored_label(AMBER,"This text was recognized by OCR. High confidence does not establish that numbers, tables or clauses are correct.");
                 ui.checkbox(&mut self.context.ocr_text_confirmed,"I checked every OCR page, including numbers and low-confidence words, against the original.");
             }
-            widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, consecutive weekly-rest hours after six consecutive normal work days, or annual paid service incentive leave days. Other wording stays unresolved.");
+            widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, consecutive weekly-rest hours after six consecutive normal work days, annual paid service incentive leave, or the explicit formats shown in each additional check. Other wording stays unresolved.");
             if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready && (s.report.ocr.is_none() || self.context.ocr_text_confirmed))).clicked() {
                 self.result=None;
                 let result=(|| {
@@ -144,6 +151,63 @@ impl CheckView {
         }
         None
     }
+}
+fn additional_scopes(
+    ui: &mut Ui,
+    scopes: &mut std::collections::BTreeMap<String, complyph_checks::RuleScope>,
+) {
+    ui.add_space(16.0);
+    ui.separator();
+    ui.add_space(8.0);
+    ui.label(
+        RichText::new("Initial checks across seven domains")
+            .strong()
+            .size(16.0),
+    );
+    widgets::muted(
+        ui,
+        "Open the relevant domain and check. Confirm coverage and exceptions, record the period being assessed and its factual basis. Unestablished checks stay unresolved; document text does not establish eligibility.",
+    );
+    for domain in [
+        "Labour",
+        "DOLE OSHS",
+        "Privacy / NPC",
+        "BIR / Tax",
+        "SSS",
+        "PhilHealth",
+        "Pag-IBIG",
+    ] {
+        egui::CollapsingHeader::new(domain).id_salt(("initial-scope-domain",domain)).show(ui,|ui| {
+            for rule in complyph_checks::initial_rules().iter().filter(|r|r.domain==domain) {
+                egui::CollapsingHeader::new(&rule.title).id_salt(("initial-scope",&rule.id)).show(ui,|ui| {
+                    widgets::muted(ui,&rule.help);
+                    widgets::muted(ui,&format!("Supported reference-profile dates: {} through {}. These are coverage bounds, not the law's expiry.",rule.valid_from,rule.valid_to));
+                    let scope=scopes.entry(rule.id.clone()).or_default();
+                    super_scope(ui,&mut scope.coverage);
+                    ui.checkbox(&mut scope.exceptions_reviewed,"I reviewed coverage, applicable amendments and exceptions for this check.");
+                    ui.label("Date within the period being reviewed (YYYY-MM-DD)");
+                    ui.add(egui::TextEdit::singleline(&mut scope.review_on).char_limit(10).desired_width(170.0));
+                    ui.label("Factual and applicability basis");
+                    ui.add(egui::TextEdit::multiline(&mut scope.basis).char_limit(1000).desired_rows(3).desired_width(f32::INFINITY));
+                    widgets::muted(ui,"Record coverage, period and the records/base/exception evidence used. This assertion is saved locally and included in requested reports; the app does not verify the underlying facts.");
+                });
+            }
+        });
+    }
+}
+fn super_scope(ui: &mut Ui, value: &mut Applicability) {
+    egui::ComboBox::from_id_salt(ui.scope_id().with("coverage"))
+        .selected_text(value.label())
+        .width(ui.available_width().clamp(180.0, 390.0))
+        .show_ui(ui, |ui| {
+            for v in [
+                Applicability::Unknown,
+                Applicability::Covered,
+                Applicability::OutsideScope,
+            ] {
+                ui.selectable_value(value, v, v.label());
+            }
+        });
 }
 fn sil_scope(ui: &mut Ui, scope: &mut complyph_checks::SilScope) {
     ui.add_space(16.0);
@@ -258,7 +322,7 @@ pub fn show_review(
     widgets::card().show(ui,|ui| {
         ui.set_min_width(ui.available_width());
         ui.label(RichText::new(format!("Findings · review #{}",saved.id)).font(heading(20.0)));
-        widgets::muted(ui,&format!("{} supported numeric comparisons in this saved review. No overall compliance verdict is produced.",saved.review.findings.len()));
+        widgets::muted(ui,&format!("{} focused numeric checks in this saved review. No overall compliance verdict is produced.",saved.review.findings.len()));
         match &workflow {
             Ok(state) => { tools.header(ui, workspace, state); tools.document(ui, workspace, state); }
             Err(error) => { ui.colored_label(RED,error.to_string()); }
@@ -283,6 +347,19 @@ pub fn show_review(
                 let basis=saved.review.context.service_incentive_leave.basis.trim();
                 if !basis.is_empty() {ui.add(egui::Label::new(format!("Reviewer-provided eligibility basis: {basis}")).wrap().selectable(true));}
             }
+            if let Some(scope)=saved.review.context.additional_checks.get(&finding.rule_id) {
+                widgets::muted(ui,&format!("Review-period date: {}",if scope.review_on.is_empty(){"Not recorded"}else{&scope.review_on}));
+                widgets::muted(ui,&format!("Exceptions reviewed: {}",if scope.exceptions_reviewed{"Yes (reviewer assertion)"}else{"Not established"}));
+                if !scope.basis.trim().is_empty(){ui.add(egui::Label::new(format!("Reviewer-provided basis: {}",scope.basis)).wrap().selectable(true));}
+            }
+            if let Some(source)=&finding.source {
+                widgets::muted(ui,&format!("Saved source: {}",source.key));
+                egui::CollapsingHeader::new("Source and profile details").id_salt(("finding-source",saved.id,&finding.rule_id)).show(ui,|ui| {
+                    ui.add(egui::Label::new(format!("Source SHA-256: {}",source.sha256)).wrap().selectable(true));
+                    ui.add(egui::Label::new(format!("Reading SHA-256: {}",source.text_sha256)).wrap().selectable(true));
+                    ui.add(egui::Label::new(&source.url).wrap().selectable(true));
+                });
+            }
             for evidence in &finding.evidence {
                 if ui.add_enabled(can_jump,egui::Button::new(format!("Show passage · {}",evidence.location.label())).small().wrap()).clicked(){
                     action=Some(ReviewAction::Passage{hash:saved.review.document_sha256.clone(),evidence:evidence.clone()});
@@ -298,7 +375,8 @@ pub fn show_review(
         ui.add_space(12.0);
         egui::CollapsingHeader::new("Scope and limitations").id_salt(("limits",saved.id)).show(ui,|ui|{ui.label(&saved.review.limitation);});
         egui::CollapsingHeader::new("Snapshot and rule identifiers").id_salt(("hashes",saved.id)).show(ui,|ui| {
-            for text in [format!("Rules: {}",saved.review.engine),format!("Document SHA-256: {}",saved.review.document_sha256),format!("Source SHA-256: {}",saved.review.source_sha256),format!("Reading-text SHA-256: {}",saved.review.source_text_sha256)] {ui.add(egui::Label::new(text).wrap().selectable(true));}
+            if let Some(hash)=&saved.review.rule_pack_sha256 {ui.add(egui::Label::new(format!("Initial rule pack SHA-256: {hash}")).wrap().selectable(true));}
+            for text in [format!("Rules: {}",saved.review.engine),format!("Document SHA-256: {}",saved.review.document_sha256),format!("Primary source SHA-256: {}",saved.review.source_sha256),format!("Reading-text SHA-256: {}",saved.review.source_text_sha256)] {ui.add(egui::Label::new(text).wrap().selectable(true));}
         });
     });
     action

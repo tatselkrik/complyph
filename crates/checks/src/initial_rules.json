@@ -1,0 +1,352 @@
+[
+  {
+    "id": "PH-LAB-296-01",
+    "domain": "Labour",
+    "title": "Standard probationary duration",
+    "article": "Labor Code Article 296 [281 in preserved compilation]",
+    "quote": "Probationary employment shall not exceed six months from the date the employee started working, unless it is covered by an apprenticeship agreement stipulating a longer period.",
+    "source": {
+      "key": "labor-code-reference",
+      "sha256": "99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0",
+      "text_sha256": "c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Presidential%20Decree%20No.%20442%2C%20s.%201974"
+    },
+    "provision": {
+      "title": "Labor Code Article 296 [281 in preserved compilation]",
+      "start": "\nArticle 281.\n",
+      "end": "\nArticle 282.\n"
+    },
+    "pattern": "(?i)^Probationary employment period (?:is|shall be) ([0-9]{1,3}) months$",
+    "topic": "(?i)\\bprobation(?:ary)?\\b",
+    "threshold": 600,
+    "comparison": "maximum",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard private-sector probation only, measured as explicit whole calendar months from actual starting work. Review apprenticeships/learnerships, academic and other special regimes, any exceptional lawful extension, standards made known at engagement and work beyond probation. No conversion from days, date arithmetic, regularization or termination decision is automated."
+  },
+  {
+    "id": "PH-OSH-016-01",
+    "domain": "DOLE OSHS",
+    "title": "Worker safety and health seminar hours",
+    "article": "R.A. 11058 Section 16(b)",
+    "quote": "All workers shall undergo the mandatory eight (8) hours of safety and health seminar as required by the DOLE which shall include a portion on joint employer-employee orientation.",
+    "source": {
+      "key": "ra-11058",
+      "sha256": "5f73fc7ce295f1058ce4eecdeeb1d2991e75c9f2afbb1d3c67b0bf3537458432",
+      "text_sha256": "1a9324d340b028c17789df9c4ce65011fff7951496fe351451757bffbe00f8c5",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011058"
+    },
+    "provision": {
+      "title": "R.A. 11058 Section 16(b)",
+      "start": "\nSEC. 16.\n",
+      "end": "\nSEC. 27.\n"
+    },
+    "pattern": "(?i)^Mandatory worker safety and health seminar duration (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?) hours$",
+    "topic": "(?i)\\b(?:worker|workers)\\b.*\\b(?:safety|OSH)\\b.*\\b(?:seminar|orientation)\\b",
+    "threshold": 800,
+    "comparison": "minimum",
+    "valid_from": "2025-05-16",
+    "valid_to": "2026-12-31",
+    "help": "Covered workplace and mandatory worker seminar under RA 11058; review DOLE implementing requirements, including DO 252-25, exemptions and worker coverage. Includes joint employer-employee orientation. This is not the BOSH course for safety officers or evidence of actual attendance/content completion."
+  },
+  {
+    "id": "PH-OSH-008-01",
+    "domain": "DOLE OSHS",
+    "title": "Required PPE charged to workers",
+    "article": "R.A. 11058 Section 8",
+    "quote": "Every employer, contractor, or subcontractor, if any, shall provide his workers, free of charge, protective equipment for their eyes, face, hands and feet, and lifeline, safety belt or harness, gas or dust respirators or masks, and protective shields whenever necessary by reason of the hazardous work process or environment, chemical, radiological, mechanical and other irritants or hazards capable of causing injury or impairment in the function of any part of the body through absorption, inhalation or physical contact.",
+    "source": {
+      "key": "ra-11058",
+      "sha256": "5f73fc7ce295f1058ce4eecdeeb1d2991e75c9f2afbb1d3c67b0bf3537458432",
+      "text_sha256": "1a9324d340b028c17789df9c4ce65011fff7951496fe351451757bffbe00f8c5",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2011058"
+    },
+    "provision": {
+      "title": "R.A. 11058 Section 8",
+      "start": "\nSEC. 8.\n",
+      "end": "\nSEC. 9.\n"
+    },
+    "pattern": "(?i)^Worker charge for required PPE (?:is|shall be) PHP ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)$",
+    "topic": "(?i)\\b(?:PPE|personal protective equipment)\\b",
+    "threshold": 0,
+    "comparison": "maximum",
+    "valid_from": "2025-05-16",
+    "valid_to": "2026-12-31",
+    "help": "Covered workplace; establish which PPE is required for the actual hazards and review applicable implementing requirements. Required PPE must be free to the worker. This compares an explicit PHP worker charge only; availability, approval, fitness, replacements and actual payroll deductions require separate review."
+  },
+  {
+    "id": "PH-NPC-038-01",
+    "domain": "Privacy / NPC",
+    "title": "Required breach-notification time limit",
+    "article": "DPA IRR Sections 38–40",
+    "quote": "The Commission and affected data subjects shall be notified by the personal information\n           controller within seventy-two (72) hours upon knowledge of, or when there is reasonable\n           belief by the personal information controller or personal information processor that, a\n           personal data breach requiring notification has occurred.",
+    "source": {
+      "key": "npc-dpa-irr",
+      "sha256": "1d8218f48661ea7fade72a3dda44de5a1cfc08cac50f857d5eb4248b5a45133d",
+      "text_sha256": "7b12f6f0e7ed538d4ffe1f1339cf7241048c90e380db97119c091a5c4d598745",
+      "url": "https://privacy.gov.ph/wp-content/uploads/2023/06/IRR_RA-10173-as-amended.pdf"
+    },
+    "provision": {
+      "title": "DPA IRR Sections 38–40",
+      "start": "Section 38. Data Breach Notification.",
+      "end": "Section 41. Breach Report."
+    },
+    "pattern": "(?i)^Required breach notifications to the NPC and affected data subjects (?:are|shall be) sent within ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?) hours of knowledge or reasonable belief$",
+    "topic": "(?i)\\b(?:breach|breaches)\\b.*\\bnotif(?:y|ication|ications)\\b|\\bnotif(?:y|ication|ications)\\b.*\\bbreach\\b",
+    "threshold": 7200,
+    "comparison": "maximum",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Establish PIC coverage, a breach requiring notification under section 38(b), the knowledge/reasonable-belief trigger and applicable timing; review NPC Circular 16-03 and lawful delays/notification exceptions. Unverified allegations alone do not establish a reportable breach. No incident classification, actual elapsed-time calculation or reporting to the NPC is automated."
+  },
+  {
+    "id": "PH-BIR-024-01",
+    "domain": "BIR / Tax",
+    "title": "Annual taxable compensation zero-rate ceiling",
+    "article": "R.A. 10963 Section 5 / NIRC Section 24(A)(2)(a)",
+    "quote": "“Not over P250,000\n................0%",
+    "source": {
+      "key": "ra-10963",
+      "sha256": "bb8ccbc22ff9f235a815e18ddcfa31c62c7cd2d3f2a4cebb8eccc5aedd21230f",
+      "text_sha256": "ebfb198199c2929c00154b55b66bf050efd76b397ed7a57f832614e40a76aae3",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%2010963"
+    },
+    "provision": {
+      "title": "R.A. 10963 Section 5 / NIRC Section 24(A)(2)(a)",
+      "start": "\"Tax Schedule Effective January 1, 2023 and onwards:",
+      "end": "\"For married individuals,"
+    },
+    "pattern": "(?i)^Annual taxable compensation income zero-rate ceiling (?:is|shall be) PHP ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)$",
+    "topic": "(?i)\\b(?:taxable compensation|zero[- ]rate ceiling)\\b",
+    "threshold": 25000000,
+    "comparison": "exact",
+    "valid_from": "2023-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Ordinary graduated annual taxable compensation under NIRC 24(A)(2)(a), 2023 schedule; resident individual scope and current amendments reviewed. Amount is annual TAXABLE compensation, not monthly/gross pay. Minimum-wage exemptions, final taxes, nonresidents, mixed/business income, 8% elections and special regimes need separate review. This checks a stated band boundary; no tax return, withholding or employee tax liability is calculated."
+  },
+  {
+    "id": "PH-SSS-TOTAL-01",
+    "domain": "SSS",
+    "title": "SSS total contribution rate",
+    "article": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+    "quote": "2025             15%           10%               5%      P5,0 00.00   P35,000.00",
+    "source": {
+      "key": "ra-11199",
+      "sha256": "45b3cdc826237e7b2288b7e85c2c5d487be4192c0bf1f2fdd945d56515deb60e",
+      "text_sha256": "5be06bddfabc1bafc47fd95f9fabcf0673f10d3884c2878369db517f1c7ea0c0",
+      "url": "https://issuances-library.senate.gov.ph/sites/default/files/2022-03/ra%2011199.pdf"
+    },
+    "provision": {
+      "title": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+      "start": "     (9)      To implement the rate of contributions",
+      "end": "     The rate of penalty"
+    },
+    "pattern": "(?i)^SSS total contribution rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of monthly salary credit$",
+    "topic": "(?i)\\bSSS\\b.*\\btotal\\b",
+    "threshold": 1500,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard business employer/employee mandatory SS and MPF schedule effective January 2025; confirm current period, coverage and correct monthly salary credit. Employer-only EC is separate; exclude EC, voluntary top-ups, self-employed/voluntary/OFW/kasambahay and other schedules. Rates and the original Act table have been visually compared, with SSS Circular 2024-006 and the current agency contribution page corroboration. No MSC bracket lookup or remittance calculation is performed."
+  },
+  {
+    "id": "PH-SSS-EMPLOYER-01",
+    "domain": "SSS",
+    "title": "SSS employer contribution rate",
+    "article": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+    "quote": "2025             15%           10%               5%      P5,0 00.00   P35,000.00",
+    "source": {
+      "key": "ra-11199",
+      "sha256": "45b3cdc826237e7b2288b7e85c2c5d487be4192c0bf1f2fdd945d56515deb60e",
+      "text_sha256": "5be06bddfabc1bafc47fd95f9fabcf0673f10d3884c2878369db517f1c7ea0c0",
+      "url": "https://issuances-library.senate.gov.ph/sites/default/files/2022-03/ra%2011199.pdf"
+    },
+    "provision": {
+      "title": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+      "start": "     (9)      To implement the rate of contributions",
+      "end": "     The rate of penalty"
+    },
+    "pattern": "(?i)^SSS employer contribution rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of monthly salary credit$",
+    "topic": "(?i)\\bSSS\\b.*\\bemployer\\b",
+    "threshold": 1000,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard business employer/employee mandatory SS and MPF schedule effective January 2025; confirm current period, coverage and correct monthly salary credit. Employer-only EC is separate; exclude EC, voluntary top-ups, self-employed/voluntary/OFW/kasambahay and other schedules. Rates and the original Act table have been visually compared, with SSS Circular 2024-006 and the current agency contribution page corroboration. No MSC bracket lookup or remittance calculation is performed."
+  },
+  {
+    "id": "PH-SSS-EMPLOYEE-01",
+    "domain": "SSS",
+    "title": "SSS employee contribution rate",
+    "article": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+    "quote": "2025             15%           10%               5%      P5,0 00.00   P35,000.00",
+    "source": {
+      "key": "ra-11199",
+      "sha256": "45b3cdc826237e7b2288b7e85c2c5d487be4192c0bf1f2fdd945d56515deb60e",
+      "text_sha256": "5be06bddfabc1bafc47fd95f9fabcf0673f10d3884c2878369db517f1c7ea0c0",
+      "url": "https://issuances-library.senate.gov.ph/sites/default/files/2022-03/ra%2011199.pdf"
+    },
+    "provision": {
+      "title": "R.A. 11199 Section 4(a)(9), 2025 schedule",
+      "start": "     (9)      To implement the rate of contributions",
+      "end": "     The rate of penalty"
+    },
+    "pattern": "(?i)^SSS employee contribution rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of monthly salary credit$",
+    "topic": "(?i)\\bSSS\\b.*\\bemployee\\b",
+    "threshold": 500,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard business employer/employee mandatory SS and MPF schedule effective January 2025; confirm current period, coverage and correct monthly salary credit. Employer-only EC is separate; exclude EC, voluntary top-ups, self-employed/voluntary/OFW/kasambahay and other schedules. Rates and the original Act table have been visually compared, with SSS Circular 2024-006 and the current agency contribution page corroboration. No MSC bracket lookup or remittance calculation is performed."
+  },
+  {
+    "id": "PH-PHIC-RATE-01",
+    "domain": "PhilHealth",
+    "title": "PhilHealth premium rate",
+    "article": "PhilHealth Advisory 2025-0002, premium schedule",
+    "quote": "Direct Contributors are hereby advised that the premium rate effective the applicable\nperiod of January 2025 remains at 5.0%, with an income floor of P10,000 and income\nceiling of P100,000, as follows:",
+    "source": {
+      "key": "philhealth-2025-0002",
+      "sha256": "f760befe41609171d5bf58a2e053f9db8915d5ab5c79badb3c9ebb2888027328",
+      "text_sha256": "158beb38a9fb2a43ccff488efd1341c6c421c62d28a353638f62cfa172d10a42",
+      "url": "https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf"
+    },
+    "provision": {
+      "title": "PhilHealth Advisory 2025-0002, premium schedule",
+      "start": "As prescribed in Section 10",
+      "end": "Further inquiries"
+    },
+    "pattern": "(?i)^PhilHealth premium rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of monthly basic salary$",
+    "topic": "(?i)\\bPhilHealth\\b.*\\bpremium rate\\b",
+    "threshold": 500,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard direct-contributor employed-member profile from January 2025; current-period continuation/amendments and any subsidized/exempt or special category must be reviewed. Rate applies to defined monthly BASIC salary, with statutory floor/ceiling, not take-home pay, commissions or an inferred gross amount. CY2025 advisory is preserved; 2026 continuation corroborated by official Advisory 2026-0042 and PIA. No deduction, allocation, salary-base selection or remittance computation is automated."
+  },
+  {
+    "id": "PH-PHIC-FLOOR-01",
+    "domain": "PhilHealth",
+    "title": "PhilHealth income floor",
+    "article": "PhilHealth Advisory 2025-0002, premium schedule",
+    "quote": "Direct Contributors are hereby advised that the premium rate effective the applicable\nperiod of January 2025 remains at 5.0%, with an income floor of P10,000 and income\nceiling of P100,000, as follows:",
+    "source": {
+      "key": "philhealth-2025-0002",
+      "sha256": "f760befe41609171d5bf58a2e053f9db8915d5ab5c79badb3c9ebb2888027328",
+      "text_sha256": "158beb38a9fb2a43ccff488efd1341c6c421c62d28a353638f62cfa172d10a42",
+      "url": "https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf"
+    },
+    "provision": {
+      "title": "PhilHealth Advisory 2025-0002, premium schedule",
+      "start": "As prescribed in Section 10",
+      "end": "Further inquiries"
+    },
+    "pattern": "(?i)^PhilHealth income floor (?:is|shall be) PHP ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)$",
+    "topic": "(?i)\\bPhilHealth\\b.*\\bincome floor\\b",
+    "threshold": 1000000,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard direct-contributor employed-member profile from January 2025; current-period continuation/amendments and any subsidized/exempt or special category must be reviewed. Rate applies to defined monthly BASIC salary, with statutory floor/ceiling, not take-home pay, commissions or an inferred gross amount. CY2025 advisory is preserved; 2026 continuation corroborated by official Advisory 2026-0042 and PIA. No deduction, allocation, salary-base selection or remittance computation is automated."
+  },
+  {
+    "id": "PH-PHIC-CEILING-01",
+    "domain": "PhilHealth",
+    "title": "PhilHealth income ceiling",
+    "article": "PhilHealth Advisory 2025-0002, premium schedule",
+    "quote": "Direct Contributors are hereby advised that the premium rate effective the applicable\nperiod of January 2025 remains at 5.0%, with an income floor of P10,000 and income\nceiling of P100,000, as follows:",
+    "source": {
+      "key": "philhealth-2025-0002",
+      "sha256": "f760befe41609171d5bf58a2e053f9db8915d5ab5c79badb3c9ebb2888027328",
+      "text_sha256": "158beb38a9fb2a43ccff488efd1341c6c421c62d28a353638f62cfa172d10a42",
+      "url": "https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf"
+    },
+    "provision": {
+      "title": "PhilHealth Advisory 2025-0002, premium schedule",
+      "start": "As prescribed in Section 10",
+      "end": "Further inquiries"
+    },
+    "pattern": "(?i)^PhilHealth income ceiling (?:is|shall be) PHP ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)$",
+    "topic": "(?i)\\bPhilHealth\\b.*\\bincome ceiling\\b",
+    "threshold": 10000000,
+    "comparison": "exact",
+    "valid_from": "2025-01-01",
+    "valid_to": "2026-12-31",
+    "help": "Standard direct-contributor employed-member profile from January 2025; current-period continuation/amendments and any subsidized/exempt or special category must be reviewed. Rate applies to defined monthly BASIC salary, with statutory floor/ceiling, not take-home pay, commissions or an inferred gross amount. CY2025 advisory is preserved; 2026 continuation corroborated by official Advisory 2026-0042 and PIA. No deduction, allocation, salary-base selection or remittance computation is automated."
+  },
+  {
+    "id": "PH-HDMF-EE-HIGH-01",
+    "domain": "Pag-IBIG",
+    "title": "Pag-IBIG employee (above PHP 1,500) savings rate",
+    "article": "R.A. 9679 Section 7 (rate only)",
+    "quote": "Employees earning more than One thousand five hundred\npesos (P1,500.00) per month - two percent (2%).",
+    "source": {
+      "key": "ra-9679",
+      "sha256": "28efca3aac121c25d41e84466baf0bdb8c1f22a4d9e05da4ea62e4b4e4fa324e",
+      "text_sha256": "8f93e7bdfaacd8b38ea9f0d6feec0f9236b4c30917e05d6456c6866f55644294",
+      "url": "https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf"
+    },
+    "provision": {
+      "title": "R.A. 9679 Section 7 (rate only)",
+      "start": "       SEC. 7. Fund Generation and Contributions.",
+      "end": "       SEC. 8. Membership Term."
+    },
+    "pattern": "(?i)^Pag-IBIG employee mandatory savings rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of applicable fund salary$",
+    "topic": "(?i)\\bPag[- ]IBIG\\b.*\\bemployee\\b",
+    "threshold": 200,
+    "comparison": "exact",
+    "valid_from": "2024-02-01",
+    "valid_to": "2026-12-31",
+    "help": "Covered mandatory Pag-IBIG I employment, current compensation band and applicable fund-salary base/cap independently confirmed. Monthly compensation ABOVE PHP 1,500. Select only one employee band for the same worker/period. Original RA 9679 cap of PHP 5,000 has been superseded; it is NOT used by this rate-only check. Confirm current MFS under Circular 460 (PHP 10,000 from February 2024), with current agency guidance. Exclude MP2, voluntary extra savings and special schemes. No fund-salary calculation, payment or remittance determination is performed."
+  },
+  {
+    "id": "PH-HDMF-EE-LOW-01",
+    "domain": "Pag-IBIG",
+    "title": "Pag-IBIG employee (at most PHP 1,500) savings rate",
+    "article": "R.A. 9679 Section 7 (rate only)",
+    "quote": "Employees earning not more than One thousand five\nhundred pesos (P1,500.00)per month - one percent (1%).",
+    "source": {
+      "key": "ra-9679",
+      "sha256": "28efca3aac121c25d41e84466baf0bdb8c1f22a4d9e05da4ea62e4b4e4fa324e",
+      "text_sha256": "8f93e7bdfaacd8b38ea9f0d6feec0f9236b4c30917e05d6456c6866f55644294",
+      "url": "https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf"
+    },
+    "provision": {
+      "title": "R.A. 9679 Section 7 (rate only)",
+      "start": "       SEC. 7. Fund Generation and Contributions.",
+      "end": "       SEC. 8. Membership Term."
+    },
+    "pattern": "(?i)^Pag-IBIG employee mandatory savings rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of applicable fund salary$",
+    "topic": "(?i)\\bPag[- ]IBIG\\b.*\\bemployee\\b",
+    "threshold": 100,
+    "comparison": "exact",
+    "valid_from": "2024-02-01",
+    "valid_to": "2026-12-31",
+    "help": "Covered mandatory Pag-IBIG I employment, current compensation band and applicable fund-salary base/cap independently confirmed. Monthly compensation AT MOST PHP 1,500. Select only one employee band for the same worker/period. Original RA 9679 cap of PHP 5,000 has been superseded; it is NOT used by this rate-only check. Confirm current MFS under Circular 460 (PHP 10,000 from February 2024), with current agency guidance. Exclude MP2, voluntary extra savings and special schemes. No fund-salary calculation, payment or remittance determination is performed."
+  },
+  {
+    "id": "PH-HDMF-ER-01",
+    "domain": "Pag-IBIG",
+    "title": "Pag-IBIG employer savings rate",
+    "article": "R.A. 9679 Section 7 (rate only)",
+    "quote": "All employers - two percent (2%) of the monthly\ncompensation of all covered employees.",
+    "source": {
+      "key": "ra-9679",
+      "sha256": "28efca3aac121c25d41e84466baf0bdb8c1f22a4d9e05da4ea62e4b4e4fa324e",
+      "text_sha256": "8f93e7bdfaacd8b38ea9f0d6feec0f9236b4c30917e05d6456c6866f55644294",
+      "url": "https://ldr.senate.gov.ph/sites/default/files/2023-02/ra%25209679.pdf"
+    },
+    "provision": {
+      "title": "R.A. 9679 Section 7 (rate only)",
+      "start": "       SEC. 7. Fund Generation and Contributions.",
+      "end": "       SEC. 8. Membership Term."
+    },
+    "pattern": "(?i)^Pag-IBIG employer mandatory savings rate (?:is|shall be) ([0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]{1,2})?|[0-9]{1,9}(?:\\.[0-9]{1,2})?)% of applicable fund salary$",
+    "topic": "(?i)\\bPag[- ]IBIG\\b.*\\bemployer\\b",
+    "threshold": 200,
+    "comparison": "exact",
+    "valid_from": "2024-02-01",
+    "valid_to": "2026-12-31",
+    "help": "Covered mandatory Pag-IBIG I employment, current compensation band and applicable fund-salary base/cap independently confirmed. Select only one employee band for the same worker/period. Original RA 9679 cap of PHP 5,000 has been superseded; it is NOT used by this rate-only check. Confirm current MFS under Circular 460 (PHP 10,000 from February 2024), with current agency guidance. Exclude MP2, voluntary extra savings and special schemes. No fund-salary calculation, payment or remittance determination is performed."
+  }
+]

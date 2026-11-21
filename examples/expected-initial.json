@@ -1,0 +1,636 @@
+{
+  "cases": {
+    "Synthetic seven-domain baseline.docx": {
+      "context": {
+        "operative_terms_confirmed": true,
+        "normal_hours": "covered",
+        "ordinary_overtime": "covered",
+        "night_differential": "covered",
+        "meal_period": "covered",
+        "weekly_rest": "covered",
+        "service_incentive_leave": {
+          "employee_coverage": "covered",
+          "qualifying_service": "covered",
+          "exceptions": "covered",
+          "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+        },
+        "additional_checks": {
+          "PH-LAB-296-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-016-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-008-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-NPC-038-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-BIR-024-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-TOTAL-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYEE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-RATE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-FLOOR-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-CEILING-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-HIGH-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-LOW-01": {
+            "coverage": "outside_scope",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-ER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          }
+        }
+      },
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "outside_scope",
+        "stated_term_meets_minimum"
+      ]
+    },
+    "Synthetic seven-domain issues.docx": {
+      "context": {
+        "operative_terms_confirmed": true,
+        "normal_hours": "covered",
+        "ordinary_overtime": "covered",
+        "night_differential": "covered",
+        "meal_period": "covered",
+        "weekly_rest": "covered",
+        "service_incentive_leave": {
+          "employee_coverage": "covered",
+          "qualifying_service": "covered",
+          "exceptions": "covered",
+          "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+        },
+        "additional_checks": {
+          "PH-LAB-296-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-016-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-008-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-NPC-038-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-BIR-024-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-TOTAL-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYEE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-RATE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-FLOOR-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-CEILING-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-HIGH-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-LOW-01": {
+            "coverage": "outside_scope",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-ER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          }
+        }
+      },
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "outside_scope",
+        "potential_issue"
+      ]
+    },
+    "Synthetic seven-domain ambiguous.docx": {
+      "context": {
+        "operative_terms_confirmed": true,
+        "normal_hours": "covered",
+        "ordinary_overtime": "covered",
+        "night_differential": "covered",
+        "meal_period": "covered",
+        "weekly_rest": "covered",
+        "service_incentive_leave": {
+          "employee_coverage": "covered",
+          "qualifying_service": "covered",
+          "exceptions": "covered",
+          "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+        },
+        "additional_checks": {
+          "PH-LAB-296-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-016-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-008-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-NPC-038-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-BIR-024-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-TOTAL-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYEE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-RATE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-FLOOR-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-CEILING-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-HIGH-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-LOW-01": {
+            "coverage": "outside_scope",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-ER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          }
+        }
+      },
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "outside_scope",
+        "needs_review"
+      ]
+    },
+    "Synthetic seven-domain baseline.pdf": {
+      "context": {
+        "operative_terms_confirmed": true,
+        "normal_hours": "covered",
+        "ordinary_overtime": "covered",
+        "night_differential": "covered",
+        "meal_period": "covered",
+        "weekly_rest": "covered",
+        "service_incentive_leave": {
+          "employee_coverage": "covered",
+          "qualifying_service": "covered",
+          "exceptions": "covered",
+          "basis": "Fictional 2026 review: covered non-managerial supervised employee; 12 qualifying months including authorized absences confirmed; establishment regularly employs 10 workers; no existing equivalent paid benefit or applicable exemption established. Synthetic facts only."
+        },
+        "additional_checks": {
+          "PH-LAB-296-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-016-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-OSH-008-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-NPC-038-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-BIR-024-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-TOTAL-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-SSS-EMPLOYEE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-RATE-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-FLOOR-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-PHIC-CEILING-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-HIGH-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-EE-LOW-01": {
+            "coverage": "outside_scope",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          },
+          "PH-HDMF-ER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional 2026 worker and policy review. Applicable private employment, standard regime, period/amendments and exceptions reviewed; source-specific employee category and base confirmed. SSS business employee MSC excludes EC; PhilHealth basic salary and category confirmed; Pag-IBIG compensation exceeds PHP 1500 and current fund-salary cap independently reviewed. No special scheme or voluntary top-up. Synthetic assertions only."
+          }
+        }
+      },
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum",
+        "outside_scope",
+        "stated_term_meets_minimum"
+      ]
+    },
+    "Synthetic Pag-IBIG low-income.docx": {
+      "context": {
+        "operative_terms_confirmed": true,
+        "normal_hours": "unknown",
+        "ordinary_overtime": "unknown",
+        "night_differential": "unknown",
+        "additional_checks": {
+          "PH-HDMF-EE-HIGH-01": {
+            "coverage": "outside_scope",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional covered mandatory member earning exactly PHP 1500 per month; correct fund salary and period, amendments and exceptions reviewed. No voluntary extras or special regime."
+          },
+          "PH-HDMF-EE-LOW-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional covered mandatory member earning exactly PHP 1500 per month; correct fund salary and period, amendments and exceptions reviewed. No voluntary extras or special regime."
+          },
+          "PH-HDMF-ER-01": {
+            "coverage": "covered",
+            "exceptions_reviewed": true,
+            "review_on": "2026-11-01",
+            "basis": "Fictional covered mandatory member earning exactly PHP 1500 per month; correct fund salary and period, amendments and exceptions reviewed. No voluntary extras or special regime."
+          }
+        }
+      },
+      "outcomes": [
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "needs_context",
+        "outside_scope",
+        "stated_term_meets_minimum",
+        "stated_term_meets_minimum"
+      ]
+    }
+  },
+  "boundaries": [
+    {
+      "id": "PH-LAB-296-01",
+      "statement": "Probationary employment period is {} months.",
+      "threshold": 6,
+      "comparison": "maximum"
+    },
+    {
+      "id": "PH-OSH-016-01",
+      "statement": "Mandatory worker safety and health seminar duration is {} hours.",
+      "threshold": 8,
+      "comparison": "minimum"
+    },
+    {
+      "id": "PH-OSH-008-01",
+      "statement": "Worker charge for required PPE is PHP {}.",
+      "threshold": 0,
+      "comparison": "maximum"
+    },
+    {
+      "id": "PH-NPC-038-01",
+      "statement": "Required breach notifications to the NPC and affected data subjects are sent within {} hours of knowledge or reasonable belief.",
+      "threshold": 72,
+      "comparison": "maximum"
+    },
+    {
+      "id": "PH-BIR-024-01",
+      "statement": "Annual taxable compensation income zero-rate ceiling is PHP {}.",
+      "threshold": 250000,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-SSS-TOTAL-01",
+      "statement": "SSS total contribution rate is {}% of monthly salary credit.",
+      "threshold": 15,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-SSS-EMPLOYER-01",
+      "statement": "SSS employer contribution rate is {}% of monthly salary credit.",
+      "threshold": 10,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-SSS-EMPLOYEE-01",
+      "statement": "SSS employee contribution rate is {}% of monthly salary credit.",
+      "threshold": 5,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-PHIC-RATE-01",
+      "statement": "PhilHealth premium rate is {}% of monthly basic salary.",
+      "threshold": 5,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-PHIC-FLOOR-01",
+      "statement": "PhilHealth income floor is PHP {}.",
+      "threshold": 10000,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-PHIC-CEILING-01",
+      "statement": "PhilHealth income ceiling is PHP {}.",
+      "threshold": 100000,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-HDMF-EE-HIGH-01",
+      "statement": "Pag-IBIG employee mandatory savings rate is {}% of applicable fund salary.",
+      "threshold": 2,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-HDMF-EE-LOW-01",
+      "statement": "Pag-IBIG employee mandatory savings rate is {}% of applicable fund salary.",
+      "threshold": 1,
+      "comparison": "exact"
+    },
+    {
+      "id": "PH-HDMF-ER-01",
+      "statement": "Pag-IBIG employer mandatory savings rate is {}% of applicable fund salary.",
+      "threshold": 2,
+      "comparison": "exact"
+    }
+  ]
+}

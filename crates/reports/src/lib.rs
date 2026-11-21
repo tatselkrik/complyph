@@ -271,6 +271,40 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
                 }
             ))?;
         }
+        if let Some(scope) = workflow
+            .saved
+            .review
+            .context
+            .additional_checks
+            .get(&finding.rule_id)
+        {
+            layout.body(&format!(
+                "Review-period date: {}",
+                if scope.review_on.is_empty() {
+                    "Not recorded"
+                } else {
+                    &scope.review_on
+                }
+            ))?;
+            layout.body(&format!(
+                "Exceptions reviewed: {}",
+                scope.exceptions_reviewed
+            ))?;
+            layout.body(&format!(
+                "Reviewer-provided basis: {}",
+                if scope.basis.trim().is_empty() {
+                    "Not recorded"
+                } else {
+                    scope.basis.trim()
+                }
+            ))?;
+        }
+        if let Some(source) = &finding.source {
+            layout.muted(&format!("Saved source key: {}", source.key))?;
+            layout.muted(&format!("Source SHA-256: {}", source.sha256))?;
+            layout.muted(&format!("Reading-text SHA-256: {}", source.text_sha256))?;
+            layout.muted(&format!("Recorded source URL: {}", source.url))?;
+        }
         if finding.evidence.is_empty() {
             layout.body("No supported document passage was recorded.")?;
         }
@@ -321,6 +355,9 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
             }
         ))?;
         layout.muted(&format!("OCR model SHA-256: {}", ocr.model_sha256))?;
+    }
+    if let Some(hash) = &workflow.saved.review.rule_pack_sha256 {
+        layout.muted(&format!("Initial rule pack SHA-256: {hash}"))?;
     }
     for line in [
         format!("Rule engine: {}", workflow.saved.review.engine),
@@ -571,6 +608,7 @@ mod tests {
                 meal_period: Covered,
                 weekly_rest: Covered,
                 service_incentive_leave: Default::default(),
+                additional_checks: Default::default(),
             },
         );
         assert!(
@@ -649,7 +687,7 @@ mod tests {
             "Human follow-up status: Resolved",
             "Automated result: Potential issue",
             "Original evidence is retained.",
-            "complyph-labor-4",
+            "complyph-rules-1",
             "complyph-pdf-1",
             "Document review notes",
             "does not change the automated result",

@@ -1,4 +1,4 @@
-ComplyPH 0.10.0 - Service incentive leave checks
+ComplyPH 0.11.0 - Initial checks across seven domains
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -42,9 +42,9 @@ then compare explicit annual paid SIL days with five. Unsupported wording, unpai
 or pooled leave and uncertain eligibility stay unresolved. Open Article 95 and
 Book III Rule V offline for eligibility, exceptions and other leave provisions.
 Existing reports keep their original findings. Results include passages, source
-and document hashes and unresolved states. These six numeric comparisons are not
+and document hashes and unresolved states. These twenty numeric comparisons are not
 legal certification or a compliance verdict.
-No Philippine lawyer has certified the rules. Other legal domains are not checked.
+No Philippine lawyer has certified the rules. Coverage is limited to the initial checklist; full-domain and payroll/remittance assessments remain future work.
 
 Samples includes seven fictional reader cases, three earlier check fixtures and five SIL cases.
 All are test data, not legal templates. Reader limits: 32 MiB, 300 PDF pages,
@@ -100,3 +100,22 @@ Downloaded changes remain separate, hash-checked copies awaiting review. Use
 Update review needed to filter the library, save a copy and record notes.
 Earlier references and report citations are retained. A byte change may be a
 webpage layout change and does not automatically change checking rules.
+
+Initial rule pack: 20 checks across seven domains. The fourteen added checks cover
+standard probationary duration, worker OSH seminar hours and required PPE charges,
+reportable-breach notification time limits, an annual taxable-compensation band,
+and stated SSS/PhilHealth/Pag-IBIG rates and base limits. Expand the relevant domain
+in the scope form. Confirm coverage, review amendments/exceptions, enter a date
+within the period under review and record the factual basis. The initial new
+profiles support periods through CY2026; this is not a legal expiry date.
+
+SSS salary credit, PhilHealth basic salary and Pag-IBIG fund salary are distinct.
+Their bases are not inferred from gross/net pay. The app does not calculate actual
+taxes, contributions or remittances, classify an incident, notify the NPC, decide
+regularization or establish actual training/PPE provision. Unknown/unsupported
+facts stay unresolved. Only one Pag-IBIG employee salary band may be covered.
+
+Five cross-domain Word/PDF cases are included in Samples. Each new finding saves
+its own public source hashes and offline section locator. Old reports retain their
+original findings; ProgramData storage, source-update isolation and private data
+are preserved. No AI review is included.

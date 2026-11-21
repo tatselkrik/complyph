@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.10.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.11.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -204,7 +204,7 @@ foreach ($name in $checkCases.expected.Keys | Sort-Object) {
     $saved = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $outcomes = @($saved.review.findings | ForEach-Object { $_.outcome })
     if (($outcomes -join ',') -ne ($checkCases.expected[$name] -join ',')) { throw "Incorrect checking outcomes: $name" }
-    if (!$saved.review.context.operative_terms_confirmed -or $saved.review.engine -ne 'complyph-labor-4') { throw 'Review audit context missing.' }
+    if (!$saved.review.context.operative_terms_confirmed -or $saved.review.engine -ne 'complyph-rules-1') { throw 'Review audit context missing.' }
     if ((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash -ne $before) { throw 'Checking changed an original.' }
     $checkResults += [ordered]@{ name=$name; review_id=$saved.id; outcomes=$outcomes; original_preserved=$true }
 }
@@ -227,7 +227,7 @@ $reviewId = ($checkResults | Where-Object { $_.name -eq 'Synthetic labour issues
 $stateFile = Join-Path $fixtureRoot 'review-state.json'
 Invoke-ReviewDiagnostic @('--review-state',"$reviewId",'--output',$stateFile)
 $workflow = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
-if ($workflow.events.Count -ne 0 -or $workflow.saved.review.findings.Count -ne 6) { throw 'New review inherited tracking history.' }
+if ($workflow.events.Count -ne 0 -or $workflow.saved.review.findings.Count -ne 20) { throw 'New review inherited tracking history.' }
 $env:COMPLYPH_SMOKE_REVIEW_ID = "$reviewId"
 $env:COMPLYPH_SMOKE_REVIEW_ORIGINAL = Join-Path $fixtureRoot 'review-value-before.json'
 @'
@@ -329,7 +329,7 @@ foreach ($name in $silCases.Keys | Sort-Object) {
     Invoke-ReviewDiagnostic @('--check-file',$sample,'--context',$silContext,'--output',$output)
     $saved = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
     $finding = $saved.review.findings[5]
-    if ($saved.review.findings.Count -ne 6 -or $finding.rule_id -ne 'PH-LAB-095-01' -or $finding.outcome -ne $silCases[$name].outcome) { throw "Installed SIL outcome mismatch: $name" }
+    if ($saved.review.findings.Count -ne 20 -or $finding.rule_id -ne 'PH-LAB-095-01' -or $finding.outcome -ne $silCases[$name].outcome) { throw "Installed SIL outcome mismatch: $name" }
     if ($saved.review.context.service_incentive_leave.basis -ne $silCases[$name].context.service_incentive_leave.basis -or $finding.article -notlike '*Article 95*') { throw 'SIL eligibility/citation audit data missing.' }
     if ((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash -ne $before) { throw 'SIL review changed an original.' }
     $silResults += [ordered]@{ name=$name; outcome=$finding.outcome; original_preserved=$true }
@@ -354,6 +354,58 @@ $silRead = Get-Content -LiteralPath $silReading -Raw | ConvertFrom-Json
 $text = (($silRead.report.units | ForEach-Object { $_.text }) -join ' ') -replace '\s+', ' '
 foreach ($needle in @('PH-LAB-095-01','Article 95','five days with pay','At least one qualifying year confirmed','regularly employs 10 workers','Potential issue')) {
     if (!$text.Contains($needle)) { throw "Missing SIL PDF content: $needle" }
+}
+# Exercise the initial seven-domain pack through the installed executable.
+$initial = Get-Content -LiteralPath (Join-Path $installDirectory 'Samples/expected-initial.json') -Raw | ConvertFrom-Json -AsHashtable
+$initialResults = @()
+$expectedPackHash = (Get-FileHash -LiteralPath (Join-Path $root 'crates/checks/src/initial_rules.json') -Algorithm SHA256).Hash.ToLowerInvariant()
+foreach ($name in $initial.cases.Keys | Sort-Object) {
+    $case = $initial.cases[$name]
+    $sample = Join-Path $installDirectory "Samples/$name"
+    $before = (Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash
+    $context = Join-Path $fixtureRoot ($name + '.initial-context.json')
+    $case.context | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $context -Encoding utf8NoBOM
+    $output = Join-Path $fixtureRoot ($name + '.initial-review.json')
+    Invoke-ReviewDiagnostic @('--check-file',$sample,'--context',$context,'--output',$output)
+    $saved = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
+    $outcomes = @($saved.review.findings | ForEach-Object { $_.outcome })
+    if (($outcomes -join ',') -ne ($case.outcomes -join ',') -or $saved.review.rule_pack_sha256 -ne $expectedPackHash) { throw "Initial rule-pack mismatch: $name" }
+    foreach ($finding in $saved.review.findings[6..19]) {
+        if (!$finding.source.key -or $finding.source.sha256.Length -ne 64 -or $finding.source.text_sha256.Length -ne 64 -or !$finding.provision.start -or !$finding.provision.end) { throw 'Finding lost its exact source or provision boundary.' }
+    }
+    if ((Get-FileHash -LiteralPath $sample -Algorithm SHA256).Hash -ne $before) { throw 'Initial review changed an original.' }
+    $initialResults += [ordered]@{ name=$name; outcomes=$outcomes; original_preserved=$true }
+    if ($name -eq 'Synthetic seven-domain issues.docx') { $initialIssueId = $saved.id }
+}
+foreach ($gateName in @('coverage','exceptions','date','basis','period')) {
+    $gate = $initial.cases['Synthetic seven-domain baseline.docx'].context | ConvertTo-Json -Depth 8 | ConvertFrom-Json -AsHashtable
+    foreach ($id in $gate.additional_checks.Keys) {
+        if ($id -eq 'PH-HDMF-EE-LOW-01') { continue }
+        $scope = $gate.additional_checks[$id]
+        switch ($gateName) {
+            'coverage' { $scope.coverage = 'unknown' }
+            'exceptions' { $scope.exceptions_reviewed = $false }
+            'date' { $scope.review_on = '2026-02-30' }
+            'basis' { $scope.basis = '' }
+            'period' { $scope.review_on = '2027-01-01' }
+        }
+    }
+    $context = Join-Path $fixtureRoot "initial-gate-$gateName.context.json"
+    $gate | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $context -Encoding utf8NoBOM
+    $output = Join-Path $fixtureRoot "initial-gate-$gateName.json"
+    Invoke-ReviewDiagnostic @('--check-file',(Join-Path $installDirectory 'Samples/Synthetic seven-domain baseline.docx'),'--context',$context,'--output',$output)
+    $saved = Get-Content -LiteralPath $output -Raw | ConvertFrom-Json
+    $expectedOutcome = if ($gateName -eq 'period') { 'needs_review' } else { 'needs_context' }
+    if (@($saved.review.findings[6..19] | Where-Object { $_.rule_id -ne 'PH-HDMF-EE-LOW-01' -and $_.outcome -ne $expectedOutcome }).Count -gt 0) { throw "Initial scope gate bypassed: $gateName" }
+}
+$initialPdf = Join-Path $fixtureRoot 'synthetic-initial-review.pdf'
+Invoke-ReviewDiagnostic @('--export-review-pdf',"$initialIssueId",'--output',$initialPdf)
+$initialReadFile = Join-Path $fixtureRoot 'initial-pdf-reading.json'
+Invoke-ReviewDiagnostic @('--read-file',$initialPdf,'--output',$initialReadFile)
+$initialRead = Get-Content -LiteralPath $initialReadFile -Raw | ConvertFrom-Json
+$text = (($initialRead.report.units | ForEach-Object { $_.text }) -join ' ') -replace '\s+', ' '
+foreach ($needle in @('PH-OSH-016-01','PH-NPC-038-01','PH-BIR-024-01','PH-SSS-TOTAL-01','PH-PHIC-RATE-01','PH-HDMF-ER-01','2026-11-01','Synthetic assertions only',$expectedPackHash)) {
+    if (!$text.Contains($needle)) { throw "Missing initial-pack PDF content: $needle" }
 }
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 # Import a fictional public reference through the installed bounded reader.
@@ -407,14 +459,14 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.9.1 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.9.1.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.9.1/ComplyPH-Setup-0.9.1.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '89a5ae89dfc6091e0054de3bc61820cac41fa92cb06474714157d0ec17d53507') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade the already released ComplyPH 0.10.0 installer in its registered directory.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.10.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.10.0/ComplyPH-Setup-0.10.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4c4587507bb56a03925a8304bd66b14726d3e44c5410e8521d70e1d7ddc1335b') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.9.1 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.10.0 upgrade failed.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -431,7 +483,8 @@ $result = [ordered]@{
     catalog_status_passed = $true; starter_source_count = $status.source_count; starter_domain_count = $status.domains.Count
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
-    private_schema = 5; validated_check_count = 6; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    private_schema = 5; validated_check_count = 20; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    installed_initial_checks_passed = $true; initial_period_scope_gates_passed = $true; installed_initial_source_citations_passed = $true; initial_pdf_sources_passed = $true; synthetic_initial_fixture_count = $initialResults.Count; initial_results = $initialResults; rule_pack_sha256 = $expectedPackHash
     installed_sil_checks_passed = $true; sil_eligibility_gates_passed = $true; sil_pdf_basis_passed = $true; synthetic_sil_fixture_count = $silResults.Count; sil_results = $silResults
     installed_ocr_passed = $true; ocr_confirmation_gate_passed = $true; ocr_originals_preserved = $true; synthetic_ocr_fixture_count = $ocrResults.Count; ocr_results = $ocrResults
     watched_folder_intake_passed = $true; no_auto_review_from_watch_passed = $true

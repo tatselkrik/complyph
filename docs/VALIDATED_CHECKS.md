@@ -1,10 +1,10 @@
-# Focused labour checks, version 3
+# Focused checks and validation
 
 “Validated” means source-anchored, technically tested numeric comparisons with explicit scope gates. No qualified Philippine lawyer has certified these rules. They are not a legal opinion or a complete compliance assessment.
 
 ## Source and thresholds
 
-All six rules pin the preserved Senate P.D. 442 reference compilation, `labor-code-reference`. Original SHA-256: `99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0`; reading text SHA-256: `c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f`. Both must match before desktop/diagnostic checking. The validation suite checks every quoted provision against that source. The uploaded DOLE 2022 edition corroborates the articles but does not replace the agency download pin. The reference bundle and its provenance have not changed in 0.10.0.
+The original six labour rules pin the preserved Senate P.D. 442 reference compilation, `labor-code-reference`. Original SHA-256: `99fd38f1434225504d0685fc5a92c4bb305a9e95bc63875d0781423d4acfa4c0`; reading text SHA-256: `c9e5a66dafa4aa6fc55c01347059c7abe15af841ac30b0ec0d74ba60823bd31f`. Both must match before desktop/diagnostic checking. The validation suite checks every quoted provision against that source. The uploaded DOLE 2022 edition corroborates the articles but does not replace the agency download pin. The reference bundle and its provenance have not changed in 0.11.0.
 
 | Rule | Provision and comparison | Required human-confirmed scope |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ A human must compare extraction with the original and confirm that statements ar
 
 Results are potential issue, stated term meets this numeric threshold, needs context, needs evidence, needs human review, or outside scope. There is no overall document pass or compliance score. Every report records the document hash, source/raw-text hashes, engine/rule versions, human-confirmed scope, matched passages with original locations, provision quotes and limitations. Reports are historical snapshots; a changed original or rule requires a new review.
 
-New reports use `complyph-labor-4` and contain six findings. Earlier reports keep their original findings, scope, engine and source identifiers. Missing meal/weekly-rest context or any SIL fact defaults to **not established**; rerunning an earlier context never assumes new eligibility. Loading does not append findings or rewrite historical review JSON/fingerprints. Scope display resolves by rule ID rather than finding position. Private schema 5 and public schema 4 remain unchanged.
+New reports use `complyph-rules-1` and contain twenty findings across seven domains. The fourteen additions, source pins, supported periods, scope gates and independent cases are documented in [the initial checklist](INITIAL_CHECKS.md). Earlier reports keep their original findings, scope, engine and source identifiers. Missing meal/weekly-rest context or any SIL fact defaults to **not established**; rerunning an earlier context never assumes new eligibility. Loading does not append findings or rewrite historical review JSON/fingerprints. Scope display resolves by rule ID rather than finding position. Private schema 5 and public schema 4 remain unchanged.
 
 ## Service incentive leave scope
 
@@ -80,3 +80,7 @@ Supported SIL formats include `Annual service incentive leave is 5 days with pay
 | Actual PDF baseline / DOCX issues / ambiguous DOCX fixtures | Five meets / five potential issues / five unresolved, plus SIL needs context |
 
 Tests live in `crates/checks/tests/validation.rs` and `crates/checks/tests/service_incentive_leave.rs`. Fixtures and independent expected outcomes live in `examples/expected-checks.json` and `examples/expected-sil.json`. Installed-executable checks also exercise the reader worker, rule evaluation and private report persistence. The engine has no filesystem, network or AI dependency; SHA-256 is used only on bytes passed by its caller.
+
+## Initial cross-domain additions
+
+The finite initial twenty-check milestone is complete technically in 0.11.0. Seven additional-rule tests exercise the fourteen new definitions, with independently transcribed boundary/ambiguity/scope/period/OCR cases, original-source pins and historical six-finding defaults. Desktop tests open and render each exact provision from its own recorded source and reject a changed quote. The installed-executable integration checks five real PDF/Word fixtures, persisted per-finding citations and bases, unchanged originals and human follow-up/PDF export for a non-labour finding. The six original comparisons retain their earlier ordering and thresholds; old reports are never expanded in place. Qualified legal review remains outstanding.

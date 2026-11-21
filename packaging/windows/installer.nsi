@@ -9,7 +9,7 @@ Unicode True
   !error "Pass /DUPDATER_EXE=path-to-complyph-updater.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "ComplyPH-Setup-0.10.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.11.0.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
@@ -29,14 +29,14 @@ SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
 BrandingText "ComplyPH - Local OCR and folder intake"
-VIProductVersion "0.10.0.0"
+VIProductVersion "0.11.0.0"
 VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
 VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local legal source installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.10.0"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.11.0"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
-!define MUI_WELCOMEPAGE_TEXT "Install ComplyPH for private document review.$\r$\n$\r$\nInspect document text beside findings, jump to highlighted passages, and open exact supporting provisions offline. Import local legal references with citation URLs, dates and verification notes. Add reviewer notes, track follow-up statuses, and export PDF reports locally. Includes offline OCR for up to 20 PDF pages and optional local folder intake. Six focused labour checks, including annual paid service incentive leave, and 19 starter references. Windows workspace data uses ProgramData\ComplyPH; old data is copied safely and retained as backup. Approved official URLs can be checked daily while the app is open. Changed downloads are preserved for review."
+!define MUI_WELCOMEPAGE_TEXT "Install ComplyPH for private document review.$\r$\n$\r$\nInspect document text beside findings, jump to highlighted passages, and open exact supporting provisions offline. Import local legal references with citation URLs, dates and verification notes. Add reviewer notes, track follow-up statuses, and export PDF reports locally. Includes offline OCR for up to 20 PDF pages and optional local folder intake. Twenty focused checks across seven compliance domains and 19 starter references. Windows workspace data uses ProgramData\ComplyPH; old data is copied safely and retained as backup. Approved official URLs can be checked daily while the app is open. Changed downloads are preserved for review."
 !define MUI_FINISHPAGE_RUN "$INSTDIR\ComplyPH.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Open ComplyPH"
 !insertmacro MUI_PAGE_WELCOME
@@ -92,7 +92,7 @@ Section "ComplyPH" SEC_APP
   CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.10.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.11.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"
@@ -132,6 +132,12 @@ Section "Uninstall"
   Delete "$INSTDIR\Samples\Synthetic SIL ambiguous.docx"
   Delete "$INSTDIR\Samples\Synthetic SIL excluded.docx"
   Delete "$INSTDIR\Samples\Synthetic SIL unknown service.docx"
+  Delete "$INSTDIR\Samples\Synthetic seven-domain baseline.docx"
+  Delete "$INSTDIR\Samples\Synthetic seven-domain baseline.pdf"
+  Delete "$INSTDIR\Samples\Synthetic seven-domain issues.docx"
+  Delete "$INSTDIR\Samples\Synthetic seven-domain ambiguous.docx"
+  Delete "$INSTDIR\Samples\Synthetic Pag-IBIG low-income.docx"
+  Delete "$INSTDIR\Samples\expected-initial.json"
   Delete "$INSTDIR\Samples\expected-sil.json"
   Delete "$INSTDIR\Samples\expected-ocr.json"
   Delete "$INSTDIR\Samples\expected-checks.json"

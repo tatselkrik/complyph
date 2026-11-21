@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.10.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Six deterministic labour comparisons, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
+ComplyPH 0.11.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Twenty focused numeric comparisons across seven domains, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Approved URL checks and immutable downloaded-change history are implemented for Windows. Bounded local PDF OCR and optional local folder intake are implemented.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ The Legal library page filters sources by domain, searches titles/instruments/is
 4. Evaluate explicit, versioned rules and produce findings with passages, source provisions, missing facts, and review status.
 5. Preserve evaluated domains, coverage, evidence, source versions, and rule versions in reports.
 
-The source/domain layer and the first six labour rules are implemented. Rules use a pinned agency source; the desktop validates raw/text hashes, current document hash, human-confirmed scope and extraction quality before saving a local review. See [rule scope/validation](VALIDATED_CHECKS.md). Additional domain packs and legal-period reconciliation remain planned. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
+The source/domain layer and twenty initial rules across seven domains are implemented. Rules use seven pinned agency sources; the desktop validates raw/text hashes, current document hash, human-confirmed scope and extraction quality before saving a local review. See [rule scope/validation](VALIDATED_CHECKS.md). Broader domain coverage and additional legal-period profiles remain planned. Rules must be reviewed data and Rust logic. Money calculations need exact decimal arithmetic. Missing evidence must remain a missing-evidence state.
 
 ## Private document reading
 
@@ -118,3 +118,9 @@ OCR uses the existing pipe/supervisor model with 90 CPU/120 elapsed seconds, 20 
 Rule engine 4 adds `PH-LAB-095-01`, comparing only explicit annual paid SIL days with five, under reviewer-established employee coverage, qualifying service and exception facts plus a nonempty bounded basis. The three facts default independently to unknown; an established exclusion prevents a threshold conclusion. They are assertions rather than automated eligibility findings. A separate conservative sentence matcher retains semicolons and wrapped lines so attached conditions cannot become unconditional grants. Written day values zero through ten and exact hundredths are supported. Vacation pools, unpaid grants, other periods and conflicting/unsupported clauses remain unresolved.
 
 The native form, saved review and PDF show the three facts and recorded basis. The offline viewer maps the unchanged pinned source to Article 95, Article 82 and the complete Book III Rule V. No source pin, public bundle or database schema changes. Missing SIL context in historical JSON remains unknown; loading never adds new findings or rewrites original report bytes. See [SIL source assessment](SERVICE_INCENTIVE_LEAVE.md).
+
+## Initial cross-domain pack
+
+Engine `complyph-rules-1` keeps the original six findings first and appends fourteen definitions compiled from `crates/checks/src/initial_rules.json`. Each definition binds its comparison, exact pattern/topic, support period, applicability instructions, quote and complete provision boundaries to a preserved agency source. The engine remains a pure function with no filesystem/network/AI access. New scope records default to unknown and require coverage, reviewed exceptions, a valid period date and a bounded factual basis. Unsupported periods remain unresolved; both Pag-IBIG employee bands cannot be confirmed together. OCR uses the same separate provenance/accuracy gate.
+
+The desktop and diagnostic validate all seven source pins before a new review. New findings retain their own source key, hashes, URL and provision locator; the legal viewer reads that exact historical snapshot and verifies the quote inside its stored section boundaries. Original six findings retain the earlier mapping and primary-source fields for compatibility. Reports record per-finding sources, new period/basis data and a SHA-256 of the compiled definitions. Missing fields deserialize safely; loading an older review never adds findings or rewrites its original stored JSON/fingerprint. No database schema or reference bundle change is required.

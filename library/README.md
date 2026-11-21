@@ -1,6 +1,6 @@
 # ComplyPH starter reference library
 
-ComplyPH 0.7.0 includes **19 preserved references across seven domains**: 14 verified agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The app installs them locally without network requests. The collection is a starter library with explicit currency, amendment and interpretation gaps.
+ComplyPH includes **19 preserved references across seven domains**: 14 verified agency downloads, 3 identity-checked uploads and 2 provisional third-party copies. The app installs them locally without network requests. The collection is a starter library with explicit currency, amendment and interpretation gaps.
 
 ## Provenance and integrity
 
@@ -43,9 +43,9 @@ See [addition assessment](ADDITIONS.md) for source links, completeness observati
 
 ## Known gaps
 
-The imported Labor Code and OSHS files add reference material; later amendments, special-sector applicability and amendment reconciliation remain outstanding. Agency originals for the provisional Pag-IBIG circulars still need exact comparison. No OSHS staffing/facilities matrix or contribution/remittance calculator has been validated. BIR/NIRC coverage remains incomplete. The 2025 PhilHealth premium advisory remains a dated reference.
+The imported Labor Code and OSHS files add reference material; later amendments, special-sector applicability and amendment reconciliation remain outstanding. Agency originals for the provisional Pag-IBIG circulars still need exact comparison. Initial rate/term comparisons are implemented; OSHS staffing/facilities matrices and full contribution/remittance calculators remain outside their scope. BIR/NIRC coverage remains incomplete. The 2025 PhilHealth premium advisory remains a dated reference.
 
-Six supported labour rules use the pinned **agency-downloaded Senate P.D. 442** reference, not the provisional or OCR-heavy additions. See [rule scope and validation](../docs/VALIDATED_CHECKS.md). Acquiring a reference does not create a validated checking rule.
+The initial twenty comparisons use seven pinned **agency-downloaded** references with exact per-finding citations. Provisional and identity-checked additions are not promoted to approved rule sources. See [rule scope and validation](../docs/VALIDATED_CHECKS.md). Acquiring a reference does not create a validated checking rule.
 
 ## Reproducibility
 

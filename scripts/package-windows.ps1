@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.10.0'
+$version = '0.11.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -54,7 +54,7 @@ $zip = Join-Path $output "ComplyPH-Windows-x64-$version.zip"
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force
 $sourceCommit = (git -C $root rev-parse HEAD).Trim()
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Service incentive leave checks'
+    project = 'ComplyPH'; version = $version; milestone = 'Initial checks across seven domains'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
     document_text_reading = 'offline PDF and DOCX'; private_schema = 5
     local_ocr = $true; ocr_engine = 'complyph-ocr-1'; ocr_renderer = 'pdfium-8165'; ocr_language = 'eng'; synthetic_ocr_fixture_count = 3; ocr_max_pages = 20
@@ -64,7 +64,7 @@ $manifest = [ordered]@{
     manual_legal_source_import = $true; public_schema = 4
     source_update_checks = $true; downloader_isolation = 'Windows AppContainer InternetClient'; update_schedule = 'daily while desktop is open, approved URLs only'; source_change_review = $true
     synthetic_fixture_count = 7; reader_engine = 'complyph-text-1'
-    legal_checking = 'six focused labour numeric comparisons'; rule_engine = 'complyph-labor-4'; validated_check_count = 6; synthetic_check_fixture_count = 3; synthetic_sil_fixture_count = 5; sil_eligibility_gates = $true; workspace_default = 'C:\ProgramData\ComplyPH'; automatic_downloads = 'approved public source URLs only'
+    legal_checking = '20 focused numeric checks across seven domains'; rule_engine = 'complyph-rules-1'; validated_check_count = 20; validated_domain_count = 7; initial_pack_id = 'initial-seven-domain-v1'; synthetic_initial_fixture_count = 5; rule_pack_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'crates/checks/src/initial_rules.json') -Algorithm SHA256).Hash.ToLowerInvariant(); synthetic_check_fixture_count = 3; synthetic_sil_fixture_count = 5; sil_eligibility_gates = $true; workspace_default = 'C:\ProgramData\ComplyPH'; automatic_downloads = 'approved public source URLs only'
     starter_source_count = $library.sources.Count; starter_domain_count = $library.domains.Count
     starter_bundle_id = $library.bundle_id; verification_scope = $library.verification_scope
     artifacts = @($installer, $zip) | ForEach-Object {

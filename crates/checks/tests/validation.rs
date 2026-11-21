@@ -15,6 +15,7 @@ fn context() -> Context {
         meal_period: Covered,
         weekly_rest: Covered,
         service_incentive_leave: Default::default(),
+        additional_checks: Default::default(),
     }
 }
 fn report(text: &str) -> Report {
@@ -133,14 +134,14 @@ fn coverage_and_reading_integrity_are_required() {
         night_differential: Applicability::OutsideScope,
         meal_period: Applicability::OutsideScope,
         weekly_rest: Applicability::OutsideScope,
+        additional_checks: Default::default(),
         service_incentive_leave: SilScope {
             employee_coverage: Applicability::OutsideScope,
             ..Default::default()
         },
     };
     assert!(
-        review(&input, "sha", outside)
-            .findings
+        review(&input, "sha", outside).findings[..6]
             .iter()
             .all(|f| f.outcome == complyph_checks::Outcome::OutsideScope)
     );
@@ -222,7 +223,11 @@ fn pinned_agency_source_contains_each_quoted_provision_and_detects_tampering() {
     assert!(source_is_approved(&source.raw, &source.text));
     assert!(!source_is_approved(b"modified", &source.text));
     assert!(!source_is_approved(&source.raw, "modified"));
-    for finding in review(&report(&clauses("8", "25", "10")), "sha", context()).findings {
+    for finding in review(&report(&clauses("8", "25", "10")), "sha", context())
+        .findings
+        .into_iter()
+        .take(6)
+    {
         assert!(
             source.text.contains(&finding.legal_quote),
             "{}",

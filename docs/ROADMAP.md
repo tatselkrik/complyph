@@ -1,13 +1,13 @@
 # Roadmap
 
-Status reflects ComplyPH 0.10.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.11.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.10.0
+## Available in 0.11.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
 - [x] Complete supporting provisions and related rules from the exact historical local source.
-- [x] Six focused labour numeric checks: normal daily working hours, ordinary-day overtime premium, night shift differential, regular meal periods, consecutive weekly rest and annual paid service incentive leave, with explicit applicability and evidence requirements.
+- [x] Twenty focused numeric checks across seven domains, with confirmed applicability/periods, evidence, exact per-finding sources and preserved rule-pack identity.
 - [x] Nineteen preserved references across seven compliance domains, with provenance and coverage gaps.
 - [x] Approved-URL source checks on Windows, daily while open; immutable downloaded-change history, change flags, local export and source-review notes.
 - [x] Manual PDF/DOCX legal-source intake with official citation URLs, domains, dates, user verification notes and immutable version history.
@@ -18,18 +18,13 @@ Status reflects ComplyPH 0.10.0. Checked items are available; unchecked items ar
 
 ## Remaining work
 
-### 1. More validated checks
+### 1. Initial validated checks across seven domains — complete technically
 
-Only the six labour comparisons listed above are implemented. Other saved laws are reference material awaiting checking rules.
+- [x] Complete the finite [initial twenty-check checklist](INITIAL_CHECKS.md): seven labour comparisons, two OSHS, one privacy/NPC, one BIR, three SSS, three PhilHealth and three Pag-IBIG comparisons.
+- [x] Add coverage, exception, review-period and factual-basis gates for the fourteen new checks, including the mutually exclusive Pag-IBIG employee bands.
+- [x] Preserve exact source hashes and complete offline provisions per finding, rule-pack identity, historical reviews and independently expected boundary/document cases.
 
-- [x] First labour expansion in 0.7.0: meal-period and weekly-rest comparisons, exception-aware scope controls, exact offline provisions, boundary/ambiguity tests and historical-report compatibility.
-- [x] Service incentive leave in 0.10.0: three eligibility gates and recorded basis, explicit annual paid entitlement, exact Article 95 / Rule V, ambiguity/exclusion tests and earlier-review compatibility.
-- [ ] Continue labour coverage with probationary employment terms, with reviewed applicability, exceptions and independent cases.
-- [ ] Add reviewed and tested DOLE OSHS checks.
-- [ ] Add reviewed and tested privacy/NPC checks.
-- [ ] Add BIR/tax and SSS, PhilHealth and Pag-IBIG contribution/compliance checks, including applicable periods and versioned rates or tables.
-
-Each new check requires reviewed source provisions, applicability and exception handling, effective-period handling, evidence requirements, exact offline citations and independently expected validation cases. Importing a law or downloading changed bytes does not create or activate a rule. See [current checks and validation](VALIDATED_CHECKS.md).
+This completes the initial technical milestone, not full coverage of each domain. Qualified legal review remains under item 6. Further labour coverage, OSHS staffing/facility matrices, privacy/security requirements, full tax/contribution calculations, remittance deadlines and special regimes are future expansion. Profiles beyond the supported CY2026 boundary require separate assessment. See [scope and source assessment](INITIAL_CHECKS.md).
 
 ### 2. Better reports and review tracking
 
@@ -43,7 +38,7 @@ PDF reports, document/finding notes and status history have been available since
 
 ### 3. Local OCR and folder monitoring
 
-Local PDF OCR and optional nonrecursive folder intake are available in 0.10.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
+Local PDF OCR and optional nonrecursive folder intake are available in 0.11.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
 
 - [x] Read scanned PDF documents using local OCR, with page locations, low-confidence highlights, visible quality limits and separate text confirmation before checking.
 - [ ] Improve layout, font and embedded-content reading coverage.
@@ -53,7 +48,7 @@ Local PDF OCR and optional nonrecursive folder intake are available in 0.10.0. S
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.10.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.11.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

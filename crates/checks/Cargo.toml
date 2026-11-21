@@ -9,11 +9,11 @@ publish.workspace = true
 [dependencies]
 complyph-extract = { path = "../extract" }
 serde.workspace = true
+serde_json.workspace = true
 regex.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
 complyph-library = { path = "../library" }
 
-serde_json.workspace = true
 tempfile.workspace = true
