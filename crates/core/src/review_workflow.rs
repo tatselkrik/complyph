@@ -96,6 +96,8 @@ pub struct ReviewWorkflow {
     pub review_fingerprint: String,
     pub captured_at: i64,
     pub events: Vec<ReviewEvent>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub document_version: Option<crate::document_history::VersionReference>,
 }
 impl ReviewWorkflow {
     pub fn revision(&self, rule_id: Option<&str>) -> i64 {
@@ -162,20 +164,26 @@ fn events(connection: &Connection, id: i64, fingerprint: &str) -> Result<Vec<Rev
     }).collect()
 }
 
+pub(crate) fn capture(connection: &Connection, id: i64) -> Result<ReviewWorkflow> {
+    let (saved, review_fingerprint, document_name) = original(connection, id)?;
+    let events = events(connection, id, &review_fingerprint)?;
+    Ok(ReviewWorkflow {
+        saved,
+        document_name,
+        review_fingerprint,
+        captured_at: now(),
+        events,
+        document_version: crate::document_history::review_reference(connection, id)?,
+    })
+}
+
 impl Workspace {
     /// One SQLite read transaction captures original findings and current history together.
     pub fn review_workflow(&self, id: i64) -> Result<ReviewWorkflow> {
         let tx = self.connection.unchecked_transaction()?;
-        let (saved, review_fingerprint, document_name) = original(&tx, id)?;
-        let events = events(&tx, id, &review_fingerprint)?;
+        let workflow = capture(&tx, id)?;
         tx.commit()?;
-        Ok(ReviewWorkflow {
-            saved,
-            document_name,
-            review_fingerprint,
-            captured_at: now(),
-            events,
-        })
+        Ok(workflow)
     }
 
     /// An explicit reviewer action. A stale window cannot overwrite another reviewer.
@@ -505,6 +513,7 @@ mod tests {
                 |r| r.get(0),
             )
             .unwrap();
+        crate::document_history::remove_schema_for_legacy_test(&workspace.connection);
         workspace.connection.execute_batch("DROP TABLE folder_intake; DROP TABLE folder_watch; DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; PRAGMA user_version=3;").unwrap();
         drop(workspace);
         let upgraded = Workspace::open(&paths).unwrap();
@@ -522,7 +531,7 @@ mod tests {
                 .connection
                 .query_row("PRAGMA user_version", [], |r| r.get::<_, i32>(0))
                 .unwrap(),
-            5
+            6
         );
         assert!(
             upgraded

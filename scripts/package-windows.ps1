@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.12.0'
+$version = '0.13.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -28,6 +28,7 @@ $library = Get-Content -LiteralPath (Join-Path $root 'library/starter/manifest.j
 Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destination (Join-Path $stage 'starter-manifest.json')
 Copy-Item -LiteralPath (Join-Path $root 'library/README.md') -Destination (Join-Path $stage 'Library-notes.md')
 Copy-Item -LiteralPath (Join-Path $root 'docs/LIBRARY_MAINTENANCE.md') -Destination (Join-Path $stage 'Library-maintenance.md')
+Copy-Item -LiteralPath (Join-Path $root 'docs/REPORTS.md') -Destination (Join-Path $stage 'Reports-and-revisions.md')
 Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destination (Join-Path $output 'starter-library-manifest.json')
 $ocr = Join-Path $root 'target/ocr-runtime'
 foreach ($required in @('pdfium.dll','tesseract.dll','eng.traineddata','runtime-manifest.json','licenses')) {
@@ -62,9 +63,12 @@ try {
     $compiledHash = [Convert]::ToHexString($compiled.GetHashAndReset()).ToLowerInvariant()
 } finally { $compiled.Dispose() }
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Reviewed library maintenance'
+    project = 'ComplyPH'; version = $version; milestone = 'Document revision comparisons'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
-    document_text_reading = 'offline PDF and DOCX'; private_schema = 5
+    document_text_reading = 'offline PDF and DOCX'; private_schema = 6
+    document_version_history = $true; retained_document_readings = $true; document_version_comparison = $true; finding_comparison = $true
+    comparison_pdf_export = $true; comparison_json_export = $true; comparison_engine = 'complyph-document-comparison-1'
+    revision_workflow_cases = 6; synthetic_revision_fixture_count = 5
     local_ocr = $true; ocr_engine = 'complyph-ocr-1'; ocr_renderer = 'pdfium-8165'; ocr_language = 'eng'; synthetic_ocr_fixture_count = 3; ocr_max_pages = 20
     folder_monitoring = $true; folder_quiet_seconds = 10
     reviewer_tracking = $true; pdf_export = $true; pdf_engine = 'complyph-pdf-1'

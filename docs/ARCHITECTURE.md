@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-ComplyPH 0.12.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Twenty focused numeric comparisons across seven domains, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Reviewed source metadata/identity, comparison/adoption/restoration, rule revalidation and approved-page publication inventories are implemented. Online checks use Windows AppContainer or supported Linux Landlock/seccomp isolation. Bounded local PDF OCR and optional local folder intake are implemented.
+ComplyPH 0.13.0 is a native Rust desktop application using egui/eframe. It combines the private PDF/DOCX text reader and workspace with 19 preserved references with explicit provenance across seven compliance domains. Twenty focused numeric comparisons across seven domains, saved reports, separate reviewer tracking and offline PDF exports are implemented. Local PDF/DOCX legal-source import is implemented. Reviewed source metadata/identity, comparison/adoption/restoration, rule revalidation and approved-page publication inventories are implemented. Online checks use Windows AppContainer or supported Linux Landlock/seccomp isolation. Bounded local PDF OCR and optional local folder intake are implemented.
 
 | Component | Responsibility | Private-data dependency |
 | --- | --- | --- |
@@ -18,12 +18,20 @@ ComplyPH 0.12.0 is a native Rust desktop application using egui/eframe. It combi
 
 The desktop and private-processing crates have no HTTP client or telemetry, AI integration, or runtime downloader. Source acquisition for the bundled collection is a maintainer activity involving public publications only.
 
+## Private document versions and comparisons
+
+Private schema 6 adds explicit document groups, immutable file-version/readings, exact review-to-reading links and link-correction events. Every successful cache write retains its reading in the same transaction. Review persistence accepts the actual reading used, so another window refreshing the cache cannot change the association. A file hash identifies bytes; a separate fingerprint includes the complete extracted report and OCR metadata. Original files remain in place.
+
+The native version window and diagnostic actions share the private core API. Linking is explicit and stale-safe; unlinking keeps all readings and review history. Two existing multi-file histories are never merged implicitly. Text comparison has a 20,000-line/500 ms computation budget and bounded location-aware display; full readings remain available. Both selected review/history streams are captured in one SQLite read transaction. Rule IDs match findings; differing scopes, periods, sources, rule packs, reading methods, missing exact-reading associations or additional extraction warnings prevent a direct correction classification. Missing clauses, omitted checks and human resolution labels never establish a correction.
+
+Historical connected reviews can load their exact retained reading without opening an original file. Fresh numeric review uses the current original, requires new confirmations and binds a separate result. Comparison PDF/JSON exports are atomic new-file writes; PDF retains both selected histories and JSON also retains complete readings. Old review JSON and source hashes are not rewritten. Schema-5 migration retains valid current caches and labels legacy reviews whose exact reading was not recorded.
+
 ## Local storage and upgrades
 
 Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`, with a protected current-owner/SYSTEM/Administrators ACL. The desktop, before opening a window/store, detects a single legacy LocalAppData or known Public workspace and copies databases through SQLite backup into a protected staging directory. It checks schema bounds, integrity and source stability before same-volume rename activation. It never copies live WAL files directly, merges populated destinations or deletes originals. Other running review-app processes block migration. A folder picker resolves ambiguity/custom locations. Explicit import closes active connections, refuses a populated target and retains an unused target as backup with rollback on failure. A migration marker records the old path. Linux retains prior local discovery. The updater refuses pending private migration and only handles its public catalog.
 
 ```text
-private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions and folder intake; schema 5
+private/workspace.sqlite3   Private document references, text caches, preferences, review runs and reviewer actions and folder intake, retained document readings and revision links; schema 6
 library/catalog.sqlite3    Public sources, versions, domains, originals, reading text, maintenance events, rule assessments and publication inventories; schema 5
 ```
 

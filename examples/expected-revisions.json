@@ -1,0 +1,42 @@
+{
+  "context": {
+    "operative_terms_confirmed": true,
+    "normal_hours": "covered",
+    "ordinary_overtime": "covered",
+    "night_differential": "covered",
+    "meal_period": "covered",
+    "weekly_rest": "covered"
+  },
+  "rules": [
+    "PH-LAB-083-01",
+    "PH-LAB-087-01",
+    "PH-LAB-086-01",
+    "PH-LAB-085-01",
+    "PH-LAB-091-01"
+  ],
+  "original_outcomes": [
+    "potential_issue",
+    "potential_issue",
+    "potential_issue",
+    "potential_issue",
+    "potential_issue"
+  ],
+  "corrected_outcomes": [
+    "stated_term_meets_minimum",
+    "stated_term_meets_minimum",
+    "stated_term_meets_minimum",
+    "stated_term_meets_minimum",
+    "stated_term_meets_minimum"
+  ],
+  "corrected_changes": [
+    "no_longer_flagged",
+    "no_longer_flagged",
+    "no_longer_flagged",
+    "no_longer_flagged",
+    "no_longer_flagged"
+  ],
+  "missing_term_rule": "PH-LAB-087-01",
+  "missing_term_outcome": "needs_evidence",
+  "missing_term_change": "changed",
+  "fixture_count": 5
+}

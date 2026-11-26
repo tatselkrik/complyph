@@ -84,6 +84,7 @@ pub struct ComplyApp {
     reader_view: crate::reader_view::ReaderView,
     check_view: crate::check_view::CheckView,
     review_tools: crate::review_tools::ReviewTools,
+    document_versions: crate::document_versions::DocumentVersions,
     folder_watch: crate::folder_watch::FolderWatch,
     provision_view: crate::provision_view::ProvisionView,
     workspace_picker: FileDialog,
@@ -115,6 +116,7 @@ impl ComplyApp {
             reader_view: crate::reader_view::ReaderView::default(),
             check_view: crate::check_view::CheckView::default(),
             review_tools: crate::review_tools::ReviewTools::default(),
+            document_versions: crate::document_versions::DocumentVersions::default(),
             folder_watch: crate::folder_watch::FolderWatch::default(),
             provision_view: crate::provision_view::ProvisionView::default(),
             workspace_picker: FileDialog::new()
@@ -267,6 +269,44 @@ impl ComplyApp {
         {
             self.reader_view.start(paths, document, false, ctx);
         }
+    }
+
+    fn open_saved_review(&mut self, review: complyph_core::SavedReview, ctx: &egui::Context) {
+        let reading = self
+            .workspace
+            .as_ref()
+            .map(|w| w.reading_for_review(review.id));
+        match reading {
+            Some(Ok(Some(reading))) => {
+                if reading.saved.sha256 != review.review.document_sha256
+                    || reading.document_id != review.document_id
+                {
+                    self.notice = Some(Notice {
+                        text: "The saved review changed. Refresh Reports before reopening it."
+                            .into(),
+                        error: true,
+                    });
+                    return;
+                }
+                self.selected = Some(review.document_id);
+                self.reader_view.open_retained(reading.saved);
+                self.check_view.set_review(review);
+                self.notice=Some(Notice{text:"Showing the exact retained reading used by this saved review. Choose Review current file to prepare a new assessment.".into(),error:false});
+            }
+            Some(Ok(None)) => {
+                self.select_document(review.document_id, ctx);
+                self.check_view.set_review(review);
+                self.notice=Some(Notice{text:"This earlier review did not record its complete reading. The current original is opened if available; passage navigation requires its matching file hash and evidence. No old text is reconstructed from a changed file.".into(),error:false});
+            }
+            Some(Err(error)) => {
+                self.notice = Some(Notice {
+                    text: error.to_string(),
+                    error: true,
+                })
+            }
+            None => return,
+        }
+        self.navigate(Page::Review);
     }
 
     fn messages(&mut self, ctx: &egui::Context) {
@@ -643,9 +683,18 @@ impl ComplyApp {
                 });
                 ui.add_space(8.0);
             } else {
+                let counts = self.workspace.as_ref().and_then(|w| w.review_counts().ok());
                 for document in self.documents.iter().take(3).cloned().collect::<Vec<_>>() {
-                    if document_row(ui, &document, self.selected == Some(document.id), false)
-                        .clicked()
+                    if document_row(
+                        ui,
+                        &document,
+                        self.selected == Some(document.id),
+                        false,
+                        counts
+                            .as_ref()
+                            .map(|c| c.get(&document.id).copied().unwrap_or(0)),
+                    )
+                    .clicked()
                     {
                         self.select_document(document.id, ui.ctx());
                     }
@@ -669,6 +718,7 @@ impl ComplyApp {
                     self.reader_view
                         .current()
                         .is_some_and(|s| s.report.status == complyph_extract::Status::Ready)
+                        && !self.reader_view.is_retained()
                         && self.catalog.is_some()
                         && self.library_error.is_none(),
                 )
@@ -678,6 +728,15 @@ impl ComplyApp {
                 }
                 if widgets::secondary(ui, "Choose another").clicked() {
                     self.choose_documents(ui.ctx());
+                }
+                if ui.button("Version history / compare…").clicked()
+                    && let Some(workspace) = &self.workspace
+                {
+                    self.document_versions.open(workspace, document.id);
+                }
+                if self.reader_view.is_retained() && ui.button("Review current file").clicked() {
+                    self.select_document(document.id, ui.ctx());
+                    self.check_view.edit_scope();
                 }
                 if ui.button("Back to overview").clicked() {
                     self.selected = None;
@@ -701,6 +760,8 @@ impl ComplyApp {
         }
         ui.add_space(12.0);
         let pane_height = ui.available_height().max(240.0);
+        self.check_view
+            .historical_reading(self.reader_view.is_retained());
         let mut reread = false;
         let mut action = None;
         ui.columns(2, |columns| {
@@ -826,12 +887,16 @@ impl ComplyApp {
                     });
                     ui.add_space(20.0);
                 }
+                let counts = self.workspace.as_ref().and_then(|w| w.review_counts().ok());
                 for document in filtered {
                     if document_row(
                         ui,
                         &document,
                         self.selected == Some(document.id),
                         self.preferences.show_full_paths,
+                        counts
+                            .as_ref()
+                            .map(|c| c.get(&document.id).copied().unwrap_or(0)),
                     )
                     .clicked()
                     {
@@ -861,9 +926,10 @@ impl ComplyApp {
     }
 
     fn reports_page(&mut self, ui: &mut Ui) {
-        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Open a saved review, record follow-up notes and statuses, or export a local PDF report.");
+        self.page_header(ui,"REVIEW HISTORY","Your findings, kept together.","Open a version's saved review, retain its notes and statuses, compare revisions, or export a local PDF report.");
         let mut open = None;
         let mut action = None;
+        let mut history = None;
         if let Some(workspace) = &self.workspace {
             match workspace.reviews() {
                 Ok(reviews) if reviews.is_empty() => self.empty_state(
@@ -881,15 +947,23 @@ impl ComplyApp {
                             .map(|d| d.name.as_str())
                             .unwrap_or("Document");
                         egui::CollapsingHeader::new(format!(
-                            "{} · {} · Review #{}",
+                            "{} · {} · Review #{} · File {}",
                             name,
                             format_date(saved.created_at),
-                            saved.id
+                            saved.id,
+                            saved
+                                .review
+                                .document_sha256
+                                .get(..12)
+                                .unwrap_or(&saved.review.document_sha256)
                         ))
                         .id_salt(("report", saved.id))
                         .show(ui, |ui| {
                             if ui.button("Open connected review").clicked() {
                                 open = Some(saved.clone());
+                            }
+                            if ui.button("Version history / compare…").clicked() {
+                                history = Some(saved.document_id);
                             }
                             if let Some(event) = crate::check_view::show_review(
                                 ui,
@@ -912,9 +986,12 @@ impl ComplyApp {
             self.review_action(action);
         }
         if let Some(review) = open {
-            self.select_document(review.document_id, ui.ctx());
-            self.check_view.set_review(review);
-            self.navigate(Page::Review);
+            self.open_saved_review(review, ui.ctx());
+        }
+        if let Some(id) = history
+            && let Some(workspace) = &self.workspace
+        {
+            self.document_versions.open(workspace, id);
         }
     }
 
@@ -1049,7 +1126,7 @@ impl ComplyApp {
         egui::Window::new("Remove this workspace entry?").collapsible(false).resizable(false)
             .anchor(Align2::CENTER_CENTER,[0.0,0.0]).default_width(420.0).show(ctx,|ui| {
                 ui.label(RichText::new(&document.name).font(heading(17.0)));
-                ui.label("Its workspace entry and cached text will be removed. The original file will stay exactly where it is.");
+                ui.label("Its workspace entry, retained readings, saved reviews and follow-up history will be removed. Other linked files keep their own history. The original file stays where it is.");
                 ui.add_space(14.0);
                 ui.horizontal(|ui| {
                     remove=widgets::primary(ui,"Remove entry",true).clicked();
@@ -1062,9 +1139,11 @@ impl ComplyApp {
                 .and_then(|()| workspace.documents())
             {
                 Ok(documents) => {
+                    self.document_versions.clear();
                     self.documents = documents;
                     if self.selected == Some(id) {
                         self.reader_view.clear();
+                        self.check_view.clear();
                         self.selected = None;
                     }
                     self.notice = Some(Notice {
@@ -1157,6 +1236,38 @@ impl eframe::App for ComplyApp {
             });
         });
         self.provision_view.show(ui.ctx());
+        if let (Some(workspace), Some(paths)) = (&self.workspace, &self.paths) {
+            let (changed, action) = self.document_versions.show(ui.ctx(), workspace, paths);
+            if changed && let Ok(documents) = workspace.documents() {
+                self.documents = documents;
+            }
+            if let Some(action) = action {
+                match action {
+                    crate::document_versions::VersionAction::Reading(reading) => {
+                        self.selected = Some(reading.document_id);
+                        self.reader_view.open_retained(reading.saved);
+                        self.check_view.clear();
+                        self.navigate(Page::Review);
+                    }
+                    crate::document_versions::VersionAction::Review(review) => {
+                        self.open_saved_review(*review, ui.ctx())
+                    }
+                    crate::document_versions::VersionAction::CurrentFile {
+                        document_id,
+                        context,
+                    } => {
+                        self.select_document(document_id, ui.ctx());
+                        if let Some(context) = context {
+                            self.check_view.start_with_scope(context);
+                        } else {
+                            self.check_view.edit_scope();
+                        }
+                        self.notice=Some(Notice{text:"Reviewing the current original file. Reconfirm text accuracy, applicability and any OCR before saving a fresh review. Earlier notes and statuses remain with their original review.".into(),error:false});
+                        self.navigate(Page::Review);
+                    }
+                }
+            }
+        }
         self.removal_dialog(ui.ctx());
         self.workspace_picker.update(ui.ctx());
         if let Some(source) = self.workspace_picker.take_picked() {
@@ -1233,6 +1344,7 @@ fn document_row(
     document: &Document,
     selected: bool,
     show_path: bool,
+    reviews: Option<u64>,
 ) -> egui::Response {
     let width = ui.available_width();
     let height = if show_path { 91.0 } else { 72.0 };
@@ -1251,13 +1363,18 @@ fn document_row(
         rect.min + vec2(65.0, 11.0),
         pos2(rect.right() - 156.0, rect.top() + 36.0),
     );
-    ui.scope_builder(UiBuilder::new().max_rect(name_rect), |ui| {
-        ui.add(
+    {
+        let mut name_ui = ui.new_child(
+            UiBuilder::new()
+                .id_salt(("document-name", document.id))
+                .max_rect(name_rect),
+        );
+        name_ui.add(
             egui::Label::new(RichText::new(&document.name).font(heading(15.0)))
                 .truncate()
                 .selectable(false),
         );
-    });
+    }
     ui.painter().text(
         rect.min + vec2(65.0, 45.0),
         Align2::LEFT_CENTER,
@@ -1275,8 +1392,13 @@ fn document_row(
             rect.min + vec2(65.0, 61.0),
             pos2(rect.right() - 20.0, rect.bottom()),
         );
-        ui.scope_builder(UiBuilder::new().max_rect(path_rect), |ui| {
-            ui.add(
+        {
+            let mut path_ui = ui.new_child(
+                UiBuilder::new()
+                    .id_salt(("document-path", document.id))
+                    .max_rect(path_rect),
+            );
+            path_ui.add(
                 egui::Label::new(
                     RichText::new(document.path.display().to_string())
                         .size(11.0)
@@ -1285,14 +1407,23 @@ fn document_row(
                 .truncate()
                 .selectable(false),
             );
-        });
+        }
     }
     ui.painter().text(
         pos2(rect.right() - 55.0, rect.top() + 35.0),
         Align2::RIGHT_CENTER,
-        "Not reviewed",
-        FontId::proportional(11.5),
-        AMBER,
+        match reviews {
+            Some(0) => "No saved reviews".to_owned(),
+            Some(1) => "1 saved review".to_owned(),
+            Some(count) => format!("{count} saved reviews"),
+            None => "Review status unavailable".to_owned(),
+        },
+        FontId::proportional(10.5),
+        if reviews.is_some_and(|n| n > 0) {
+            GREEN
+        } else {
+            MUTED
+        },
     );
     widgets::paint_icon(
         ui.painter(),

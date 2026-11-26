@@ -46,3 +46,12 @@ Synthetic publication listing.html and Synthetic updated publication listing.htm
 are inert discovery fixtures with no real issuances. They exercise official-link
 resolution, duplicate/unsafe/hidden/script exclusion, initial inventory and one
 later newly seen citation. Parsing them never fetches their linked documents.
+
+## Document revision fixtures
+
+Five clearly fictional revision files (original/corrected Word and PDF pairs, plus
+a Word revision with a missing overtime clause) exercise retained text, explicit
+links, changed passages, independent finding expectations, separate human statuses
+and local exports. `expected-revisions.json` defines the expected outcomes.
+Generate them with the standard-library-only `scripts/generate-revision-fixtures.py`.
+These files are test inputs, not legal templates or real employment records.

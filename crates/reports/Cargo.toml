@@ -13,6 +13,7 @@ ttf-parser.workspace = true
 chrono.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
+serde_json.workspace = true
 
 [dev-dependencies]
 complyph-checks = { path = "../checks" }

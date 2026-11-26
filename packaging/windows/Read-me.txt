@@ -1,4 +1,4 @@
-ComplyPH 0.12.0 - Initial checks across seven domains
+ComplyPH 0.13.0 - Document revision comparisons
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -132,5 +132,17 @@ pages. Newly seen links are not automatically downloaded or verified as new laws
 Use Add downloaded legal reference or Assess rule impact to continue deliberately.
 The initial twenty checks retain their supported periods; qualified legal review
 and broader coverage remain separate. See Library-maintenance.md for limits and
-workflow instructions. Private schema 5 and ProgramData storage remain unchanged;
+workflow instructions. ProgramData storage remains unchanged;
 public schema 5 preserves previous catalog data while adding maintenance history.
+
+Document revisions and reports
+Open Version history / compare from a document or saved report. Add a revised
+document or explicitly link an existing entry. Readings for changed file hashes
+and separate OCR results are retained privately; original files stay in place.
+Choose readings and saved reviews to compare changes and separate follow-up
+statuses. Use earlier scope for a fresh review requires new accuracy confirmations
+and copies no notes/statuses. Export comparison PDF or full JSON to a new file.
+
+Private schema 6 preserves old caches/reports/notes while adding version history.
+Missing historical text is never reconstructed from a changed original. Comparison
+covers extracted text, not images/layout or legal meaning. See Reports-and-revisions.md.

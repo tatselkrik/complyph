@@ -20,6 +20,7 @@ enum State {
 pub struct ReaderView {
     request_ocr: bool,
     ocr_running: bool,
+    retained: bool,
     state: State,
     generation: u64,
     cancel: Option<reader::Cancel>,
@@ -39,6 +40,7 @@ impl Default for ReaderView {
         Self {
             request_ocr: false,
             ocr_running: false,
+            retained: false,
             state: State::Idle,
             generation: 0,
             cancel: None,
@@ -55,6 +57,17 @@ impl Default for ReaderView {
 }
 
 impl ReaderView {
+    pub fn is_retained(&self) -> bool {
+        self.retained
+    }
+    pub fn open_retained(&mut self, saved: SavedExtraction) {
+        self.clear();
+        self.retained = true;
+        self.unit = 0;
+        self.chunk = 0;
+        self.search.clear();
+        self.state = State::Finished(Box::new(saved));
+    }
     pub fn take_ocr_request(&mut self) -> bool {
         std::mem::take(&mut self.request_ocr)
     }
@@ -69,6 +82,8 @@ impl ReaderView {
     }
 
     pub fn clear(&mut self) {
+        self.retained = false;
+        self.request_ocr = false;
         if let Some(cancel) = self.cancel.take() {
             cancel.store(true, Ordering::Relaxed);
         }
@@ -204,14 +219,22 @@ impl ReaderView {
                         let ready = report.status == Status::Ready;
                         widgets::pill(ui, report.status.label(), if ready { GREEN } else { AMBER }, if ready { GREEN_TINT } else { AMBER_TINT }, false);
                         ui.label(RichText::new(format!("{} · {} text bytes", super::app::format_date(saved.read_at), report.text_bytes())).size(11.5).color(MUTED));
-                        reread = widgets::secondary(ui, "Read again").clicked();
+                        if self.retained {
+                            widgets::pill(ui,"Retained reading",AMBER,AMBER_TINT,false);
+                        } else {
+                            reread = widgets::secondary(ui, "Read again").clicked();
+                        }
                     });
                     ui.label(&report.summary);
-                    if report.format == complyph_extract::Format::Pdf && matches!(report.status, Status::Ready | Status::NeedsOcr) {
+                    if !self.retained && report.format == complyph_extract::Format::Pdf && matches!(report.status, Status::Ready | Status::NeedsOcr) {
                         if ui.button(if report.ocr.is_some() { "Run local OCR again" } else { "Run local OCR" }).clicked() { self.request_ocr = true; }
                         widgets::muted(ui,"Recognize every PDF page offline. OCR can misread confident-looking numbers; compare the result with the original.");
                     }
-                    widgets::muted(ui, "Saved text stays in the private workspace. File contents are checked against the cache whenever opened here; use Read again after editing.");
+                    widgets::muted(ui, if self.retained {
+                        "Immutable saved reading for this file version. The current original is not opened or rechecked here. Use Review current file for a new assessment."
+                    } else {
+                        "Saved readings stay in the private workspace. File contents are checked against the cache whenever opened here; use Read again after editing."
+                    });
                     if !report.units.is_empty() && report.text_bytes() > 0 {
                         ui.add_space(10.0);
                         ui.horizontal(|ui| {

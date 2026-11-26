@@ -35,9 +35,9 @@ jobs:
             fi
           done
       - name: Test Linux confinement and public-library workflows
-        run: cargo test -p complyph-paths -p complyph-library -p complyph-checks -p complyph-updater --locked
+        run: cargo test -p complyph-paths -p complyph-library -p complyph-checks -p complyph-core -p complyph-reports -p complyph-updater --locked
       - name: Check Linux Rust warnings
-        run: cargo clippy -p complyph-library -p complyph-checks -p complyph-updater --all-targets --locked -- -D warnings
+        run: cargo clippy -p complyph-library -p complyph-checks -p complyph-core -p complyph-reports -p complyph-updater --all-targets --locked -- -D warnings
   windows:
     name: Test, build, and install
     runs-on: windows-latest

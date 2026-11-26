@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.12.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.13.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.12.0
+## Available in 0.13.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -26,7 +26,7 @@ Status reflects ComplyPH 0.12.0. Checked items are available; unchecked items ar
 
 This completes the initial technical milestone, not full coverage of each domain. Qualified legal review remains under item 6. Further labour coverage, OSHS staffing/facility matrices, privacy/security requirements, full tax/contribution calculations, remittance deadlines and special regimes are future expansion. Profiles beyond the supported CY2026 boundary require separate assessment. See [scope and source assessment](INITIAL_CHECKS.md).
 
-### 2. Better reports and review tracking
+### 2. Better reports and review tracking — implemented
 
 PDF reports, document/finding notes and status history have been available since 0.8.0. Existing source-review notes concern downloaded legal references; they remain separate from document/finding notes. See [reports and tracking](REPORTS.md).
 
@@ -34,7 +34,11 @@ PDF reports, document/finding notes and status history have been available since
 - [x] Add reviewer notes to document reviews and individual findings.
 - [x] Track issue statuses such as **unresolved**, **acknowledged** and **resolved**, with a history of reviewer actions.
 - [x] Keep human review statuses separate from the original automated finding and its preserved evidence.
-- [ ] Compare revised document versions and retain the review history for each version.
+- [x] Compare revised document versions and retain the review history for each version.
+- [x] Retain extracted readings for overwritten/moved originals, explicitly link/unlink revisions and bind new reviews to exact reading fingerprints.
+- [x] Compare findings with scope/source/method differences visible; keep human statuses separate and export comparison PDF/full JSON.
+
+The complete reporting milestone is available in 0.13.0. Comparison covers retained extracted text; images/layouts and legal meaning are not inferred. Missing historical readings remain explicitly unavailable. Broader extraction coverage belongs to item 3 and legal/desktop quality review to item 6.
 
 ### 3. Local OCR and folder monitoring
 
@@ -48,7 +52,7 @@ Local PDF OCR and optional nonrecursive folder intake are available in 0.12.0. S
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.12.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.13.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

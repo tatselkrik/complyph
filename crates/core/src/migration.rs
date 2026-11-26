@@ -301,6 +301,7 @@ mod tests {
             .unwrap();
         drop(workspace);
         let db = Connection::open(&source.database).unwrap();
+        crate::document_history::remove_schema_for_legacy_test(&db);
         db.execute_batch("DROP TABLE folder_intake; DROP TABLE folder_watch; DROP TRIGGER tracked_reviews_immutable; DROP TABLE review_actions; DROP TABLE review_runs; PRAGMA user_version=2;")
             .unwrap();
         drop(db);

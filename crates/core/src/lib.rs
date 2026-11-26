@@ -1,5 +1,7 @@
 //! Private, local workspace data. This crate has no networking dependencies.
 
+pub mod document_comparison;
+pub mod document_history;
 pub mod folder_watch;
 pub mod migration;
 pub mod review_workflow;
@@ -14,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 
-const SCHEMA_VERSION: i32 = 5;
+const SCHEMA_VERSION: i32 = 6;
 
 #[derive(Debug, Error)]
 pub enum WorkspaceError {
@@ -32,6 +34,8 @@ pub enum WorkspaceError {
         "This review or its tracking history changed. Refresh the history, check the latest status and submit again."
     )]
     ReviewConflict,
+    #[error("This document history changed. Refresh it and choose the revision again.")]
+    RevisionConflict,
     #[error("This workspace uses a newer database version. Open it with a newer ComplyPH release.")]
     NewerDatabase,
     #[error("The operating system did not provide a local application-data directory.")]
@@ -245,6 +249,9 @@ impl Workspace {
         if version < 5 {
             folder_watch::migrate(&transaction)?;
         }
+        if version < 6 {
+            document_history::migrate(&transaction)?;
+        }
         transaction.commit()?;
         connection.pragma_update(None, "journal_mode", "WAL")?;
         connection.pragma_update(None, "foreign_keys", "ON")?;
@@ -279,7 +286,14 @@ impl Workspace {
             WorkspaceError::InvalidDocument("This file is too large to register.".to_owned())
         })?;
         let modified_at = metadata.modified().ok().and_then(unix_seconds);
-        self.connection.execute(
+        // Folder intake already owns a transaction; keep membership in that same commit.
+        let transaction = if self.connection.is_autocommit() {
+            Some(self.connection.unchecked_transaction()?)
+        } else {
+            None
+        };
+        let tx: &Connection = transaction.as_ref().map_or(&self.connection, |tx| tx);
+        tx.execute(
             "INSERT INTO documents (path, name, kind, bytes, added_at, modified_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(path) DO UPDATE SET
@@ -287,14 +301,19 @@ impl Workspace {
                 bytes = excluded.bytes, modified_at = excluded.modified_at",
             params![path_text, name, kind.label(), bytes, now(), modified_at],
         )?;
-        self.connection
+        let document = tx
             .query_row(
                 "SELECT id, name, path, kind, bytes, added_at, modified_at
                  FROM documents WHERE path = ?1",
                 [path_text],
                 document_from_row,
             )
-            .map_err(Into::into)
+            .map_err(WorkspaceError::from)?;
+        document_history::ensure_group(tx, &document)?;
+        if let Some(transaction) = transaction {
+            transaction.commit()?;
+        }
+        Ok(document)
     }
 
     pub fn documents(&self) -> Result<Vec<Document>> {
@@ -329,6 +348,11 @@ impl Workspace {
         snapshot: &DocumentSnapshot,
         report: complyph_extract::Report,
     ) -> Result<SavedExtraction> {
+        if format!("{:x}", Sha256::digest(&snapshot.bytes)) != snapshot.sha256 {
+            return Err(WorkspaceError::InvalidDocument(
+                "The parsed file snapshot failed its integrity check.".into(),
+            ));
+        }
         let saved = SavedExtraction {
             sha256: snapshot.sha256.clone(),
             read_at: now(),
@@ -336,7 +360,7 @@ impl Workspace {
         };
         let value = serde_json::to_string(&saved)?;
         let transaction = self.connection.unchecked_transaction()?;
-        transaction.execute(
+        let updated = transaction.execute(
             "UPDATE documents SET bytes = ?1, modified_at = ?2 WHERE id = ?3 AND path = ?4",
             params![
                 snapshot.bytes.len() as i64,
@@ -345,6 +369,12 @@ impl Workspace {
                 document.path.to_str()
             ],
         )?;
+        if updated != 1 {
+            return Err(WorkspaceError::InvalidDocument(
+                "This document entry is no longer available. Reopen it before reading.".into(),
+            ));
+        }
+        document_history::retain_reading(&transaction, document, &saved)?;
         transaction.execute(
             "INSERT INTO document_extractions(document_id, value) VALUES (?1, ?2)
             ON CONFLICT(document_id) DO UPDATE SET value = excluded.value",
@@ -356,8 +386,10 @@ impl Workspace {
 
     /// Removes the reference and cached text. The original document is untouched.
     pub fn remove_document(&self, id: i64) -> Result<()> {
-        self.connection
-            .execute("DELETE FROM documents WHERE id = ?1", [id])?;
+        let tx = self.connection.unchecked_transaction()?;
+        tx.execute("DELETE FROM documents WHERE id = ?1", [id])?;
+        document_history::remove_empty_groups(&tx)?;
+        tx.commit()?;
         Ok(())
     }
 
@@ -366,13 +398,31 @@ impl Workspace {
         document_id: i64,
         review: complyph_checks::Review,
     ) -> Result<SavedReview> {
+        self.save_review_internal(document_id, review, None)
+    }
+    /// Bind a new review to the exact reading used, even if another window refreshes the cache.
+    pub fn save_review_for_reading(
+        &self,
+        document_id: i64,
+        reading: &SavedExtraction,
+        review: complyph_checks::Review,
+    ) -> Result<SavedReview> {
+        self.save_review_internal(document_id, review, Some(reading))
+    }
+    fn save_review_internal(
+        &self,
+        document_id: i64,
+        review: complyph_checks::Review,
+        reading: Option<&SavedExtraction>,
+    ) -> Result<SavedReview> {
         let saved = SavedReview {
             id: 0,
             document_id,
             created_at: now(),
             review,
         };
-        self.connection.execute(
+        let tx = self.connection.unchecked_transaction()?;
+        tx.execute(
             "INSERT INTO review_runs(document_id,created_at,value) VALUES (?1,?2,?3)",
             params![
                 document_id,
@@ -380,10 +430,13 @@ impl Workspace {
                 serde_json::to_string(&saved.review)?
             ],
         )?;
-        Ok(SavedReview {
-            id: self.connection.last_insert_rowid(),
+        let saved = SavedReview {
+            id: tx.last_insert_rowid(),
             ..saved
-        })
+        };
+        document_history::bind_review(&tx, &saved, reading)?;
+        tx.commit()?;
+        Ok(saved)
     }
     pub fn reviews(&self) -> Result<Vec<SavedReview>> {
         let mut statement = self

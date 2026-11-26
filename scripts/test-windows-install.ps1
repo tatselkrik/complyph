@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.12.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.13.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -178,7 +178,7 @@ foreach ($name in $expected.Keys | Sort-Object) {
 import json, os, pathlib, sqlite3
 root = pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])
 with sqlite3.connect(root / 'private/workspace.sqlite3') as db:
-    assert db.execute('PRAGMA user_version').fetchone()[0] == 5
+    assert db.execute('PRAGMA user_version').fetchone()[0] == 6
     original = db.execute('SELECT id,path,added_at FROM documents WHERE id=1').fetchone()
     assert original == (1, os.environ['COMPLYPH_SMOKE_ORIGINAL'], 1)
     prefs = json.loads(db.execute('SELECT value FROM preferences WHERE id=1').fetchone()[0])
@@ -311,7 +311,7 @@ if ($intake.scan.added.Count -ne 1 -or $intake.scan.duplicates -ne 1 -or $intake
 @'
 import os,pathlib,sqlite3
 with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_SMOKE_ACTIVE'])/'private/workspace.sqlite3') as db:
- assert db.execute('PRAGMA user_version').fetchone()[0]==5
+ assert db.execute('PRAGMA user_version').fetchone()[0]==6
  assert db.execute('SELECT COUNT(*) FROM review_runs').fetchone()[0]==5
  assert db.execute('SELECT COUNT(*) FROM folder_intake').fetchone()[0]==2
  assert db.execute('SELECT COUNT(*) FROM review_actions').fetchone()[0]==3
@@ -442,6 +442,14 @@ $maintenance = Get-Content -LiteralPath $maintenanceOutput -Raw | ConvertFrom-Js
 if ($maintenance.public_schema -ne 5 -or $maintenance.workflow_cases.Count -ne 6 -or @($maintenance.workflow_cases | Where-Object { !$_.passed }).Count -gt 0) { throw 'Incomplete maintenance workflow evidence.' }
 foreach ($check in $maintenance.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed maintenance check: $($check.Name)" } }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Library maintenance changed the default private workspace.' }
+$revisionsOutput = Join-Path $fixtureRoot 'document-revisions.json'
+& python (Join-Path $root 'scripts/test-document-revisions.py') '--app' $application '--samples' (Join-Path $installDirectory 'Samples') '--work' (Join-Path $fixtureRoot 'document-revisions') '--output' $revisionsOutput
+if ($LASTEXITCODE -ne 0) { throw 'Installed document revision workflows failed.' }
+$revisions = Get-Content -LiteralPath $revisionsOutput -Raw | ConvertFrom-Json
+if ($revisions.private_schema -ne 6 -or $revisions.public_schema -ne 5 -or $revisions.workflow_cases.Count -ne 6) { throw 'Incomplete document revision evidence.' }
+foreach ($case in $revisions.workflow_cases) { if ($case.passed -ne $true) { throw "Failed revision workflow: $($case.name)" } }
+foreach ($check in $revisions.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed revision check: $($check.Name)" } }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Revision tests changed the default private workspace.' }
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
@@ -466,14 +474,63 @@ if ((Get-FileHash -LiteralPath $original -Algorithm SHA256).Hash -ne $originalHa
 foreach ($path in @((Join-Path $desktop 'ComplyPH.lnk'), (Join-Path $programs 'ComplyPH.lnk'))) {
     if (Test-Path -LiteralPath $path) { throw "Uninstallation left a shortcut: $path" }
 }
-# Upgrade the already released ComplyPH 0.11.0 installer in its registered directory.
-$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.11.0.exe'
-Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.11.0/ComplyPH-Setup-0.11.0.exe' -OutFile $currentInstaller
-if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'f20f2e25aeb2c648b1a279c6afa09421a24b92c695aa1fc7e1da847d0d5e4ea7') { throw 'Previous ComplyPH installer hash mismatch.' }
+# Upgrade a real workspace created and annotated by the released ComplyPH 0.12.0 binary.
+$currentInstaller = Join-Path $fixtureRoot 'ComplyPH-Setup-0.12.0.exe'
+Invoke-WebRequest -Uri 'https://github.com/tatselkrik/complyph/releases/download/v0.12.0/ComplyPH-Setup-0.12.0.exe' -OutFile $currentInstaller
+if ((Get-FileHash -LiteralPath $currentInstaller -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'e604c6c9f2b79ffde613ea1e7fed1a753383611b9cc4a58733868d9365436589') { throw 'Previous ComplyPH installer hash mismatch.' }
 $previous = Start-Process -FilePath $currentInstaller -ArgumentList '/S', "/D=$freshDirectory" -Wait -PassThru
 if ($previous.ExitCode -ne 0) { throw 'Previous ComplyPH fixture installation failed.' }
+$upgradeApplication = Join-Path $freshDirectory 'ComplyPH.exe'
+function Invoke-UpgradeDiagnostic([string[]]$Arguments) {
+    $info = [Diagnostics.ProcessStartInfo]::new(); $info.FileName = $upgradeApplication; $info.UseShellExecute = $false
+    foreach ($argument in $Arguments) { $info.ArgumentList.Add($argument) }
+    $process = [Diagnostics.Process]::Start($info)
+    if (!$process.WaitForExit(60000)) { $process.Kill($true); throw 'Released workspace upgrade diagnostic timed out.' }
+    if ($process.ExitCode -ne 0) { throw 'Released workspace upgrade diagnostic failed.' }
+}
+$releasedData = Join-Path $fixtureRoot 'released-v012-data'
+$releasedOriginal = Join-Path $fixtureRoot 'Released earlier.docx'
+Copy-Item -LiteralPath (Join-Path $root 'examples/Synthetic revision original.docx') -Destination $releasedOriginal
+$releasedScope = Join-Path $fixtureRoot 'released-scope.json'
+((Get-Content -LiteralPath (Join-Path $root 'examples/expected-revisions.json') -Raw | ConvertFrom-Json).context | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $releasedScope -Encoding utf8NoBOM
+$releasedReview = Join-Path $fixtureRoot 'released-review.json'
+Invoke-UpgradeDiagnostic @('--check-file',$releasedOriginal,'--context',$releasedScope,'--output',$releasedReview,'--data-dir',$releasedData)
+$released = Get-Content -LiteralPath $releasedReview -Raw | ConvertFrom-Json
+$releasedStateFile = Join-Path $fixtureRoot 'released-state.json'
+Invoke-UpgradeDiagnostic @('--review-state',"$($released.id)",'--output',$releasedStateFile,'--data-dir',$releasedData)
+$releasedState = Get-Content -LiteralPath $releasedStateFile -Raw | ConvertFrom-Json
+$releasedAction = Join-Path $fixtureRoot 'released-action.json'
+@{ review_fingerprint=$releasedState.review_fingerprint; rule_id='PH-LAB-083-01'; expected_revision=0; reviewer='Synthetic upgrade reviewer'; note='Preserve this released-version resolution.'; status='resolved' } | ConvertTo-Json | Set-Content -LiteralPath $releasedAction -Encoding utf8NoBOM
+Invoke-UpgradeDiagnostic @('--review-action',"$($released.id)",'--metadata',$releasedAction,'--output',(Join-Path $fixtureRoot 'released-noted.json'),'--data-dir',$releasedData)
+$env:COMPLYPH_RELEASED_DATA = $releasedData
+$env:COMPLYPH_RELEASED_BEFORE = Join-Path $fixtureRoot 'released-before.json'
+@'
+import os,pathlib,sqlite3,json
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_RELEASED_DATA'])/'private/workspace.sqlite3') as db:
+ assert db.execute('PRAGMA user_version').fetchone()[0]==5
+ before={table:db.execute('SELECT * FROM '+table+' ORDER BY 1').fetchall() for table in ['documents','document_extractions','review_runs','review_actions']}
+ pathlib.Path(os.environ['COMPLYPH_RELEASED_BEFORE']).write_text(json.dumps(before),encoding='utf-8')
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Could not capture a real released schema-5 workspace.' }
+$releasedPublicHash = (Get-FileHash -LiteralPath (Join-Path $releasedData 'library/catalog.sqlite3') -Algorithm SHA256).Hash
 $upgrade = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
-if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/synthetic-source.json'))) { throw 'ComplyPH 0.11.0 upgrade failed.' }
+if ($upgrade.ExitCode -ne 0 -or !(Test-Path -LiteralPath (Join-Path $freshDirectory 'Samples/Synthetic revision corrected.docx'))) { throw 'ComplyPH 0.12.0 upgrade failed.' }
+$upgradeRequest = Join-Path $fixtureRoot 'released-history-request.json'
+@{ action='history'; document_id=$released.document_id } | ConvertTo-Json | Set-Content -LiteralPath $upgradeRequest -Encoding utf8NoBOM
+Invoke-UpgradeDiagnostic @('--document-action','--metadata',$upgradeRequest,'--output',(Join-Path $fixtureRoot 'released-migrated-history.json'),'--data-dir',$releasedData)
+Invoke-UpgradeDiagnostic @('--review-state',"$($released.id)",'--output',(Join-Path $fixtureRoot 'released-migrated-state.json'),'--data-dir',$releasedData)
+@'
+import os,pathlib,sqlite3,json
+before=json.loads(pathlib.Path(os.environ['COMPLYPH_RELEASED_BEFORE']).read_text(encoding='utf-8'))
+with sqlite3.connect(pathlib.Path(os.environ['COMPLYPH_RELEASED_DATA'])/'private/workspace.sqlite3') as db:
+ assert db.execute('PRAGMA user_version').fetchone()[0]==6
+ for table,expected in before.items(): assert [list(r) for r in db.execute('SELECT * FROM '+table+' ORDER BY 1')]==expected,table
+ assert db.execute('SELECT COUNT(*) FROM document_readings').fetchone()[0]==1
+ assert db.execute('SELECT COUNT(*) FROM review_version_links WHERE reading_id IS NOT NULL').fetchone()[0]==0
+'@ | python -
+if ($LASTEXITCODE -ne 0) { throw 'Released schema-5 upgrade lost original readings, reports or reviewer history.' }
+if ((Get-FileHash -LiteralPath (Join-Path $releasedData 'library/catalog.sqlite3') -Algorithm SHA256).Hash -ne $releasedPublicHash) { throw 'Private revision migration changed the released legal catalog.' }
+if ((Get-FileHash -LiteralPath $releasedOriginal -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath (Join-Path $root 'examples/Synthetic revision original.docx') -Algorithm SHA256).Hash) { throw 'Released workspace migration changed an original.' }
 $cleanup = Start-Process -FilePath (Join-Path $freshDirectory 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
 if ($cleanup.ExitCode -ne 0) { throw 'ComplyPH upgrade fixture cleanup failed.' }
 $deadline = [DateTime]::UtcNow.AddSeconds(15)
@@ -490,7 +547,8 @@ $result = [ordered]@{
     catalog_status_passed = $true; starter_source_count = $status.source_count; starter_domain_count = $status.domains.Count
     uninstalled = $true; private_fixture_preserved = $true; catalog_preserved = $true; original_preserved = $true
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
-    private_schema = 5; validated_check_count = 20; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    private_schema = 6; validated_check_count = 20; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
+    installed_document_revisions_passed = $true; released_v012_history_upgrade_passed = $true; document_revisions = $revisions
     installed_initial_checks_passed = $true; initial_period_scope_gates_passed = $true; installed_initial_source_citations_passed = $true; initial_pdf_sources_passed = $true; synthetic_initial_fixture_count = $initialResults.Count; initial_results = $initialResults; rule_pack_sha256 = $expectedPackHash
     installed_sil_checks_passed = $true; sil_eligibility_gates_passed = $true; sil_pdf_basis_passed = $true; synthetic_sil_fixture_count = $silResults.Count; sil_results = $silResults
     installed_ocr_passed = $true; ocr_confirmation_gate_passed = $true; ocr_originals_preserved = $true; synthetic_ocr_fixture_count = $ocrResults.Count; ocr_results = $ocrResults

@@ -11,6 +11,7 @@ pub struct CheckView {
     result: Option<SavedReview>,
     error: Option<String>,
     editing: bool,
+    historical_reading: bool,
 }
 
 pub enum ReviewAction {
@@ -42,6 +43,19 @@ pub fn approved_source(catalog: &LibraryCatalog) -> Result<(), String> {
 }
 
 impl CheckView {
+    pub fn historical_reading(&mut self, historical: bool) {
+        self.historical_reading = historical;
+    }
+    pub fn start_with_scope(&mut self, mut context: Context) {
+        context.operative_terms_confirmed = false;
+        context.ocr_text_confirmed = false;
+        *self = Self {
+            visible: true,
+            editing: true,
+            context,
+            ..Self::default()
+        };
+    }
     pub fn clear(&mut self) {
         *self = Self::default();
     }
@@ -100,6 +114,12 @@ impl CheckView {
             );
         }
         if self.editing || self.result.is_none() {
+            if self.historical_reading {
+                widgets::muted(
+                    ui,
+                    "This is a retained historical reading. Choose Review current file to prepare a fresh review; prior notes and statuses stay with their original review.",
+                );
+            }
             widgets::card().show(ui, |ui| {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new(format!("{} focused checks · seven domains",complyph_checks::RULE_COUNT)).font(heading(21.0)));
@@ -124,7 +144,7 @@ impl CheckView {
                 ui.checkbox(&mut self.context.ocr_text_confirmed,"I checked every OCR page, including numbers and low-confidence words, against the original.");
             }
             widgets::muted(ui,"Supported statements use explicit daily hours, additional ordinary-day/night premiums, regular-meal minutes, consecutive weekly-rest hours after six consecutive normal work days, annual paid service incentive leave, or the explicit formats shown in each additional check. Other wording stays unresolved.");
-            if widgets::primary(ui,"Run and save local review",self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready && (s.report.ocr.is_none() || self.context.ocr_text_confirmed))).clicked() {
+            if widgets::primary(ui,"Run and save local review",!self.historical_reading && self.context.operative_terms_confirmed && saved.is_some_and(|s|s.report.status==complyph_extract::Status::Ready && (s.report.ocr.is_none() || self.context.ocr_text_confirmed))).clicked() {
                 self.result=None;
                 let result=(|| {
                     let saved=saved.ok_or("Wait for this document to finish reading.")?;
@@ -132,7 +152,7 @@ impl CheckView {
                     let current=complyph_core::document_snapshot(&document.path).map_err(|e|e.to_string())?;
                     if current.sha256!=saved.sha256 { return Err("The original changed. Read it again before checking.".into()); }
                     let review=crate::library_rules::apply(catalog,complyph_checks::review(&saved.report,&saved.sha256,self.context.clone()))?;
-                    workspace.save_review(document.id,review).map_err(|e|e.to_string())
+                    workspace.save_review_for_reading(document.id,saved,review).map_err(|e|e.to_string())
                 })();
                 match result { Ok(review)=>{self.result=Some(review);self.error=None;},Err(error)=>self.error=Some(error) }
             }

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.12.0"><img src="https://img.shields.io/badge/version-0.12.0-142B49?style=flat-square" alt="Version 0.12.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.13.0"><img src="https://img.shields.io/badge/version-0.13.0-142B49?style=flat-square" alt="Version 0.13.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -33,6 +33,8 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 - **Local OCR:** recognize scanned PDF pages with bundled English OCR, page references, low-confidence flags and a separate accuracy confirmation before numeric checking.
 - **Watched folder:** opt into local PDF/DOCX intake with a quiet interval, completion/lock checks, duplicate detection and pause/resume controls.
 - **Private document reader:** local extraction, text search, location navigation and content-hash-validated caching. Original files remain in place.
+- **Document versions:** explicitly link revisions, retain complete extracted readings, compare text changes and reopen each version’s own reviews and follow-up history.
+- **Finding comparison:** compare selected reviews with visible scope/source/method differences; corrected numeric results never inherit earlier resolved statuses. Export comparison PDF or full JSON locally.
 - **Saved reports:** retain the confirmed scope, matched passages, outcomes, rule versions and document/source hashes; reopen a report beside its document.
 - **Reviewer notes and tracking:** add document-review and finding notes; track Unresolved, Acknowledged and Resolved follow-up with append-only local history. Original automated findings stay intact.
 - **Offline PDF export:** save findings, evidence, exact legal quotes, scope, identifiers and complete reviewer history in a readable report with embedded fonts. No printer or browser is required.
@@ -51,9 +53,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/ComplyPH-Setup-0.12.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/ComplyPH-Windows-x64-0.12.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.12.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/ComplyPH-Setup-0.13.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/ComplyPH-Windows-x64-0.13.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -70,6 +72,14 @@ Normal use requires no command prompt or development tools. The current Windows 
 A resolved follow-up status records a human decision and never changes the automated result or certifies compliance. Reviewer names are self-reported. Each saved review has separate tracking; a new review starts fresh. PDF exports contain private excerpts and notes, include all saved actions, and do not recheck current documents or laws. See [reports and tracking](docs/REPORTS.md).
 
 A matching numeric term is not a complete compliance verdict. Unclear applicability, unsupported wording, conflicting values and incomplete extraction remain unresolved. See [supported checks and validation](docs/VALIDATED_CHECKS.md).
+
+## Compare revised documents
+
+Open a document or saved report, then choose **Version history / compare…**. Select **Add revised document…**, or explicitly link an existing standalone entry. Reading a changed file at the same path also retains a new version.
+
+Choose earlier and revised readings, select their saved reviews, and **Compare selected versions**. Inspect highlighted text changes, both outcomes and their separate follow-up statuses. **Use earlier scope for a fresh review…** copies scope as a starting point and requires new accuracy confirmations; it copies no notes or statuses. Export the captured comparison as PDF or full JSON.
+
+Retained text remains available after originals move or change. Older reviews without a retained reading show that limitation; missing historical text is never reconstructed from a changed original. Comparison covers extracted text and selected assessments, including their method/source/scope differences. See [reports and document versions](docs/REPORTS.md).
 
 ## Scanned documents and folder intake
 

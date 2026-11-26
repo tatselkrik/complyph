@@ -105,7 +105,25 @@ jobs:
           compiled = hashlib.sha256(b''.join(Path(path).read_bytes() for path in ('crates/checks/src/lib.rs','crates/checks/src/initial.rs','crates/checks/src/initial_rules.json'))).hexdigest()
           assert manifest['compiled_rule_profile_sha256'] == compiled
           assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
-          assert manifest['private_schema'] == check['private_schema'] == 5
+          assert manifest['private_schema'] == check['private_schema'] == 6
+          assert check['installed_document_revisions_passed'] is True
+          assert check['released_v012_history_upgrade_passed'] is True
+          for name in ('document_version_history','retained_document_readings','document_version_comparison','finding_comparison','comparison_pdf_export','comparison_json_export'):
+              assert manifest[name] is True, name
+          assert manifest['comparison_engine'] == 'complyph-document-comparison-1'
+          revisions = check['document_revisions']
+          assert revisions['private_schema'] == 6 and revisions['public_schema'] == 5
+          assert manifest['revision_workflow_cases'] == len(revisions['workflow_cases']) == 6
+          assert {case['name'] for case in revisions['workflow_cases']} == {'revision_link_and_text_diff','finding_comparison_and_history','same_path_version_retention','missing_statement_and_basis_guards','comparison_exports','migration_and_private_boundary'}
+          assert all(case['passed'] is True for case in revisions['workflow_cases'])
+          for name in ('installed_revision_linking_passed','installed_retained_readings_passed','installed_document_diff_passed','installed_finding_comparison_passed','installed_version_history_passed','installed_status_separation_passed','installed_comparison_pdf_passed','installed_comparison_json_passed','installed_revision_guards_passed','installed_revision_migration_passed','revision_originals_preserved','revision_public_catalog_preserved'):
+              assert revisions['checks'][name] is True, name
+          expected_revisions = json.loads(Path('examples/expected-revisions.json').read_text())
+          assert manifest['synthetic_revision_fixture_count'] == revisions['synthetic_revision_fixture_count'] == expected_revisions['fixture_count'] == 5
+          assert len(revisions['pair_results']) == 2 and {case['format'] for case in revisions['pair_results']} == {'docx','pdf'}
+          for pair in revisions['pair_results']:
+              assert pair['changes'] == expected_revisions['corrected_changes']
+              assert pair['left_status'] == 'resolved' and pair['right_status'] == 'unresolved'
           assert manifest['reviewer_tracking'] is True and manifest['pdf_export'] is True and manifest['pdf_engine'] == 'complyph-pdf-1'
           for flag in ('installed_review_notes_passed','installed_issue_tracking_passed','installed_pdf_export_passed','review_audit_history_preserved'):
               assert check[flag] is True
@@ -193,7 +211,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Reviewed library maintenance" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Document revision comparisons" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

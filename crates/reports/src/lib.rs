@@ -1,4 +1,6 @@
 //! Offline PDF reports. No browser, printer service, network or original-file access.
+mod comparison;
+pub use comparison::{export_comparison_json, export_comparison_pdf, render_comparison_pdf};
 use complyph_core::{ReviewEvent, ReviewWorkflow};
 use lopdf::{
     Dictionary, Document, Object, Stream,
@@ -202,8 +204,51 @@ impl Layout {
 /// Render only the captured historical review and its captured human history.
 pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
     let mut layout = Layout::new()?;
+    append_review(&mut layout, workflow)?;
+    let count = layout.pages.len();
+    for (index, page) in layout.pages.iter_mut().enumerate() {
+        page.lines.push(Line {
+            text: format!(
+                "Review #{} | Page {} of {} | Historical snapshot",
+                workflow.saved.id,
+                index + 1,
+                count
+            ),
+            x: LEFT,
+            y: 32.0,
+            size: 8.0,
+            bold: false,
+            color: [0.32, 0.37, 0.41],
+        });
+    }
+    encode(
+        &layout.pages,
+        &layout.regular,
+        &layout.bold,
+        &format!(
+            "ComplyPH review #{}: {}",
+            workflow.saved.id, workflow.document_name
+        ),
+        "Historical technical review and separate human follow-up",
+    )
+}
+
+fn append_review(layout: &mut Layout, workflow: &ReviewWorkflow) -> Result<()> {
     layout.paragraph(&workflow.document_name, 20.0, true, [0.08, 0.17, 0.29])?;
     layout.body(&format!("Document review #{}", workflow.saved.id))?;
+    if let Some(version) = &workflow.document_version {
+        layout.muted(&format!(
+            "Document version #{} | Retained reading: {}",
+            version.version_id,
+            version
+                .reading_id
+                .map(|id| format!("#{id}"))
+                .unwrap_or_else(|| "not recorded in this historical review".into())
+        ))?;
+        if let Some(hash) = &version.reading_sha256 {
+            layout.muted(&format!("Reading SHA-256: {hash}"))?;
+        }
+    }
     layout.muted(&format!(
         "Automated review: {}",
         time(workflow.saved.created_at)
@@ -412,23 +457,7 @@ pub fn render_pdf(workflow: &ReviewWorkflow) -> Result<Vec<u8>> {
     ] {
         layout.muted(&line)?;
     }
-    let count = layout.pages.len();
-    for (index, page) in layout.pages.iter_mut().enumerate() {
-        page.lines.push(Line {
-            text: format!(
-                "Review #{} | Page {} of {} | Historical snapshot",
-                workflow.saved.id,
-                index + 1,
-                count
-            ),
-            x: LEFT,
-            y: 32.0,
-            size: 8.0,
-            bold: false,
-            color: [0.32, 0.37, 0.41],
-        });
-    }
-    encode(&layout.pages, &layout.regular, &layout.bold, workflow)
+    Ok(())
 }
 
 fn unicode(value: &str) -> Object {
@@ -499,7 +528,8 @@ fn encode(
     pages: &[Page],
     regular: &ttf_parser::Face<'_>,
     bold: &ttf_parser::Face<'_>,
-    workflow: &ReviewWorkflow,
+    title: &str,
+    subject: &str,
 ) -> Result<Vec<u8>> {
     let all: BTreeSet<char> = pages
         .iter()
@@ -577,7 +607,7 @@ fn encode(
     let root = doc.add_object(
         dictionary! {"Type"=>"Catalog","Pages"=>pages_id,"Lang"=>Object::string_literal("en-PH")},
     );
-    let info=doc.add_object(dictionary!{"Title"=>unicode(&format!("ComplyPH review #{}: {}",workflow.saved.id,workflow.document_name)),"Creator"=>Object::string_literal(format!("ComplyPH {} / {ENGINE}",env!("CARGO_PKG_VERSION"))),"Subject"=>unicode("Historical technical review and separate human follow-up"),"FontLicense"=>Object::string_literal("Lato fonts: SIL Open Font License 1.1")});
+    let info=doc.add_object(dictionary!{"Title"=>unicode(title),"Creator"=>Object::string_literal(format!("ComplyPH {} / {ENGINE}",env!("CARGO_PKG_VERSION"))),"Subject"=>unicode(subject),"FontLicense"=>Object::string_literal("Lato fonts: SIL Open Font License 1.1")});
     doc.trailer.set("Root", root);
     doc.trailer.set("Info", info);
     doc.compress();

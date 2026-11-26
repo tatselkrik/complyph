@@ -2,6 +2,8 @@
 
 mod app;
 mod check_view;
+mod document_cli;
+mod document_versions;
 mod folder_watch;
 mod library_cli;
 mod library_maintenance;
@@ -53,6 +55,13 @@ fn main() -> eframe::Result {
 fn parse_arguments() -> Option<PathBuf> {
     let mut arguments = std::env::args_os().skip(1);
     match arguments.next() {
+        Some(argument) if argument == "--document-action" => {
+            if let Err(error) = document_cli::run(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--library-action" => {
             if let Err(error) = library_cli::run(arguments.collect()) {
                 eprintln!("{error}");
@@ -140,7 +149,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --library-action --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --library-action --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --document-action --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }
@@ -396,8 +405,9 @@ fn diagnostic_check(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
         return Err("The original changed; read again before checking.".into());
     }
     let review = workspace
-        .save_review(
+        .save_review_for_reading(
             document.id,
+            &saved,
             library_rules::apply(
                 &catalog,
                 complyph_checks::review(&saved.report, &saved.sha256, context),
