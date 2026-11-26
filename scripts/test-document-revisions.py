@@ -231,8 +231,16 @@ def main():
     assert public_snapshot_hash(public) == public_before
 
     # An actual schema-5 fixture retains raw cache/review/history bytes during upgrade.
-    legacy = args.work / "legacy-data/private/workspace.sqlite3"
-    legacy.parent.mkdir(parents=True)
+    # Let the real app establish its owning SID and protected directories first.
+    # Python mkdir on an elevated Windows runner can assign Administrators as
+    # owner; opening such a manually created root must correctly be refused.
+    legacy_root = args.work / "legacy-data"
+    action({"action": "history", "document_id": -1}, legacy_root, success=False)
+    legacy = legacy_root / "private/workspace.sqlite3"
+    assert legacy.is_file(), "The app did not initialize the isolated private workspace"
+    with sqlite3.connect(legacy) as empty:
+        assert empty.execute("PRAGMA user_version").fetchone()[0] == 6
+        assert empty.execute("SELECT COUNT(*) FROM review_runs").fetchone()[0] == 0
     with sqlite3.connect(root / "private/workspace.sqlite3") as source:
         with sqlite3.connect(legacy) as target:
             source.backup(target)
@@ -240,7 +248,6 @@ def main():
                                 "DROP TABLE document_readings; DROP TABLE document_versions; "
                                 "DROP TABLE document_link_events; DROP TABLE document_group_members; "
                                 "DROP TABLE document_groups; PRAGMA user_version=5;")
-    legacy_root = legacy.parent.parent
     with sqlite3.connect(legacy) as db:
         old_reviews = db.execute("SELECT * FROM review_runs ORDER BY id").fetchall()
         old_actions = db.execute("SELECT * FROM review_actions ORDER BY id").fetchall()
