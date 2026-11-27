@@ -280,7 +280,8 @@ foreach ($name in $ocrCases.Keys | Sort-Object) {
     $output = Join-Path $fixtureRoot ($name + '.ocr.json')
     Invoke-ReviewDiagnostic @('--ocr-file',$sample,'--output',$output)
     $reading = Get-Content $output -Raw | ConvertFrom-Json
-    if ($reading.report.status -ne 'ready' -or $reading.report.engine -ne 'complyph-ocr-1' -or $reading.report.units.Count -ne $ocrCases[$name].pages) { throw "Installed OCR failed: $name" }
+    if ($reading.report.status -ne 'ready' -or $reading.report.engine -ne 'complyph-ocr-2' -or $reading.report.units.Count -ne $ocrCases[$name].pages) { throw "Installed OCR failed: $name" }
+    if ($reading.report.ocr.processing.profile -ne 'complyph-raster-1' -or $null -eq $reading.report.ocr.processing.settings) { throw 'Installed OCR processing provenance is missing.' }
     if ($reading.report.ocr.model_sha256 -ne '7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2' -or $reading.report.ocr.renderer -ne 'pdfium-8165' -or $reading.report.ocr.engine_version -ne '5.5.4') { throw 'OCR provenance mismatch.' }
     $text = (($reading.report.units | ForEach-Object { $_.text }) -join ' ') -replace '\s+', ' '
     foreach ($needle in $ocrCases[$name].contains) { if (!$text.Contains($needle)) { throw "OCR missed expected synthetic text: $needle" } }
