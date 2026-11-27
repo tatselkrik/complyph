@@ -49,7 +49,7 @@ def main():
     def review(path,case):
         saved=invoke('--check-file',[path,'--context',scope])
         assert len(saved['review']['findings'])==20
-        assert [f['outcome']for f in saved['review']['findings'][:5]]==case['outcomes'],(path.name,[f['outcome']for f in saved['review']['findings'][:5]],case['outcomes'])
+        assert [f['outcome']for f in saved['review']['findings'][:5]]==case['outcomes'],(path.name,saved['review']['findings'][:5],case['outcomes'])
         return saved
 
     def inspect(saved,name,case):

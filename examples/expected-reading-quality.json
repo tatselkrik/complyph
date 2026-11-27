@@ -162,7 +162,8 @@
       "contains": [
         "Normal daily working hours are 9 hours",
         "Regular meal period is 30 minutes",
-        "12 consecutive hours"
+        "12 consecutive hours",
+        "Night shift differential is 5% of the regular hourly wage for hours worked between 22:00 and 06:00."
       ],
       "manual": false,
       "pages": 1,
@@ -183,7 +184,8 @@
       "contains": [
         "Normal daily working hours are 9 hours",
         "Regular meal period is 30 minutes",
-        "12 consecutive hours"
+        "12 consecutive hours",
+        "Night shift differential is 5% of the regular hourly wage for hours worked between 22:00 and 06:00."
       ],
       "manual": false,
       "pages": 1,
@@ -247,7 +249,8 @@
       "contains": [
         "SELECTABLE-HEADING",
         "Normal daily working hours are 9 hours",
-        "12 consecutive hours"
+        "12 consecutive hours",
+        "Night shift differential is 5% of the regular hourly wage for hours worked between 22:00 and 06:00."
       ],
       "manual": false,
       "pages": 1,

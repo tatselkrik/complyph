@@ -64,7 +64,11 @@ def policy(background=255,ink=0):
  for i,line in enumerate([BANNER,'Fictional worker: José Example. No real agreement.']+ISSUES):d.text((55,70+i*145),line,font=font,fill=ink)
  return image
 def scan_pdf(name,image,blank=False):
- s,c=start();c.drawImage(ImageReader(image),0,0,width=1000,height=760);c.showPage()
+ # Keep the scan's pixels proportional, including portrait pages after rotation.
+ # Stretching a rotated portrait into a landscape page tests distorted glyphs,
+ # rather than the intended cardinal-rotation case.
+ s,c=start();width,height=image.width*72/180,image.height*72/180
+ c.setPageSize((width,height));c.drawImage(ImageReader(image),0,0,width=width,height=height);c.showPage()
  if blank:c.showPage()
  save(name,s,c)
 scan_pdf('Synthetic sideways scan.pdf',policy().rotate(-90,expand=True,fillcolor=255))
@@ -143,6 +147,8 @@ ocr_cases={
  'Synthetic mixed image text.pdf':{'options':{'rotation':'none','layout':'auto','enhance_scan':True},'contains':['SELECTABLE-HEADING','Normal daily working hours are 9 hours','12 consecutive hours'],'manual':False,'pages':1},
  'Synthetic unsupported font.pdf':{'options':{'rotation':'none','layout':'auto','enhance_scan':True},'contains':['Normal daily working hours are 8 hours'],'manual':False,'pages':1},
 }
+for name in ['Synthetic sideways scan.pdf','Synthetic faint skew scan.pdf','Synthetic mixed image text.pdf']:
+ ocr_cases[name]['contains'].append(ISSUES[2])
 # Independent expected outcomes for the existing first five labour rules.
 for cases in [reader_cases,ocr_cases]:
  for name,case in cases.items():
