@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 pub(crate) fn register(catalog: &LibraryCatalog) -> Result<(), String> {
     let template = complyph_checks::review(
         &complyph_extract::Report {
+            reading: None,
             engine: complyph_extract::ENGINE.into(),
             ocr: None,
             format: complyph_extract::Format::Docx,

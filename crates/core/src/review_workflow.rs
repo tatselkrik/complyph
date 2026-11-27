@@ -90,6 +90,20 @@ pub struct ReviewEvent {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReviewReadingContext {
+    pub engine: String,
+    pub summary: String,
+    pub warnings: Vec<String>,
+    pub reading: Option<complyph_extract::ReadingInfo>,
+}
+/// Only small immutable metadata is reused; findings/actions are captured fresh.
+#[derive(Default)]
+pub(super) struct ReadingContextCache {
+    data_version: std::cell::Cell<i64>,
+    entries: std::cell::RefCell<Vec<(i64, String, ReviewReadingContext)>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReviewWorkflow {
     pub saved: SavedReview,
     pub document_name: String,
@@ -98,6 +112,8 @@ pub struct ReviewWorkflow {
     pub events: Vec<ReviewEvent>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub document_version: Option<crate::document_history::VersionReference>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reading_context: Option<ReviewReadingContext>,
 }
 impl ReviewWorkflow {
     pub fn revision(&self, rule_id: Option<&str>) -> i64 {
@@ -165,15 +181,65 @@ fn events(connection: &Connection, id: i64, fingerprint: &str) -> Result<Vec<Rev
 }
 
 pub(crate) fn capture(connection: &Connection, id: i64) -> Result<ReviewWorkflow> {
+    capture_with_context_cache(connection, id, None)
+}
+fn capture_with_context_cache(
+    connection: &Connection,
+    id: i64,
+    cache: Option<&ReadingContextCache>,
+) -> Result<ReviewWorkflow> {
+    if let Some(cache) = cache {
+        // An external writer must not hide a changed/corrupt retained reading behind
+        // metadata validated earlier in this session. Our own reading rows are immutable.
+        let version = connection.query_row("PRAGMA data_version", [], |r| r.get(0))?;
+        if version != cache.data_version.get() {
+            cache.entries.borrow_mut().clear();
+            cache.data_version.set(version);
+        }
+    }
     let (saved, review_fingerprint, document_name) = original(connection, id)?;
     let events = events(connection, id, &review_fingerprint)?;
+    let document_version = crate::document_history::review_reference(connection, id)?;
+    let reading_context = if let Some((reading_id, hash)) = document_version
+        .as_ref()
+        .and_then(|v| v.reading_id.zip(v.reading_sha256.as_ref()))
+    {
+        if let Some(context) = cache.and_then(|c| {
+            c.entries
+                .borrow()
+                .iter()
+                .find(|(id, h, _)| *id == reading_id && h == hash)
+                .map(|(_, _, c)| c.clone())
+        }) {
+            Some(context)
+        } else {
+            let r = crate::document_history::retained_reading(connection, reading_id)?;
+            let context = ReviewReadingContext {
+                engine: r.saved.report.engine,
+                summary: r.saved.report.summary,
+                warnings: r.saved.report.warnings,
+                reading: r.saved.report.reading,
+            };
+            if let Some(cache) = cache {
+                let mut cache = cache.entries.borrow_mut();
+                if cache.len() >= 8 {
+                    cache.clear();
+                }
+                cache.push((reading_id, hash.clone(), context.clone()));
+            }
+            Some(context)
+        }
+    } else {
+        None
+    };
     Ok(ReviewWorkflow {
         saved,
         document_name,
         review_fingerprint,
         captured_at: now(),
         events,
-        document_version: crate::document_history::review_reference(connection, id)?,
+        document_version,
+        reading_context,
     })
 }
 
@@ -181,7 +247,7 @@ impl Workspace {
     /// One SQLite read transaction captures original findings and current history together.
     pub fn review_workflow(&self, id: i64) -> Result<ReviewWorkflow> {
         let tx = self.connection.unchecked_transaction()?;
-        let workflow = capture(&tx, id)?;
+        let workflow = capture_with_context_cache(&tx, id, Some(&self.reading_context_cache))?;
         tx.commit()?;
         Ok(workflow)
     }

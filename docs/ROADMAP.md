@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.13.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.14.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.13.0
+## Available in 0.14.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -40,19 +40,20 @@ PDF reports, document/finding notes and status history have been available since
 
 The complete reporting milestone is available in 0.13.0. Comparison covers retained extracted text; images/layouts and legal meaning are not inferred. Missing historical readings remain explicitly unavailable. Broader extraction coverage belongs to item 3 and legal/desktop quality review to item 6.
 
-### 3. Local OCR and folder monitoring
+### 3. Local OCR, folder monitoring and initial reading quality — implemented
 
-Local PDF OCR and optional nonrecursive folder intake are available in 0.12.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
+Local PDF OCR and optional nonrecursive folder intake are implemented. The finite [supported reading-quality profile](READING_QUALITY.md), with twelve synthetic fixtures, is available in 0.14.0. See [controls and limits](OCR_AND_FOLDERS.md). Folder intake adds document entries; reading, OCR, scope confirmation and review remain deliberate actions.
 
 - [x] Read scanned PDF documents using local OCR, with page locations, low-confidence highlights, visible quality limits and separate text confirmation before checking.
-- [ ] Improve layout, font and embedded-content reading coverage.
+- [x] Improve the defined initial layout/font/embedded-content coverage: spatial PDF paragraphs/two-column text, labelled Word text boxes and alternatives, Unicode mappings, OCR rotation/contrast/mild-skew/layout controls, and explicit manual gates for unresolved content.
+- [x] Preserve exact reading warnings/settings across reruns, histories, comparisons and local report exports.
 - [x] Add a folder picker for local watched-folder intake.
 - [x] Wait for stable writes/completion markers, preserve originals and avoid duplicate/unchanged intake; numeric reviews are not automatic.
 - [x] Keep watched-folder processing local; it must never trigger an AI upload automatically.
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.13.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.14.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.

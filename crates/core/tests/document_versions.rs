@@ -24,6 +24,7 @@ fn context() -> Context {
 }
 fn report(text: &str) -> Report {
     Report {
+        reading: None,
         engine: complyph_extract::ENGINE.into(),
         format: Format::Docx,
         status: Status::Ready,
@@ -490,6 +491,13 @@ fn deletion_removes_only_that_files_history_and_tampered_snapshots_are_refused()
     assert!(w.retained_reading(ai).is_err());
     assert_eq!(w.document_history(b.id).unwrap().documents.len(), 1);
     assert_eq!(w.reading_for_review(after.id).unwrap().unwrap().id, bi);
+    // Warm the metadata cache, then prove that a later external change is revalidated.
+    assert!(
+        w.review_workflow(after.id)
+            .unwrap()
+            .reading_context
+            .is_some()
+    );
     assert!(a.path.exists() && b.path.exists());
     let db = rusqlite::Connection::open(&paths.database).unwrap();
     assert!(
@@ -505,6 +513,7 @@ fn deletion_removes_only_that_files_history_and_tampered_snapshots_are_refused()
     )
     .unwrap();
     assert!(w.retained_reading(bi).is_err());
+    assert!(w.review_workflow(after.id).is_err());
 }
 #[test]
 fn schema_five_upgrade_keeps_original_review_and_cache_bytes_without_inventing_old_text() {

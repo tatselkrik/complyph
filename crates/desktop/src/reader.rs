@@ -4,7 +4,9 @@
 mod limits;
 
 use complyph_core::{Document, SavedExtraction, Workspace, WorkspacePaths, document_snapshot};
-use complyph_extract::{ENGINE, Format, MAX_INPUT_BYTES, MAX_REPORT_BYTES, Report, Status};
+use complyph_extract::{
+    ENGINE, Format, MAX_INPUT_BYTES, MAX_REPORT_BYTES, OcrSettings, Report, Status,
+};
 use std::io::{Read, Write};
 use std::process::{Command, Stdio};
 use std::sync::{
@@ -21,7 +23,7 @@ pub fn read_document(
     force: bool,
     cancel: &AtomicBool,
 ) -> Result<SavedExtraction, String> {
-    read_document_mode(paths, document, force, false, cancel)
+    read_document_mode(paths, document, force, None, cancel)
 }
 
 pub fn read_document_ocr(
@@ -29,17 +31,25 @@ pub fn read_document_ocr(
     document: &Document,
     cancel: &AtomicBool,
 ) -> Result<SavedExtraction, String> {
+    read_document_ocr_with_settings(paths, document, OcrSettings::default(), cancel)
+}
+pub fn read_document_ocr_with_settings(
+    paths: &WorkspacePaths,
+    document: &Document,
+    settings: OcrSettings,
+    cancel: &AtomicBool,
+) -> Result<SavedExtraction, String> {
     if document.kind.format() != Format::Pdf {
         return Err("Local OCR currently accepts PDF documents.".into());
     }
-    read_document_mode(paths, document, true, true, cancel)
+    read_document_mode(paths, document, true, Some(settings), cancel)
 }
 
 fn read_document_mode(
     paths: &WorkspacePaths,
     document: &Document,
     force: bool,
-    requested_ocr: bool,
+    requested_settings: Option<OcrSettings>,
     cancel: &AtomicBool,
 ) -> Result<SavedExtraction, String> {
     check_cancel(cancel)?;
@@ -48,7 +58,22 @@ fn read_document_mode(
     let cached = workspace
         .extraction(document.id)
         .map_err(|e| e.to_string())?;
-    let ocr = requested_ocr || (force && cached.as_ref().is_some_and(|s| s.report.ocr.is_some()));
+    let settings = requested_settings.or_else(|| {
+        if force {
+            cached
+                .as_ref()
+                .and_then(|s| s.report.ocr.as_ref())
+                .map(|o| {
+                    o.processing
+                        .as_ref()
+                        .map(|p| p.settings.clone())
+                        .unwrap_or_default()
+                })
+        } else {
+            None
+        }
+    });
+    let ocr = settings.is_some();
     if !force
         && let Some(cached) = cached
         && cached.sha256 == snapshot.sha256
@@ -60,7 +85,12 @@ fn read_document_mode(
     }
     check_cancel(cancel)?;
     let report = if ocr {
-        run_worker_mode(Format::Pdf, snapshot.bytes.clone(), cancel, true)?
+        run_worker_with_settings(
+            Format::Pdf,
+            snapshot.bytes.clone(),
+            cancel,
+            settings.as_ref(),
+        )?
     } else {
         run_worker(document.kind.format(), snapshot.bytes.clone(), cancel)?
     };
@@ -91,14 +121,25 @@ pub(crate) fn run_worker(
     bytes: Vec<u8>,
     cancel: &AtomicBool,
 ) -> Result<Report, String> {
-    run_worker_mode(format, bytes, cancel, false)
+    run_worker_with_settings(format, bytes, cancel, None)
 }
+/// Public-reference candidate OCR retains its explicit, local default action.
 pub(crate) fn run_worker_mode(
     format: Format,
     bytes: Vec<u8>,
     cancel: &AtomicBool,
     ocr: bool,
 ) -> Result<Report, String> {
+    let settings = ocr.then(OcrSettings::default);
+    run_worker_with_settings(format, bytes, cancel, settings.as_ref())
+}
+fn run_worker_with_settings(
+    format: Format,
+    bytes: Vec<u8>,
+    cancel: &AtomicBool,
+    settings: Option<&OcrSettings>,
+) -> Result<Report, String> {
+    let ocr = settings.is_some();
     let executable =
         std::env::current_exe().map_err(|_| "The local reader could not be located.")?;
     let mut command = Command::new(executable);
@@ -112,6 +153,12 @@ pub(crate) fn run_worker_mode(
             Format::Pdf => "pdf",
             Format::Docx => "docx",
         });
+    if let Some(settings) = settings {
+        command.arg("--settings").arg(
+            serde_json::to_string(settings)
+                .map_err(|_| "The local OCR options could not be prepared.")?,
+        );
+    }
     // No inherited service credentials, proxy settings, or document-derived arguments.
     command.env_clear();
     for name in ["SystemRoot", "WINDIR", "TEMP", "TMP"] {
@@ -137,7 +184,15 @@ pub(crate) fn run_worker_mode(
     )?;
     let report: Report = serde_json::from_slice(&output)
         .map_err(|_| "The local reader returned an invalid result. The original is unchanged.")?;
-    if (report.engine != ENGINE && !(ocr && complyph_extract::valid_ocr(&report)))
+    if (report.engine != ENGINE
+        && !(ocr
+            && report.engine == complyph_extract::OCR_ENGINE
+            && complyph_extract::valid_ocr(&report)
+            && report
+                .ocr
+                .as_ref()
+                .and_then(|o| o.processing.as_ref())
+                .is_some_and(|p| Some(&p.settings) == settings)))
         || report.format != format
         || report.units.len() > complyph_extract::MAX_UNITS
         || report.text_bytes() > complyph_extract::MAX_TEXT_BYTES
@@ -210,12 +265,13 @@ fn supervise(
 /// Internal helper: bounded memory/CPU, no window, no file-path argument, no disk writes.
 /// Always terminate before desktop or catalog initialization.
 pub fn worker_main(format: Format) -> ! {
-    worker(format, false)
+    worker(format, None)
 }
-pub fn ocr_worker_main() -> ! {
-    worker(Format::Pdf, true)
+pub fn ocr_worker_main(settings: OcrSettings) -> ! {
+    worker(Format::Pdf, Some(settings))
 }
-fn worker(format: Format, ocr: bool) -> ! {
+fn worker(format: Format, settings: Option<OcrSettings>) -> ! {
+    let ocr = settings.is_some();
     let guard = if ocr {
         limits::apply_ocr()
     } else {
@@ -233,7 +289,7 @@ fn worker(format: Format, ocr: bool) -> ! {
             Ok(_) => std::panic::catch_unwind(|| {
                 if ocr {
                     match complyph_ocr::runtime_directory() {
-                        Ok(directory) => complyph_ocr::recognize(&bytes,&directory),
+                        Ok(directory) => complyph_ocr::recognize_with_settings(&bytes,&directory,settings.as_ref().unwrap()),
                         Err(error) => Report::failure(format,Status::Unreadable,&error),
                     }
                 } else { complyph_extract::extract(format,&bytes) }

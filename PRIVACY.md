@@ -1,10 +1,10 @@
 # Privacy
 
-## ComplyPH 0.13.0
+## ComplyPH 0.14.0
 
 ComplyPH runs locally. Selecting a PDF/DOCX registers its filename, canonical path, size, and modification time, then reads supported text in a local child process. Extracted text, paragraph/page/table locations, the original’s SHA-256 hash, reading state, and read date are saved in the private SQLite workspace. Preferences use the same workspace. The private workspace also stores human-confirmed scope and review reports containing passages, outcomes, source/rule identifiers and hashes. Private schema 4 also stores append-only document-review/finding notes, self-reported reviewer names, timestamps, status transitions and fingerprints binding them to the original saved review. Names are not authenticated identities or digital signatures. SIL employee coverage, qualifying service, exception assertions and the reviewer-provided eligibility basis are stored with each new review and included in requested exports. The twenty numeric checks are local and do not certify compliance.
 
-Document bytes pass from the app to its own worker through local stdin/stdout pipes. Worker arguments contain only the document format; inherited credentials and proxy settings are cleared. The readers do not fetch document hyperlinks or external XML entities, execute fields, macros, PDF JavaScript, or embedded programs. Parser diagnostics are not logged. Resource limits and cancellation protect responsiveness; this is not a full operating-system sandbox.
+Document bytes pass from the app to its own worker through local stdin/stdout pipes. Worker arguments contain the document format and, for OCR, bounded typed rotation/layout/enhancement options; inherited credentials and proxy settings are cleared. The readers do not fetch document hyperlinks or external XML entities, execute fields, macros, PDF JavaScript, or embedded programs. Parser diagnostics are not logged. Resource limits and cancellation protect responsiveness; this is not a full operating-system sandbox.
 
 The desktop, document reader and rule engine contain no HTTP client, telemetry, advertising, AI integration or document upload. The separate updater uses Windows AppContainer or supported Linux Landlock/seccomp confinement for approved source downloads and publication-page scans. Status queries and source import make no online request.
 
@@ -17,6 +17,8 @@ Text and finding comparisons use only the private database and do not open or mo
 Migration preserves original cached/report/note bytes. The latest valid old cache can be retained; earlier missing text and the exact reading of a historical review are not invented. Removing a document entry removes that file’s retained readings, reports and follow-up history, while preserving other linked entries and originals. Previously exported files, SQLite journals/backups and free pages are not secure erasure.
 
 ## Local OCR and watched folders
+
+OCR options and per-page pixel-processing results are retained with new readings and saved reviews. Grayscale contrast, bounded straightening and explicit rotations happen in memory; the original PDF is not modified. Word text boxes are read at separate XML locations. Field instructions, embedded objects and external relationships remain unexecuted/unfetched. Additional quality warnings block numeric conclusions. Historical exports obtain warnings/settings from the exact retained reading, not the latest cache. See [supported reading layouts](docs/READING_QUALITY.md).
 
 OCR is an explicit local action for a selected PDF. A bounded child receives bytes through local pipes and calls packaged PDFium/Tesseract APIs using memory buffers and hash-pinned English recognition data. Page images are not written to temporary files. No service, document URL, model downloader or upload is used. The Windows Tesseract build disables curl/URL support. Recognition text, page references, confidence flags and engine/model identifiers are saved in the private cache; saved reviews preserve OCR provenance and the human accuracy confirmation. Confidence is an estimate, not verified accuracy.
 

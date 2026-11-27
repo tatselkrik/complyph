@@ -795,7 +795,7 @@ impl ComplyApp {
                 });
         });
         if let Some(action) = action {
-            self.review_action(action);
+            self.review_action(action, ui.ctx());
         }
         if self.reader_view.take_ocr_request()
             && let Some(paths) = self.paths.clone()
@@ -809,8 +809,11 @@ impl ComplyApp {
                 .start(paths, document.clone(), true, ui.ctx());
         }
     }
-    fn review_action(&mut self, action: crate::check_view::ReviewAction) {
+    fn review_action(&mut self, action: crate::check_view::ReviewAction, ctx: &egui::Context) {
         match action {
+            crate::check_view::ReviewAction::SavedReading { review } => {
+                self.open_saved_review(*review, ctx)
+            }
             crate::check_view::ReviewAction::Passage { hash, evidence } => {
                 self.reader_view.jump_to(&hash, &evidence)
             }
@@ -969,6 +972,7 @@ impl ComplyApp {
                                 ui,
                                 &saved,
                                 None,
+                                None,
                                 workspace,
                                 &mut self.review_tools,
                             ) {
@@ -983,7 +987,7 @@ impl ComplyApp {
             }
         }
         if let Some(action) = action {
-            self.review_action(action);
+            self.review_action(action, ui.ctx());
         }
         if let Some(review) = open {
             self.open_saved_review(review, ui.ctx());

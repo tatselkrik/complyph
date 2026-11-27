@@ -255,6 +255,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let catalog = LibraryCatalog::open(temp.path()).unwrap();
         let input = complyph_extract::Report {
+            reading: None,
             engine: complyph_extract::ENGINE.into(),
             ocr: None,
             format: complyph_extract::Format::Docx,

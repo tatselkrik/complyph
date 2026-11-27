@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.13.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.14.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -450,6 +450,14 @@ if ($revisions.private_schema -ne 6 -or $revisions.public_schema -ne 5 -or $revi
 foreach ($case in $revisions.workflow_cases) { if ($case.passed -ne $true) { throw "Failed revision workflow: $($case.name)" } }
 foreach ($check in $revisions.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed revision check: $($check.Name)" } }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Revision tests changed the default private workspace.' }
+$qualityOutput = Join-Path $fixtureRoot 'reading-quality.json'
+& python (Join-Path $root 'scripts/test-reading-quality.py') '--app' $application '--samples' (Join-Path $installDirectory 'Samples') '--work' (Join-Path $fixtureRoot 'reading-quality') '--output' $qualityOutput
+if ($LASTEXITCODE -ne 0) { throw 'Installed reading-quality workflows failed.' }
+$quality = Get-Content -LiteralPath $qualityOutput -Raw | ConvertFrom-Json
+if ($quality.private_schema -ne 6 -or $quality.public_schema -ne 5 -or $quality.workflow_cases.Count -ne 6 -or $quality.reader_results.Count -ne 8 -or $quality.ocr_results.Count -ne 6) { throw 'Incomplete reading-quality evidence.' }
+foreach ($case in $quality.workflow_cases) { if ($case.passed -ne $true) { throw "Failed quality workflow: $($case.name)" } }
+foreach ($check in $quality.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed reading-quality check: $($check.Name)" } }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Reading-quality tests changed the default private workspace.' }
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
@@ -538,6 +546,11 @@ while ((Test-Path -LiteralPath (Join-Path $freshDirectory 'ComplyPH.exe')) -and 
 if (Test-Path -LiteralPath (Join-Path $freshDirectory 'ComplyPH.exe')) { throw 'ComplyPH upgrade fixture was not removed.' }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Current-version upgrade changed private data.' }
 if ((Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash -ne $catalogHash) { throw 'Current-version upgrade changed public data.' }
+$readingUpgradeOutput = Join-Path $fixtureRoot 'released-v013-reading-upgrade.json'
+& (Join-Path $root 'scripts/test-reading-upgrade.ps1') -Installer $installer -FixtureRoot $fixtureRoot -InstallDirectory $freshDirectory -OutputPath $readingUpgradeOutput
+$readingUpgrade = Get-Content -LiteralPath $readingUpgradeOutput -Raw | ConvertFrom-Json
+if ($readingUpgrade.passed -ne $true) { throw 'Released reading-history upgrade failed.' }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash -or (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash -ne $catalogHash) { throw 'Reading-history upgrade changed the default workspace.' }
 $result = [ordered]@{
     source_commit = (git -C $root rev-parse HEAD).Trim()
     installed = $true; fresh_install_passed = $true; legacy_upgrade_passed = $true
@@ -549,6 +562,7 @@ $result = [ordered]@{
     installed_reader_passed = $true; private_schema_upgrade_passed = $true; current_version_upgrade_passed = $true
     private_schema = 6; validated_check_count = 20; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
     installed_document_revisions_passed = $true; released_v012_history_upgrade_passed = $true; document_revisions = $revisions
+    installed_reading_quality_passed = $true; reading_quality = $quality; released_v013_reading_upgrade_passed = $true; reading_upgrade = $readingUpgrade
     installed_initial_checks_passed = $true; initial_period_scope_gates_passed = $true; installed_initial_source_citations_passed = $true; initial_pdf_sources_passed = $true; synthetic_initial_fixture_count = $initialResults.Count; initial_results = $initialResults; rule_pack_sha256 = $expectedPackHash
     installed_sil_checks_passed = $true; sil_eligibility_gates_passed = $true; sil_pdf_basis_passed = $true; synthetic_sil_fixture_count = $silResults.Count; sil_results = $silResults
     installed_ocr_passed = $true; ocr_confirmation_gate_passed = $true; ocr_originals_preserved = $true; synthetic_ocr_fixture_count = $ocrResults.Count; ocr_results = $ocrResults

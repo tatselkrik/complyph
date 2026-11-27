@@ -1,0 +1,283 @@
+{
+  "fixture_count": 12,
+  "reader_cases": {
+    "Synthetic positioned columns.pdf": {
+      "pages": 2,
+      "contains": [
+        "LEFT-ONE",
+        "LEFT-TWO",
+        "LEFT-THREE",
+        "RIGHT-ONE",
+        "RIGHT-TWO",
+        "SECOND-PHYSICAL-PAGE"
+      ],
+      "manual": false,
+      "ordered": [
+        "FULL-WIDTH-HEADER",
+        "LEFT-ONE",
+        "LEFT-TWO",
+        "LEFT-THREE",
+        "RIGHT-ONE",
+        "RIGHT-TWO",
+        "RIGHT-THREE",
+        "FULL-WIDTH-FOOTER"
+      ],
+      "outcomes": [
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue"
+      ]
+    },
+    "Synthetic positioned table.pdf": {
+      "pages": 1,
+      "contains": [
+        "NORMAL-HOURS-CELL",
+        "9 hours",
+        "OVERTIME-CELL",
+        "20% additional"
+      ],
+      "manual": true,
+      "warning": "table or column",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic mapped font.pdf": {
+      "pages": 1,
+      "contains": [
+        "José Example",
+        "₱12,345.67",
+        "Café",
+        "8 hours"
+      ],
+      "manual": false,
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "needs_evidence",
+        "needs_evidence",
+        "needs_evidence",
+        "needs_evidence"
+      ]
+    },
+    "Synthetic mixed image text.pdf": {
+      "pages": 1,
+      "contains": [
+        "SELECTABLE-HEADING"
+      ],
+      "manual": true,
+      "warning": "substantial image",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic unsupported font.pdf": {
+      "pages": 1,
+      "contains": [
+        "Normal daily working hours"
+      ],
+      "manual": true,
+      "warning": "font characters",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic irregular columns.pdf": {
+      "pages": 1,
+      "contains": [
+        "FIRST-COLUMN-4",
+        "SECOND-COLUMN-4",
+        "THIRD-COLUMN-4"
+      ],
+      "manual": true,
+      "warning": "table or column",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic Word text boxes.docx": {
+      "contains": [
+        "BODY-BEFORE",
+        "BODY-AFTER",
+        "BOX-TABLE-PASSAGE",
+        "HEADER-TEXT-BOX-PASSAGE"
+      ],
+      "manual": false,
+      "text_box": true,
+      "outcomes": [
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue"
+      ]
+    },
+    "Synthetic Word embedded content.docx": {
+      "contains": [
+        "INSERTED-VISIBLE-TEXT",
+        "DISPLAYED-FIELD-RESULT",
+        "MERGED-CELL-TEXT"
+      ],
+      "excludes": [
+        "FIELD-INSTRUCTION-DO-NOT-RUN",
+        "DELETED-DO-NOT-READ",
+        "EMBEDDED-PAYLOAD-DO-NOT-OPEN",
+        "https://example.invalid"
+      ],
+      "manual": true,
+      "warning": "Alternative Word representations",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    }
+  },
+  "ocr_cases": {
+    "Synthetic sideways scan.pdf": {
+      "options": {
+        "rotation": "clockwise_270",
+        "layout": "auto",
+        "enhance_scan": true
+      },
+      "contains": [
+        "Normal daily working hours are 9 hours",
+        "Regular meal period is 30 minutes",
+        "12 consecutive hours"
+      ],
+      "manual": false,
+      "pages": 1,
+      "outcomes": [
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue"
+      ]
+    },
+    "Synthetic faint skew scan.pdf": {
+      "options": {
+        "rotation": "none",
+        "layout": "auto",
+        "enhance_scan": true
+      },
+      "contains": [
+        "Normal daily working hours are 9 hours",
+        "Regular meal period is 30 minutes",
+        "12 consecutive hours"
+      ],
+      "manual": false,
+      "pages": 1,
+      "enhanced": true,
+      "outcomes": [
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue"
+      ]
+    },
+    "Synthetic scanned table.pdf": {
+      "options": {
+        "rotation": "none",
+        "layout": "sparse_text",
+        "enhance_scan": true
+      },
+      "contains": [
+        "9 hours",
+        "20% additional",
+        "30 minutes"
+      ],
+      "manual": true,
+      "pages": 1,
+      "warning": "table-like lines",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic blank OCR page.pdf": {
+      "options": {
+        "rotation": "none",
+        "layout": "auto",
+        "enhance_scan": true
+      },
+      "contains": [
+        "Normal daily working hours are 9 hours"
+      ],
+      "manual": true,
+      "pages": 2,
+      "warning": "no OCR text",
+      "outcomes": [
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review",
+        "needs_review"
+      ]
+    },
+    "Synthetic mixed image text.pdf": {
+      "options": {
+        "rotation": "none",
+        "layout": "auto",
+        "enhance_scan": true
+      },
+      "contains": [
+        "SELECTABLE-HEADING",
+        "Normal daily working hours are 9 hours",
+        "12 consecutive hours"
+      ],
+      "manual": false,
+      "pages": 1,
+      "outcomes": [
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue",
+        "potential_issue"
+      ]
+    },
+    "Synthetic unsupported font.pdf": {
+      "options": {
+        "rotation": "none",
+        "layout": "auto",
+        "enhance_scan": true
+      },
+      "contains": [
+        "Normal daily working hours are 8 hours"
+      ],
+      "manual": false,
+      "pages": 1,
+      "outcomes": [
+        "stated_term_meets_minimum",
+        "needs_evidence",
+        "needs_evidence",
+        "needs_evidence",
+        "needs_evidence"
+      ]
+    }
+  },
+  "limitation": "Fictional fixtures and a bounded supported-layout milestone; no promise of arbitrary layout, font or handwriting accuracy."
+}

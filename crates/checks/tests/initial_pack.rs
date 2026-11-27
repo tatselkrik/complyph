@@ -5,6 +5,7 @@ use complyph_checks::{
 use complyph_extract::{Format, Location, Report, Status, TextUnit};
 fn report(text: &str) -> Report {
     Report {
+        reading: None,
         engine: complyph_extract::ENGINE.into(),
         ocr: None,
         format: Format::Docx,
@@ -261,12 +262,14 @@ fn every_initial_rule_requires_separate_ocr_confirmation_and_supported_provenanc
         input.units[0].location = Location::PdfPage { page: 1 };
         input.warnings = vec![complyph_extract::OCR_WARNING.into()];
         input.ocr = Some(complyph_extract::OcrInfo {
+            processing: Some(Default::default()),
             engine_version: "synthetic-validation".into(),
             renderer: "pdfium-8165".into(),
             language: "eng".into(),
             model_sha256: complyph_extract::OCR_MODEL_SHA256.into(),
             confidence_threshold: 8000,
             pages: vec![complyph_extract::OcrPage {
+                processing: Some(Default::default()),
                 page: 1,
                 words: 20,
                 uncertain: vec![],

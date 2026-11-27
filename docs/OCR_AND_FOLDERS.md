@@ -4,13 +4,13 @@ ComplyPH supports recognition for scanned PDFs and optional folder intake. Both 
 
 ## Read a scanned PDF
 
-1. Open a PDF in **Review**. The ordinary reader still uses selectable text first.
+1. Open a PDF in **Review**. The ordinary reader still uses selectable text first. Expand **OCR options** to choose page rotation, layout and scan enhancement; settings apply to every page.
 2. Select **Run local OCR** to recognize every page, including pages in mixed text/image documents.
 3. Inspect the recognized text at its original physical page number. Low-confidence words receive amber highlights and a page count. Selecting a finding highlights its evidence instead.
 4. Compare every page with the original, including all numbers, table relationships and operative terms. High recognition confidence is not proof of accuracy; a wrong number may be unflagged.
 5. In the checking scope, confirm both the ordinary accuracy/operative-term statement and the separate **I checked every OCR page…** statement. Establish each rule’s applicability before running a review.
 
-The rule engine independently blocks numeric conclusions when OCR confirmation is missing, provenance is unsupported, a page has no recognized text or other reading warnings remain. Confirmation records a human assertion; the app cannot verify that assertion. If text is wrong or incomplete, use a better original/corrected local document or manual review rather than confirming inaccurate text.
+See [supported layouts and OCR options](READING_QUALITY.md) for the initial reading-quality profile, metadata/history behavior and difficult-document limits. The rule engine independently blocks numeric conclusions when OCR confirmation is missing, provenance is unsupported, a page has no recognized text or other reading warnings remain. Confirmation records a human assertion; the app cannot verify that assertion. If text is wrong or incomplete, use a better original/corrected local document or manual review rather than confirming inaccurate text.
 
 Recognized text is cached privately against the original file hash. Reopening an unchanged file reuses its OCR reading. **Read again** repeats the cached reading method; **Run local OCR again** explicitly reruns recognition. A changed file needs a new accurate reading and a new review. Previous findings, notes and citations remain historical snapshots.
 

@@ -404,6 +404,18 @@ fn append_review(layout: &mut Layout, workflow: &ReviewWorkflow) -> Result<()> {
         }
     }
     layout.heading("Preserved scope and limitations")?;
+    if let Some(reading) = &workflow.reading_context {
+        layout.body(&format!("Original reading method: {}", reading.engine))?;
+        layout.body(&reading.summary)?;
+        for warning in &reading.warnings {
+            layout.body(&format!("Saved reading warning: {warning}"))?;
+        }
+        if let Some(info) = &reading.reading {
+            for detail in &info.details {
+                layout.muted(&format!("{}: {}", detail.location.label(), detail.message))?;
+            }
+        }
+    }
     layout.body(&workflow.saved.review.limitation)?;
     layout.body(&format!(
         "Operative-term accuracy confirmation: {}",
@@ -429,6 +441,21 @@ fn append_review(layout: &mut Layout, workflow: &ReviewWorkflow) -> Result<()> {
             }
         ))?;
         layout.muted(&format!("OCR model SHA-256: {}", ocr.model_sha256))?;
+        if let Some(processing) = &ocr.processing {
+            layout.body(&format!(
+                "Local OCR options: {}",
+                processing.settings.label()
+            ))?;
+            layout.muted(&format!("Pixel-processing profile: {}", processing.profile))?;
+            for page in &ocr.pages {
+                if let Some(p) = &page.processing {
+                    layout.muted(&format!("Page {}: {}", page.page, p.label()))?;
+                }
+            }
+        } else {
+            layout
+                .muted("Earlier OCR reading: rotation/enhancement settings were not recorded.")?;
+        }
     }
     if let Some(hash) = &workflow.saved.review.rule_pack_sha256 {
         layout.muted(&format!("Initial rule pack SHA-256: {hash}"))?;

@@ -48,6 +48,7 @@ struct Tess {
     free_text: unsafe extern "C" fn(*mut c_char),
     clear: unsafe extern "C" fn(Handle),
     resolution: unsafe extern "C" fn(Handle, c_int),
+    segmentation: unsafe extern "C" fn(Handle, c_int),
 }
 fn library(path: &Path) -> Result<Library, String> {
     // SAFETY: fixed packaged libraries, loaded only inside a resource-limited worker.
@@ -117,6 +118,7 @@ impl<'a> Engine<'a> {
             free_text: symbol!(tess_library, "TessDeleteText"),
             clear: symbol!(tess_library, "TessBaseAPIClear"),
             resolution: symbol!(tess_library, "TessBaseAPISetSourceResolution"),
+            segmentation: symbol!(tess_library, "TessBaseAPISetPageSegMode"),
         };
         // SAFETY: input/model buffers outlive Engine; null password/configs disable file/URL input.
         let (document, recognition) = unsafe {
@@ -172,19 +174,27 @@ impl<'a> Engine<'a> {
                 .into_owned()
         }
     }
-    pub fn page(&mut self, index: usize) -> Result<String, String> {
+    pub fn page(
+        &mut self,
+        index: usize,
+        settings: &complyph_extract::OcrSettings,
+    ) -> Result<(String, complyph_extract::OcrPageProcessing), String> {
         // SAFETY: caller bounds index by GetPageCount; handle is closed on every path.
         let page = unsafe { (self.pdf.page)(self.document, index as c_int) };
         if page.is_null() {
             return Err("A PDF page could not be rendered locally.".into());
         }
-        let result = self.render_page(page);
+        let result = self.render_page(page, settings);
         unsafe {
             (self.pdf.close_page)(page);
         }
         result
     }
-    fn render_page(&mut self, page: Handle) -> Result<String, String> {
+    fn render_page(
+        &mut self,
+        page: Handle,
+        settings: &complyph_extract::OcrSettings,
+    ) -> Result<(String, complyph_extract::OcrPageProcessing), String> {
         // SAFETY: live page handle, dimensions validated before any allocation.
         let (w, h) = unsafe { ((self.pdf.width)(page), (self.pdf.height)(page)) };
         if !w.is_finite() || !h.is_finite() || w <= 0.0 || h <= 0.0 {
@@ -212,12 +222,19 @@ impl<'a> Engine<'a> {
             let bgra = unsafe {
                 std::slice::from_raw_parts(buffer.cast::<u8>(), stride as usize * height as usize)
             };
-            let mut rgb = Vec::with_capacity(width as usize * height as usize * 3);
-            for p in bgra.as_chunks::<4>().0 {
-                rgb.extend_from_slice(&[p[2], p[1], p[0]]);
-            }
+            let (raster, processing) =
+                crate::raster::Raster::from_bgra(bgra, width as usize, height as usize)?
+                    .prepare(settings);
             unsafe {
-                (self.tess.image)(self.recognition, rgb.as_ptr(), width, height, 3, width * 3);
+                (self.tess.segmentation)(self.recognition, settings.layout.segmentation());
+                (self.tess.image)(
+                    self.recognition,
+                    raster.pixels.as_ptr(),
+                    raster.width as c_int,
+                    raster.height as c_int,
+                    1,
+                    raster.width as c_int,
+                );
                 (self.tess.resolution)(self.recognition, (72.0 * scale).round() as c_int);
                 if (self.tess.recognize)(self.recognition, ptr::null_mut()) != 0 {
                     return Err("A page could not be recognized locally.".into());
@@ -237,7 +254,7 @@ impl<'a> Engine<'a> {
                 };
                 (self.tess.free_text)(text);
                 (self.tess.clear)(self.recognition);
-                result
+                result.map(|text| (text, processing))
             }
         })();
         unsafe {

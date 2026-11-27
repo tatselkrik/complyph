@@ -1,0 +1,85 @@
+%PDF-1.3
+%“Œ‹ž ReportLab Generated PDF document (opensource)
+1 0 obj
+<<
+/F1 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/Contents 7 0 R /MediaBox [ 0 0 1000 760 ] /Parent 6 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
+endobj
+4 0 obj
+<<
+/PageMode /UseNone /Pages 6 0 R /Type /Catalog
+>>
+endobj
+5 0 obj
+<<
+/Author (ComplyPH synthetic tests) /CreationDate (D:20000101000000+00'00') /Creator (anonymous) /Keywords () /ModDate (D:20000101000000+00'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (unspecified) /Title (ComplyPH fictional reading-quality fixture) /Trapped /False
+>>
+endobj
+6 0 obj
+<<
+/Count 1 /Kids [ 3 0 R ] /Type /Pages
+>>
+endobj
+7 0 obj
+<<
+/Length 574
+>>
+stream
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+BT /F1 12 Tf 14.4 TL ET
+BT 1 0 0 1 40 720 Tm (SYNTHETIC TEST ONLY - NOT A LEGAL TEMPLATE) Tj T* ET
+n 40 640 m 700 640 l S
+n 40 580 m 700 580 l S
+n 40 520 m 700 520 l S
+n 40 460 m 700 460 l S
+n 40 460 m 40 640 l S
+n 370 460 m 370 640 l S
+n 700 460 m 700 640 l S
+BT 1 0 0 1 55 600 Tm (NORMAL-HOURS-CELL) Tj T* ET
+BT 1 0 0 1 385 600 Tm (9 hours) Tj T* ET
+BT 1 0 0 1 55 540 Tm (OVERTIME-CELL) Tj T* ET
+BT 1 0 0 1 385 540 Tm (20% additional) Tj T* ET
+BT 1 0 0 1 55 480 Tm (MEAL-CELL) Tj T* ET
+BT 1 0 0 1 385 480 Tm (30 minutes) Tj T* ET
+ 
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000061 00000 n 
+0000000092 00000 n 
+0000000199 00000 n 
+0000000393 00000 n 
+0000000461 00000 n 
+0000000771 00000 n 
+0000000830 00000 n 
+trailer
+<<
+/ID 
+[<701e40b613f83146d980f23d403d791e><701e40b613f83146d980f23d403d791e>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 5 0 R
+/Root 4 0 R
+/Size 8
+>>
+startxref
+1454
+%%EOF

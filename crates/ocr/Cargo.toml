@@ -10,3 +10,4 @@ publish.workspace = true
 complyph-extract = { path = "../extract" }
 libloading.workspace = true
 sha2.workspace = true
+lopdf.workspace = true

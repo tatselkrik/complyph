@@ -185,6 +185,7 @@ impl Default for Preferences {
 
 pub struct Workspace {
     connection: Connection,
+    reading_context_cache: review_workflow::ReadingContextCache,
 }
 
 impl Workspace {
@@ -260,7 +261,10 @@ impl Workspace {
             use std::os::unix::fs::PermissionsExt;
             fs::set_permissions(&paths.database, fs::Permissions::from_mode(0o600))?;
         }
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            reading_context_cache: Default::default(),
+        })
     }
 
     /// Register a reference to an existing file. Never copy, alter, or upload it.

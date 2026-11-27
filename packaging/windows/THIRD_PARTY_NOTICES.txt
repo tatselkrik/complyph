@@ -1,4 +1,4 @@
-ComplyPH 0.13.0 - third-party notices
+ComplyPH 0.14.0 - third-party notices
 
 Application source: MIT license.
 This file includes notices for dependencies in the locked cross-platform source graph. Some are platform-specific or build-only.

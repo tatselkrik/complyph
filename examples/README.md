@@ -55,3 +55,7 @@ links, changed passages, independent finding expectations, separate human status
 and local exports. `expected-revisions.json` defines the expected outcomes.
 Generate them with the standard-library-only `scripts/generate-revision-fixtures.py`.
 These files are test inputs, not legal templates or real employment records.
+
+## Difficult-document fixtures
+
+Twelve fictional files and `expected-reading-quality.json` cover positioned/two-column PDFs, tables, mapped and deliberately broken Unicode fonts, mixed text/image pages, Word text boxes/alternatives and unread embedded content, sideways/faint scans, a scanned table and an empty OCR page. Eight ordinary cases and six OCR cases share two files. Expected first-five labour outcomes are transcribed independently; manual-review cases must not produce numeric conclusions. Recreate them with `scripts/generate-reading-fixtures.py` (development-only reportlab, Pillow, pypdf and DejaVu Sans). Test the actual executable with `scripts/test-reading-quality.py`. These files contain no real records and are not legal templates.

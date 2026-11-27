@@ -77,12 +77,30 @@ fn parse_arguments() -> Option<PathBuf> {
             std::process::exit(0);
         }
         Some(argument) if argument == "--ocr-worker" => {
-            if arguments.next().as_deref() != Some(std::ffi::OsStr::new("pdf"))
-                || arguments.next().is_some()
-            {
+            if arguments.next().as_deref() != Some(std::ffi::OsStr::new("pdf")) {
                 std::process::exit(2);
             }
-            reader::ocr_worker_main();
+            let settings = match arguments.next() {
+                None => complyph_extract::OcrSettings::default(),
+                Some(flag) if flag == "--settings" => {
+                    let parsed = arguments
+                        .next()
+                        .and_then(|v| v.into_string().ok())
+                        .filter(|v| v.len() <= 2048)
+                        .and_then(|v| {
+                            serde_json::from_str::<complyph_extract::OcrSettings>(&v).ok()
+                        });
+                    if arguments.next().is_some() {
+                        std::process::exit(2);
+                    }
+                    match parsed {
+                        Some(settings) => settings,
+                        None => std::process::exit(2),
+                    }
+                }
+                _ => std::process::exit(2),
+            };
+            reader::ocr_worker_main(settings);
         }
         Some(argument) if argument == "--extract-worker" => {
             let format = match arguments.next().as_deref().and_then(|value| value.to_str()) {
@@ -197,19 +215,41 @@ fn diagnostic_watch(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
 }
 
 fn diagnostic_ocr(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
-    if !matches!(arguments.len(), 3 | 5)
-        || arguments[1] != "--output"
-        || (arguments.len() == 5 && arguments[3] != "--data-dir")
+    use std::io::Read;
+    let mut index = 1;
+    let settings = if arguments.get(1).is_some_and(|v| v == "--options") {
+        let path = arguments
+            .get(2)
+            .ok_or("Choose a local OCR options JSON file.")?;
+        let mut bytes = vec![];
+        std::fs::File::open(path)
+            .map_err(|e| e.to_string())?
+            .take(4097)
+            .read_to_end(&mut bytes)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() > 4096 {
+            return Err("The OCR options exceed their limit.".into());
+        }
+        index = 3;
+        Some(serde_json::from_slice::<complyph_extract::OcrSettings>(&bytes).map_err(|_|"The OCR options are invalid; use supported rotation/layout values and no extra fields.")?)
+    } else {
+        None
+    };
+    if (arguments.len() != index + 2 && arguments.len() != index + 4)
+        || arguments.get(index).is_none_or(|v| v != "--output")
+        || (arguments.len() == index + 4 && arguments[index + 2] != "--data-dir")
     {
-        return Err("Use --ocr-file PDF --output NEW-JSON [--data-dir PATH]".into());
+        return Err(
+            "Use --ocr-file PDF [--options JSON] --output NEW-JSON [--data-dir PATH]".into(),
+        );
     }
     let output = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
-        .open(&arguments[2])
+        .open(&arguments[index + 1])
         .map_err(|_| "Choose a new output file; existing files are never overwritten.")?;
-    let paths = if arguments.len() == 5 {
-        WorkspacePaths::under(PathBuf::from(&arguments[4]))
+    let paths = if arguments.len() == index + 4 {
+        WorkspacePaths::under(PathBuf::from(&arguments[index + 3]))
     } else {
         WorkspacePaths::default_location().map_err(|e| e.to_string())?
     };
@@ -217,11 +257,13 @@ fn diagnostic_ocr(arguments: Vec<std::ffi::OsString>) -> Result<(), String> {
     let document = workspace
         .register_document(std::path::Path::new(&arguments[0]))
         .map_err(|e| e.to_string())?;
-    let saved = reader::read_document_ocr(
-        &paths,
-        &document,
-        &std::sync::atomic::AtomicBool::new(false),
-    )?;
+    let cancel = std::sync::atomic::AtomicBool::new(false);
+    let saved = match settings {
+        Some(settings) => {
+            reader::read_document_ocr_with_settings(&paths, &document, settings, &cancel)?
+        }
+        None => reader::read_document_ocr(&paths, &document, &cancel)?,
+    };
     serde_json::to_writer_pretty(output, &saved).map_err(|e| e.to_string())
 }
 

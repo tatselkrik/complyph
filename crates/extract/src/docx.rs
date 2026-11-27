@@ -1,11 +1,14 @@
 use crate::{
-    ENGINE, Format, Location, MAX_TEXT_BYTES, MAX_UNITS, Report, Status, TableCell, TextUnit,
+    ENGINE, Format, Location, MAX_TEXT_BYTES, MAX_UNITS, ReadingDetail, ReadingInfo, Report,
+    Status, TableCell, TextUnit,
 };
 use quick_xml::{NsReader, events::Event, name::ResolveResult};
 use std::io::{Cursor, Read};
 
 const WORD: &[u8] = b"http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 const STRICT_WORD: &[u8] = b"http://purl.oclc.org/ooxml/wordprocessingml/main";
+const MC: &[u8] = b"http://schemas.openxmlformats.org/markup-compatibility/2006";
+const DRAWING: &[u8] = b"http://schemas.openxmlformats.org/drawingml/2006/main";
 const MAX_XML: u64 = 16 * 1024 * 1024;
 const MAX_EXPANDED: u64 = 64 * 1024 * 1024;
 
@@ -82,6 +85,7 @@ fn read(bytes: &[u8]) -> Result<Report> {
         units: vec![],
         warnings: vec![crate::DOCX_LAYOUT_WARNING.into()],
         ocr: None,
+        reading:Some(ReadingInfo{profile:"word-xml-2".into(),details:vec![]}),
     };
     let mut used = 0;
     for part in parts {
@@ -95,11 +99,11 @@ fn read(bytes: &[u8]) -> Result<Report> {
         if xml.len() as u64 > MAX_XML {
             return Err(Failure::Limit);
         }
-        read_part(&xml, &part, &mut report.units, &mut used)?;
+        read_part(&xml, &part, &mut report, &mut used)?;
     }
     if report.units.is_empty() {
         report.status = Status::Unreadable;
-        report.summary = "No supported Word text was found. Image-only content needs OCR, which is not included yet.".into();
+        report.summary = "No supported Word text was found. Export an image-only Word document to PDF locally, then use Run local OCR. Embedded objects are not opened.".into();
     }
     Ok(report)
 }
@@ -117,30 +121,197 @@ fn is_supplement(name: &str) -> bool {
     })
 }
 
-fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize) -> Result<()> {
+#[derive(Default)]
+struct Alternatives {
+    fallback: std::collections::HashSet<usize>,
+    uncertain: std::collections::HashSet<usize>,
+}
+struct Branch {
+    id: usize,
+    depth: usize,
+    text: String,
+}
+fn fallbacks(xml: &[u8]) -> Result<Alternatives> {
     let mut reader = NsReader::from_reader(xml);
     reader.config_mut().expand_empty_elements = true;
+    let mut result = Alternatives::default();
+    let mut id = 0;
+    let mut stack = vec![];
     let mut depth = 0usize;
-    let mut skip = None;
-    let mut capture = false;
-    let mut root_seen = false;
-    let mut paragraph = 0;
-    let mut active: Option<TextUnit> = None;
-    let mut table_count = 0;
-    let mut tables = Vec::<TableCell>::new();
+    let mut branches = Vec::<Branch>::new();
+    let mut texts = std::collections::HashMap::<usize, Vec<String>>::new();
+    let mut capture = None;
+    let mut compared = 0usize;
     loop {
         let (namespace, event) = reader.read_resolved_event().map_err(|_| Failure::Invalid)?;
-        let word = matches!(namespace, ResolveResult::Bound(ns) if ns.as_ref() == WORD || ns.as_ref() == STRICT_WORD);
+        let mc = matches!(&namespace,ResolveResult::Bound(ns) if ns.as_ref()==MC);
+        let word = matches!(&namespace,ResolveResult::Bound(ns) if ns.as_ref()==WORD || ns.as_ref()==STRICT_WORD);
         match event {
             Event::Start(tag) => {
                 depth += 1;
                 if depth > 128 {
                     return Err(Failure::Limit);
                 }
-                if depth == 1 {
-                    if root_seen || !word {
-                        return Err(Failure::Invalid);
+                let name = tag.local_name();
+                let name = name.as_ref();
+                if mc && name == b"AlternateContent" {
+                    id += 1;
+                    stack.push((id, depth));
+                }
+                if mc
+                    && matches!(name, b"Fallback" | b"Choice")
+                    && let Some((id, parent)) = stack.last()
+                    && *parent + 1 == depth
+                {
+                    if name == b"Fallback" {
+                        result.fallback.insert(*id);
                     }
+                    branches.push(Branch {
+                        id: *id,
+                        depth,
+                        text: String::new(),
+                    });
+                }
+                if word && name == b"t" {
+                    capture = Some(depth);
+                }
+                if matches!(
+                    name,
+                    b"blip" | b"imagedata" | b"object" | b"altChunk" | b"sym"
+                ) {
+                    for branch in &branches {
+                        result.uncertain.insert(branch.id);
+                    }
+                }
+            }
+            Event::End(tag) => {
+                if depth == 0 {
+                    return Err(Failure::Invalid);
+                }
+                if capture == Some(depth) {
+                    capture = None;
+                }
+                if word && tag.local_name().as_ref() == b"p" {
+                    for branch in &mut branches {
+                        branch.text.push('\n');
+                    }
+                }
+                if let Some(branch) = branches.pop_if(|b| b.depth == depth) {
+                    texts
+                        .entry(branch.id)
+                        .or_default()
+                        .push(branch.text.split_whitespace().collect::<Vec<_>>().join(" "));
+                }
+                if mc && tag.local_name().as_ref() == b"AlternateContent" {
+                    stack.pop();
+                }
+                depth -= 1;
+            }
+            Event::Text(t) if capture.is_some() => {
+                let text = t.decode().map_err(|_| Failure::Invalid)?;
+                for b in &mut branches {
+                    compared += text.len();
+                    if compared > MAX_TEXT_BYTES * 2 {
+                        return Err(Failure::Limit);
+                    }
+                    b.text.push_str(&text);
+                }
+            }
+            Event::CData(t) if capture.is_some() => {
+                let text = t.decode().map_err(|_| Failure::Invalid)?;
+                for b in &mut branches {
+                    compared += text.len();
+                    if compared > MAX_TEXT_BYTES * 2 {
+                        return Err(Failure::Limit);
+                    }
+                    b.text.push_str(&text);
+                }
+            }
+            Event::GeneralRef(r) if capture.is_some() => {
+                let text = if let Some(c) = r.resolve_char_ref().map_err(|_| Failure::Invalid)? {
+                    c.to_string()
+                } else {
+                    quick_xml::escape::resolve_predefined_entity(
+                        &r.decode().map_err(|_| Failure::Invalid)?,
+                    )
+                    .ok_or(Failure::Invalid)?
+                    .into()
+                };
+                for b in &mut branches {
+                    compared += text.len();
+                    if compared > MAX_TEXT_BYTES * 2 {
+                        return Err(Failure::Limit);
+                    }
+                    b.text.push_str(&text);
+                }
+            }
+            Event::DocType(_) => return Err(Failure::Invalid),
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    for (id, branches) in texts {
+        if branches.windows(2).any(|b| b[0] != b[1]) {
+            result.uncertain.insert(id);
+        }
+    }
+    Ok(result)
+}
+
+struct BoxFrame {
+    active: Option<TextUnit>,
+    capture: bool,
+    tables: Vec<TableCell>,
+    text_box: Option<usize>,
+}
+fn note(report: &mut Report, part: &str, message: &str) {
+    let warning = format!("{}: {message}", crate::word_part_label(part));
+    if !report.warnings.contains(&warning) {
+        report.warnings.push(warning);
+    }
+}
+fn emit(active: &mut Option<TextUnit>, units: &mut Vec<TextUnit>) -> Result<()> {
+    if let Some(mut unit) = active.take() {
+        unit.text = unit.text.trim().into();
+        if !unit.text.is_empty() {
+            if units.len() >= MAX_UNITS {
+                return Err(Failure::Limit);
+            }
+            units.push(unit);
+        }
+    }
+    Ok(())
+}
+fn read_part(xml: &[u8], part: &str, report: &mut Report, used: &mut usize) -> Result<()> {
+    let fallback = fallbacks(xml)?;
+    let first_unit = report.units.len();
+    let mut reader = NsReader::from_reader(xml);
+    reader.config_mut().expand_empty_elements = true;
+    let (mut depth, mut paragraph, mut table_count, mut box_count, mut alternate) =
+        (0usize, 0, 0, 0, 0);
+    let mut skip = None;
+    let mut capture = false;
+    let mut root_seen = false;
+    let mut active: Option<TextUnit> = None;
+    let mut tables = Vec::<TableCell>::new();
+    let mut text_box = None;
+    let mut frames = Vec::<BoxFrame>::new();
+    let mut alternates = vec![];
+    let mut chosen = std::collections::HashSet::new();
+    loop {
+        let (namespace, event) = reader.read_resolved_event().map_err(|_| Failure::Invalid)?;
+        let word = matches!(&namespace,ResolveResult::Bound(ns) if ns.as_ref()==WORD || ns.as_ref()==STRICT_WORD);
+        let mc = matches!(&namespace,ResolveResult::Bound(ns) if ns.as_ref()==MC);
+        let drawing = matches!(&namespace,ResolveResult::Bound(ns) if ns.as_ref()==DRAWING);
+        match event {
+            Event::Start(tag) => {
+                depth += 1;
+                if depth > 128 {
+                    return Err(Failure::Limit);
+                }
+                let name = tag.local_name();
+                let name = name.as_ref();
+                if depth == 1 {
                     let expected: &[u8] = if part == "word/document.xml" {
                         b"document"
                     } else if part.contains("header") {
@@ -152,15 +323,14 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                     } else {
                         b"endnotes"
                     };
-                    if tag.local_name().as_ref() != expected {
+                    if root_seen || !word || name != expected {
                         return Err(Failure::Invalid);
                     }
                     root_seen = true;
                 }
-                // Count original XML elements even when their content is omitted.
-                // Later visible passages must retain their actual part indices.
+                // Raw XML paragraph/table/box numbers include omitted branches and revisions.
                 if word {
-                    match tag.local_name().as_ref() {
+                    match name {
                         b"p" => {
                             paragraph += 1;
                             if paragraph > MAX_UNITS {
@@ -168,17 +338,101 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                             }
                         }
                         b"tbl" => table_count += 1,
+                        b"txbxContent" => box_count += 1,
                         _ => (),
                     }
                 }
-                if skip.is_some() || !word {
+                if mc && name == b"AlternateContent" {
+                    alternate += 1;
+                    alternates.push(alternate);
+                    if skip.is_none() && fallback.uncertain.contains(&alternate) {
+                        note(
+                            report,
+                            part,
+                            "Alternative Word representations contain different text or unread embedded content. Establish the operative version manually before numeric conclusions.",
+                        );
+                    }
+                }
+                if skip.is_some() {
                     continue;
                 }
-                match tag.local_name().as_ref() {
-                    b"del" | b"moveFrom" | b"txbxContent" => {
+                if mc
+                    && name == b"Choice"
+                    && let Some(id) = alternates.last()
+                    && (fallback.fallback.contains(id) || !chosen.insert(*id))
+                {
+                    skip = Some(depth);
+                }
+                if drawing && name == b"blip" {
+                    note(
+                        report,
+                        part,
+                        "Image content is not read in Word. Export to a local PDF and use OCR or review the complete original manually before making numeric conclusions.",
+                    );
+                }
+                if drawing && name == b"t" {
+                    note(
+                        report,
+                        part,
+                        "DrawingML/chart text outside a supported Word text box is omitted. Embedded-content relationships need manual review.",
+                    );
+                }
+                if !word {
+                    continue;
+                }
+                match name {
+                    b"del" | b"moveFrom" => {
+                        note(
+                            report,
+                            part,
+                            "Tracked changes are present; deleted/moved-from text is omitted. Establish the operative revision manually before numeric review.",
+                        );
                         skip = Some(depth);
                     }
+                    b"ins" | b"moveTo" => note(
+                        report,
+                        part,
+                        "Tracked changes are present; deleted/moved-from text is omitted. Establish the operative revision manually before numeric review.",
+                    ),
+                    b"altChunk" | b"object" | b"subDoc" => note(
+                        report,
+                        part,
+                        "An embedded object or external content part was not opened or read. Review that content manually; no external target is fetched.",
+                    ),
+                    b"fldChar" | b"instrText" | b"fldSimple" => note(
+                        report,
+                        part,
+                        "Displayed field results may be stale. Field instructions are not evaluated; confirm the full original manually.",
+                    ),
+                    b"strike" | b"dstrike" | b"vanish" | b"webHidden" => note(
+                        report,
+                        part,
+                        "Hidden or struck-through formatting is present. Plain extracted text cannot establish its operative meaning; inspect the original manually.",
+                    ),
+                    b"sym" => note(
+                        report,
+                        part,
+                        "A symbol-font character could not be mapped safely. Inspect the original; no numeric interpretation is established.",
+                    ),
+                    b"txbxContent" => {
+                        let outer = active.take();
+                        frames.push(BoxFrame {
+                            active: outer,
+                            capture,
+                            tables: std::mem::take(&mut tables),
+                            text_box,
+                        });
+                        capture = false;
+                        text_box = Some(box_count);
+                    }
                     b"tbl" => {
+                        if !tables.is_empty() {
+                            note(
+                                report,
+                                part,
+                                "Nested table relationships need manual review; text remains labelled by its innermost cell.",
+                            );
+                        }
                         tables.push(TableCell {
                             table: table_count,
                             row: 0,
@@ -186,32 +440,69 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                         });
                     }
                     b"tr" => {
-                        if let Some(table) = tables.last_mut() {
-                            table.row += 1;
-                            table.cell = 0;
+                        if let Some(t) = tables.last_mut() {
+                            t.row += 1;
+                            t.cell = 0;
                         }
                     }
                     b"tc" => {
-                        if let Some(table) = tables.last_mut() {
-                            table.cell += 1;
+                        if let Some(t) = tables.last_mut() {
+                            t.cell += 1;
+                        }
+                    }
+                    b"gridSpan" | b"vMerge" | b"hMerge" => {
+                        let mut merged = name != b"gridSpan";
+                        for a in tag.attributes() {
+                            let a = a.map_err(|_| Failure::Invalid)?;
+                            if a.key.local_name().as_ref() == b"val" {
+                                merged |= a
+                                    .decoded_and_normalized_value(
+                                        quick_xml::XmlVersion::Implicit1_0,
+                                        reader.decoder(),
+                                    )
+                                    .map_err(|_| Failure::Invalid)?
+                                    .as_ref()
+                                    != "1";
+                            }
+                        }
+                        if merged {
+                            note(
+                                report,
+                                part,
+                                "Merged table cells need manual review; cell text does not establish header/value relationships.",
+                            );
                         }
                     }
                     b"p" => {
                         if active.is_some() {
                             return Err(Failure::Invalid);
                         }
-                        active = Some(TextUnit {
-                            location: Location::WordParagraph {
+                        let location = match text_box {
+                            Some(text_box) => Location::WordTextBox {
+                                part: part.into(),
+                                text_box,
+                                paragraph,
+                                table_cell: tables.last().cloned(),
+                            },
+                            None => Location::WordParagraph {
                                 part: part.into(),
                                 paragraph,
                                 table_cell: tables.last().cloned(),
                             },
+                        };
+                        if text_box.is_some() {
+                            report.reading.as_mut().unwrap().details.push(ReadingDetail{location:location.clone(),message:"Word text box read at its own XML location. Floating position, page placement and applicability are not inferred.".into()});
+                        }
+                        active = Some(TextUnit {
+                            location,
                             text: String::new(),
                         });
                     }
                     b"t" => capture = active.is_some(),
                     b"tab" => append(&mut active, "\t", used)?,
-                    b"br" | b"cr" => append(&mut active, "\n", used)?,
+                    b"br" | b"cr" | b"lastRenderedPageBreak" => append(&mut active, "\n", used)?,
+                    b"noBreakHyphen" => append(&mut active, "\u{2011}", used)?,
+                    b"softHyphen" => append(&mut active, "\u{00ad}", used)?,
                     _ => (),
                 }
             }
@@ -219,49 +510,54 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
                 if depth == 0 {
                     return Err(Failure::Invalid);
                 }
+                let name = tag.local_name();
+                let name = name.as_ref();
                 if skip == Some(depth) {
                     skip = None;
                 } else if skip.is_none() && word {
-                    match tag.local_name().as_ref() {
+                    match name {
                         b"t" => capture = false,
                         b"tbl" => {
                             tables.pop();
                         }
                         b"p" => {
-                            if let Some(mut unit) = active.take() {
-                                unit.text = unit.text.trim().to_owned();
-                                if !unit.text.is_empty() {
-                                    if units.len() >= MAX_UNITS {
-                                        return Err(Failure::Limit);
-                                    }
-                                    units.push(unit);
-                                }
-                            }
+                            emit(&mut active, &mut report.units)?;
                             capture = false;
+                        }
+                        b"txbxContent" => {
+                            if active.is_some() {
+                                return Err(Failure::Invalid);
+                            }
+                            let frame = frames.pop().ok_or(Failure::Invalid)?;
+                            active = frame.active;
+                            capture = frame.capture;
+                            tables = frame.tables;
+                            text_box = frame.text_box;
                         }
                         _ => (),
                     }
                 }
+                if mc && name == b"AlternateContent" {
+                    alternates.pop();
+                }
                 depth -= 1;
             }
-            Event::Text(text) if capture && skip.is_none() => {
-                let text = text.decode().map_err(|_| Failure::Invalid)?;
-                append(&mut active, &text, used)?;
+            Event::Text(t) if capture && skip.is_none() => {
+                let s = t.decode().map_err(|_| Failure::Invalid)?;
+                append(&mut active, &s, used)?;
             }
-            Event::CData(text) if capture && skip.is_none() => {
-                let text = text.decode().map_err(|_| Failure::Invalid)?;
-                append(&mut active, &text, used)?;
+            Event::CData(t) if capture && skip.is_none() => {
+                let s = t.decode().map_err(|_| Failure::Invalid)?;
+                append(&mut active, &s, used)?;
             }
-            Event::GeneralRef(reference) if capture && skip.is_none() => {
-                if let Some(character) =
-                    reference.resolve_char_ref().map_err(|_| Failure::Invalid)?
-                {
-                    append(&mut active, character.encode_utf8(&mut [0; 4]), used)?;
+            Event::GeneralRef(r) if capture && skip.is_none() => {
+                if let Some(c) = r.resolve_char_ref().map_err(|_| Failure::Invalid)? {
+                    append(&mut active, c.encode_utf8(&mut [0; 4]), used)?;
                 } else {
-                    let name = reference.decode().map_err(|_| Failure::Invalid)?;
-                    let value = quick_xml::escape::resolve_predefined_entity(&name)
+                    let name = r.decode().map_err(|_| Failure::Invalid)?;
+                    let text = quick_xml::escape::resolve_predefined_entity(&name)
                         .ok_or(Failure::Invalid)?;
-                    append(&mut active, value, used)?;
+                    append(&mut active, text, used)?;
                 }
             }
             Event::DocType(_) => return Err(Failure::Invalid),
@@ -269,12 +565,19 @@ fn read_part(xml: &[u8], part: &str, units: &mut Vec<TextUnit>, used: &mut usize
             _ => (),
         }
     }
-    if !root_seen || depth != 0 || active.is_some() {
+    if !root_seen || depth != 0 || active.is_some() || !frames.is_empty() {
         return Err(Failure::Invalid);
     }
+    // One unit per original XML paragraph: a box never splits its containing
+    // paragraph into duplicate evidence locations. Floating page order is unknown.
+    report.units[first_unit..].sort_by_key(|u| match &u.location {
+        Location::WordParagraph { paragraph, .. } | Location::WordTextBox { paragraph, .. } => {
+            *paragraph
+        }
+        _ => 0,
+    });
     Ok(())
 }
-
 fn append(active: &mut Option<TextUnit>, text: &str, used: &mut usize) -> Result<()> {
     if let Some(unit) = active {
         *used = used.checked_add(text.len()).ok_or(Failure::Limit)?;

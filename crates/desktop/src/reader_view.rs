@@ -18,6 +18,8 @@ enum State {
 }
 
 pub struct ReaderView {
+    ocr_settings: complyph_extract::OcrSettings,
+    format: Option<complyph_extract::Format>,
     request_ocr: bool,
     ocr_running: bool,
     retained: bool,
@@ -38,6 +40,8 @@ impl Default for ReaderView {
     fn default() -> Self {
         let (sender, receiver) = mpsc::channel();
         Self {
+            ocr_settings: Default::default(),
+            format: None,
             request_ocr: false,
             ocr_running: false,
             retained: false,
@@ -62,6 +66,14 @@ impl ReaderView {
     }
     pub fn open_retained(&mut self, saved: SavedExtraction) {
         self.clear();
+        self.format = Some(saved.report.format);
+        self.ocr_settings = saved
+            .report
+            .ocr
+            .as_ref()
+            .and_then(|o| o.processing.as_ref())
+            .map(|p| p.settings.clone())
+            .unwrap_or_default();
         self.retained = true;
         self.unit = 0;
         self.chunk = 0;
@@ -72,7 +84,7 @@ impl ReaderView {
         std::mem::take(&mut self.request_ocr)
     }
     pub fn start_ocr(&mut self, paths: WorkspacePaths, document: Document, ctx: &egui::Context) {
-        self.start_mode(paths, document, true, true, ctx);
+        self.start_mode(paths, document, true, Some(self.ocr_settings.clone()), ctx);
     }
     pub fn current(&self) -> Option<&SavedExtraction> {
         match &self.state {
@@ -82,6 +94,8 @@ impl ReaderView {
     }
 
     pub fn clear(&mut self) {
+        self.ocr_settings = Default::default();
+        self.format = None;
         self.retained = false;
         self.request_ocr = false;
         if let Some(cancel) = self.cancel.take() {
@@ -101,19 +115,23 @@ impl ReaderView {
         force: bool,
         ctx: &egui::Context,
     ) {
-        self.start_mode(paths, document, force, false, ctx);
+        self.start_mode(paths, document, force, None, ctx);
     }
     fn start_mode(
         &mut self,
         paths: WorkspacePaths,
         document: Document,
         force: bool,
-        ocr: bool,
+        options: Option<complyph_extract::OcrSettings>,
         ctx: &egui::Context,
     ) {
         self.clear();
+        self.format = Some(document.kind.format());
+        if let Some(options) = &options {
+            self.ocr_settings = options.clone();
+        }
         self.request_ocr = false;
-        self.ocr_running = ocr;
+        self.ocr_running = options.is_some();
         self.unit = 0;
         self.chunk = 0;
         self.search.clear();
@@ -124,8 +142,8 @@ impl ReaderView {
         let sender = self.sender.clone();
         let ctx = ctx.clone();
         std::thread::spawn(move || {
-            let result = if ocr {
-                reader::read_document_ocr(&paths, &document, &cancel)
+            let result = if let Some(options) = options {
+                reader::read_document_ocr_with_settings(&paths, &document, options, &cancel)
             } else {
                 reader::read_document(&paths, &document, force, &cancel)
             };
@@ -139,7 +157,16 @@ impl ReaderView {
             if generation == self.generation {
                 self.cancel = None;
                 self.state = match result {
-                    Ok(saved) => State::Finished(Box::new(saved)),
+                    Ok(saved) => {
+                        self.ocr_settings = saved
+                            .report
+                            .ocr
+                            .as_ref()
+                            .and_then(|o| o.processing.as_ref())
+                            .map(|p| p.settings.clone())
+                            .unwrap_or_default();
+                        State::Finished(Box::new(saved))
+                    }
                     Err(error) => State::Failed(error),
                 };
             }
@@ -197,6 +224,10 @@ impl ReaderView {
                 State::Failed(error) => {
                     ui.colored_label(RED, error);
                     reread = widgets::secondary(ui, "Read again").clicked();
+                    if !self.retained && self.format==Some(complyph_extract::Format::Pdf) {
+                        ocr_controls(ui,&mut self.ocr_settings);
+                        if ui.button("Try local OCR").clicked(){self.request_ocr=true;}
+                    }
                 }
                 State::Finished(saved) => {
                     let report = &saved.report;
@@ -226,7 +257,14 @@ impl ReaderView {
                         }
                     });
                     ui.label(&report.summary);
-                    if !self.retained && report.format == complyph_extract::Format::Pdf && matches!(report.status, Status::Ready | Status::NeedsOcr) {
+                    let blocking=report.warnings.iter().filter(|w|!routine_warning(w)).collect::<Vec<_>>();
+                    if !blocking.is_empty(){
+                        widgets::pill(ui,"Manual review needed",AMBER,AMBER_TINT,false);
+                        ui.colored_label(AMBER,format!("{} reading warning(s) prevent numeric conclusions.",blocking.len()));
+                        egui::CollapsingHeader::new("Inspect reading warnings").show(ui,|ui|{for warning in blocking {ui.colored_label(AMBER,warning);}});
+                    }
+                    if !self.retained && report.format == complyph_extract::Format::Pdf && matches!(report.status, Status::Ready | Status::NeedsOcr | Status::Unreadable) {
+                        ocr_controls(ui,&mut self.ocr_settings);
                         if ui.button(if report.ocr.is_some() { "Run local OCR again" } else { "Run local OCR" }).clicked() { self.request_ocr = true; }
                         widgets::muted(ui,"Recognize every PDF page offline. OCR can misread confident-looking numbers; compare the result with the original.");
                     }
@@ -260,6 +298,7 @@ impl ReaderView {
                             });
                             let unit = if self.unit < report.units.len() { &report.units[self.unit] } else { unit };
                             ui.label(RichText::new(unit.location.label()).font(heading(13.0)).color(NAVY));
+                            if let Some(info)=&report.reading {for detail in info.details.iter().filter(|d|d.location==unit.location){widgets::muted(ui,&detail.message);}}
                             // UTF-8-safe display chunks keep one unusually long paragraph/page responsive.
                             let boundaries = text_navigation::chunk_boundaries(&unit.text);
                             let count = boundaries.len().saturating_sub(1).max(1);
@@ -276,6 +315,7 @@ impl ReaderView {
                             if let Some(quality) = uncertain {
                                 ui.colored_label(AMBER,format!("OCR page {} · {} words · {} low-confidence words",quality.page,quality.words,quality.uncertain.len()));
                                 widgets::muted(ui,"OCR highlights mark low recognition confidence; a selected finding highlights its evidence instead. Check all numbers even when unflagged.");
+                                if let Some(processing)=&quality.processing {widgets::muted(ui,&processing.label());}
                             }
                             let ranges=self.passage.as_ref().filter(|p|p.unit==self.unit).map(|p|text_navigation::clip_ranges(&p.ranges,start..end)).unwrap_or_else(|| {
                                 let flags:Vec<_>=uncertain.map(|p|p.uncertain.iter().map(|w|w.start..w.end).collect()).unwrap_or_default();
@@ -320,6 +360,26 @@ impl Drop for ReaderView {
     }
 }
 
+fn routine_warning(warning: &str) -> bool {
+    [
+        complyph_extract::PDF_LAYOUT_WARNING,
+        complyph_extract::DOCX_LAYOUT_WARNING,
+        complyph_extract::LEGACY_DOCX_LAYOUT_WARNING,
+        complyph_extract::OCR_WARNING,
+    ]
+    .contains(&warning)
+}
+fn ocr_controls(ui: &mut Ui, settings: &mut complyph_extract::OcrSettings) {
+    egui::CollapsingHeader::new("OCR options").show(ui,|ui|{
+        ui.label("Rotate page images clockwise");
+        egui::ComboBox::from_id_salt("ocr-rotation").selected_text(settings.rotation.label()).show_ui(ui,|ui|{for rotation in complyph_extract::OcrRotation::ALL {ui.selectable_value(&mut settings.rotation,rotation,rotation.label());}});
+        ui.label("Reading layout");
+        egui::ComboBox::from_id_salt("ocr-layout").selected_text(settings.layout.label()).show_ui(ui,|ui|{for layout in complyph_extract::OcrLayout::ALL {ui.selectable_value(&mut settings.layout,layout,layout.label());}});
+        ui.checkbox(&mut settings.enhance_scan,"Enhance faint scans and straighten slight skew");
+        widgets::muted(ui,"Options apply to every page. The PDF's own page rotation is respected first. Enhancement adjusts pixels; it does not correct words or numbers. Scattered-text mode does not establish reading order and requires manual review.");
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -337,6 +397,7 @@ mod tests {
             sha256: "synthetic".into(),
             read_at: 0,
             report: Report {
+                reading: None,
                 engine: complyph_extract::ENGINE.into(),
                 ocr: None,
                 format: Format::Pdf,

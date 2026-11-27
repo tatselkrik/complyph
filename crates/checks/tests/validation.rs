@@ -20,6 +20,7 @@ fn context() -> Context {
 }
 fn report(text: &str) -> Report {
     Report {
+        reading: None,
         engine: complyph_extract::ENGINE.into(),
         ocr: None,
         format: Format::Docx,
@@ -50,12 +51,14 @@ fn ocr_numbers_require_explicit_confirmation_and_valid_reading_provenance() {
     input.units[0].location = Location::PdfPage { page: 1 };
     input.warnings = vec![complyph_extract::OCR_WARNING.into()];
     input.ocr = Some(complyph_extract::OcrInfo {
+        processing: Some(Default::default()),
         engine_version: "synthetic-validation".into(),
         renderer: "pdfium-8165".into(),
         language: "eng".into(),
         model_sha256: complyph_extract::OCR_MODEL_SHA256.into(),
         confidence_threshold: 8000,
         pages: vec![complyph_extract::OcrPage {
+            processing: Some(Default::default()),
             page: 1,
             words: 30,
             uncertain: vec![],

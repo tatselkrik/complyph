@@ -17,6 +17,7 @@ fn context() -> Context {
 }
 fn input(text: &str) -> Report {
     Report {
+        reading: None,
         engine: complyph_extract::ENGINE.into(),
         format: Format::Docx,
         status: Status::Ready,
@@ -91,12 +92,14 @@ fn sil_ocr_entitlement_needs_separate_accuracy_confirmation_and_valid_provenance
     report.units[0].location = Location::PdfPage { page: 1 };
     report.warnings = vec![complyph_extract::OCR_WARNING.into()];
     report.ocr = Some(complyph_extract::OcrInfo {
+        processing: Some(Default::default()),
         engine_version: "synthetic-validation".into(),
         renderer: "pdfium-8165".into(),
         language: "eng".into(),
         model_sha256: complyph_extract::OCR_MODEL_SHA256.into(),
         confidence_threshold: 8000,
         pages: vec![complyph_extract::OcrPage {
+            processing: Some(Default::default()),
             page: 1,
             words: 11,
             uncertain: vec![],

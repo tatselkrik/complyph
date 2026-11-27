@@ -106,6 +106,38 @@ jobs:
           assert manifest['compiled_rule_profile_sha256'] == compiled
           assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
           assert manifest['private_schema'] == check['private_schema'] == 6
+          assert manifest['reader_engine'] == 'complyph-text-2'
+          assert check['installed_reading_quality_passed'] is True
+          assert check['released_v013_reading_upgrade_passed'] is True
+          for name in ('reading_quality','spatial_pdf_reading','word_text_boxes','ocr_rotation','ocr_scan_enhancement','ocr_layout_controls','reading_warning_gates','reading_provenance_export'):
+              assert manifest[name] is True, name
+          assert manifest['quality_profile'] == 'initial-reading-quality-v1'
+          assert manifest['ocr_processing_profile'] == 'complyph-raster-1'
+          quality = check['reading_quality']
+          assert quality['profile'] == manifest['quality_profile']
+          assert quality['private_schema'] == 6 and quality['public_schema'] == 5
+          assert manifest['quality_workflow_cases'] == len(quality['workflow_cases']) == 6
+          assert {case['name'] for case in quality['workflow_cases']} == {'spatial_pdf_and_fonts','word_text_boxes_and_omissions','local_ocr_processing','numeric_review_quality_gates','reading_history_and_local_exports','offline_originals_and_source_boundary'}
+          assert all(case['passed'] is True for case in quality['workflow_cases'])
+          for name in ('installed_spatial_pdf_passed','installed_word_text_boxes_passed','installed_font_image_warnings_passed','installed_ocr_options_passed','installed_rotation_enhancement_passed','installed_reading_warning_gates_passed','installed_reading_history_passed','installed_reading_pdf_provenance_passed','quality_originals_preserved','quality_public_catalog_preserved'):
+              assert quality['checks'][name] is True, name
+          expected_quality = json.loads(Path('examples/expected-reading-quality.json').read_text())
+          assert manifest['synthetic_quality_fixture_count'] == quality['synthetic_quality_fixture_count'] == expected_quality['fixture_count'] == 12
+          for name, key, engine in (('reader_results','reader_cases','complyph-text-2'),('ocr_results','ocr_cases','complyph-ocr-2')):
+              cases = quality[name]
+              assert len(cases) == len(expected_quality[key])
+              assert {case['name'] for case in cases} == set(expected_quality[key])
+              for case in cases:
+                  expected_case = expected_quality[key][case['name']]
+                  assert case['passed'] is True and case['engine'] == engine
+                  assert case['outcomes'] == expected_case['outcomes']
+                  if key == 'ocr_cases':
+                      assert case['options'] == expected_case['options'] and case['pages'] == expected_case['pages']
+          upgrade = check['reading_upgrade']
+          assert upgrade['passed'] is True and upgrade['private_schema'] == 6 and upgrade['public_schema'] == 5
+          assert upgrade['old_engine'] == 'complyph-ocr-1' and upgrade['new_engine'] == 'complyph-ocr-2' and upgrade['retained_readings'] == 2
+          for name in ('old_reports_preserved','old_warning_context_preserved','old_cached_reading_reused','source_catalog_preserved','originals_preserved'):
+              assert upgrade[name] is True, name
           assert check['installed_document_revisions_passed'] is True
           assert check['released_v012_history_upgrade_passed'] is True
           for name in ('document_version_history','retained_document_readings','document_version_comparison','finding_comparison','comparison_pdf_export','comparison_json_export'):
@@ -128,7 +160,7 @@ jobs:
           for flag in ('installed_review_notes_passed','installed_issue_tracking_passed','installed_pdf_export_passed','review_audit_history_preserved'):
               assert check[flag] is True
           assert manifest['local_ocr'] is True and manifest['folder_monitoring'] is True
-          assert manifest['ocr_engine'] == 'complyph-ocr-1' and manifest['ocr_max_pages'] == 20
+          assert manifest['ocr_engine'] == 'complyph-ocr-2' and manifest['ocr_max_pages'] == 20
           assert manifest['rule_engine'] == 'complyph-rules-1'
           assert manifest['synthetic_ocr_fixture_count'] == check['synthetic_ocr_fixture_count'] == 3
           for flag in ('installed_ocr_passed','ocr_confirmation_gate_passed','ocr_originals_preserved','watched_folder_intake_passed','no_auto_review_from_watch_passed'):
@@ -185,6 +217,9 @@ jobs:
               sys.path.insert(0, 'scripts')
               from verify_ocr_runtime import verify
               verify({item['name']: package.read(prefix + item['name']) for item in runtime['files']})
+              for basename, source in (('Reading-quality.md','docs/READING_QUALITY.md'),('Reports-and-revisions.md','docs/REPORTS.md'),('Library-maintenance.md','docs/LIBRARY_MAINTENANCE.md')):
+                  matches = [name for name in package.namelist() if name.endswith('/' + basename)]
+                  assert len(matches) == 1 and package.read(matches[0]) == Path(source).read_bytes()
               for sample in [path.name for path in Path('examples').iterdir() if path.is_file()]:
                   matches = [name for name in package.namelist() if name.endswith('/Samples/' + sample)]
                   assert len(matches) == 1
@@ -211,7 +246,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Document revision comparisons" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Document reading quality" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

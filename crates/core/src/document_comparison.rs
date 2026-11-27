@@ -234,9 +234,9 @@ fn source(workflow: &ReviewWorkflow, finding: &Finding) -> Result<serde_json::Va
 }
 fn method(reading: &RetainedReading) -> serde_json::Value {
     let report = &reading.saved.report;
-    serde_json::json!({"engine":report.engine,"format":report.format,"ocr":report.ocr.as_ref().map(|o|serde_json::json!({
+    serde_json::json!({"engine":report.engine,"format":report.format,"reading_profile":report.reading.as_ref().map(|r|&r.profile),"ocr":report.ocr.as_ref().map(|o|serde_json::json!({
         "engine_version":o.engine_version,"renderer":o.renderer,"language":o.language,
-        "model_sha256":o.model_sha256,"confidence_threshold":o.confidence_threshold,
+        "model_sha256":o.model_sha256,"confidence_threshold":o.confidence_threshold,"processing":o.processing,
     }))})
 }
 fn bases(
@@ -286,6 +286,7 @@ fn bases(
             || s.reading.saved.report.warnings.iter().any(|w| {
                 w != complyph_extract::PDF_LAYOUT_WARNING
                     && w != complyph_extract::DOCX_LAYOUT_WARNING
+                    && w != complyph_extract::LEGACY_DOCX_LAYOUT_WARNING
                     && !(s.reading.saved.report.ocr.is_some() && w == complyph_extract::OCR_WARNING)
             })
     }) {

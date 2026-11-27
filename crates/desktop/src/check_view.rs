@@ -12,9 +12,13 @@ pub struct CheckView {
     error: Option<String>,
     editing: bool,
     historical_reading: bool,
+    current_reading_sha: Option<String>,
 }
 
 pub enum ReviewAction {
+    SavedReading {
+        review: Box<SavedReview>,
+    },
     Passage {
         hash: String,
         evidence: complyph_checks::Evidence,
@@ -60,6 +64,7 @@ impl CheckView {
         *self = Self::default();
     }
     pub fn set_review(&mut self, review: SavedReview) {
+        self.current_reading_sha = None;
         self.visible = true;
         self.editing = false;
         self.context = review.review.context.clone();
@@ -160,11 +165,16 @@ impl CheckView {
         });
         }
         if let Some(result) = &self.result {
+            if self.current_reading_sha.is_none() {
+                self.current_reading_sha = saved
+                    .and_then(|s| complyph_core::document_history::reading_sha256(&s.report).ok());
+            }
             ui.add_space(12.0);
             return show_review(
                 ui,
                 result,
-                saved.map(|s| s.sha256.as_str()),
+                saved,
+                self.current_reading_sha.as_deref(),
                 workspace,
                 tools,
             );
@@ -329,16 +339,36 @@ fn scope(ui: &mut Ui, title: &str, value: &mut Applicability, explanation: &str)
         });
     widgets::muted(ui, explanation);
 }
+fn matching_reading(
+    review: &SavedReview,
+    current: &SavedExtraction,
+    current_sha: Option<&str>,
+    recorded_sha: Option<&str>,
+) -> bool {
+    current.sha256 == review.review.document_sha256
+        && match recorded_sha {
+            Some(recorded) => current_sha == Some(recorded),
+            None => current.report.ocr == review.review.ocr,
+        }
+}
+
 pub fn show_review(
     ui: &mut Ui,
     saved: &SavedReview,
-    current_hash: Option<&str>,
+    current: Option<&SavedExtraction>,
+    current_reading_sha: Option<&str>,
     workspace: &Workspace,
     tools: &mut crate::review_tools::ReviewTools,
 ) -> Option<ReviewAction> {
     let mut action = None;
-    let can_jump = current_hash == Some(saved.review.document_sha256.as_str());
     let workflow = workspace.review_workflow(saved.id);
+    let recorded = workflow
+        .as_ref()
+        .ok()
+        .and_then(|w| w.document_version.as_ref())
+        .and_then(|v| v.reading_sha256.as_deref());
+    let can_jump = workflow.is_ok()
+        && current.is_some_and(|c| matching_reading(saved, c, current_reading_sha, recorded));
     widgets::card().show(ui,|ui| {
         ui.set_min_width(ui.available_width());
         ui.label(RichText::new(format!("Findings · review #{}",saved.id)).font(heading(20.0)));
@@ -347,9 +377,11 @@ pub fn show_review(
             Ok(state) => { tools.header(ui, workspace, state); tools.document(ui, workspace, state); }
             Err(error) => { ui.colored_label(RED,error.to_string()); }
         }
-        if current_hash.is_some() && !can_jump {
-            ui.colored_label(AMBER,"This document has changed since the saved review. Evidence quotes remain available; passage navigation is disabled. Run a new review for this version.");
+        if current.is_some() && !can_jump {
+            ui.colored_label(AMBER,"The displayed file or reading method differs from this saved review. Its findings remain historical; passage navigation is disabled. Open its exact saved reading or prepare a fresh review.");
+            if recorded.is_some() && ui.button("Open exact saved reading").clicked(){action=Some(ReviewAction::SavedReading{review:Box::new(saved.clone())});}
         }else if !can_jump {widgets::muted(ui,"Open the connected review and wait for text reading to navigate document passages.");}
+        if recorded.is_none() && workflow.is_ok(){widgets::muted(ui,"This earlier review did not record an exact reading. Any passage shown requires matching file bytes and saved text; its original reading method is not established.");}
         for (index,finding) in saved.review.findings.iter().enumerate() {
             ui.add_space(12.0);ui.separator();ui.add_space(8.0);
             let can_select=can_jump && !finding.evidence.is_empty();
@@ -410,4 +442,55 @@ pub fn show_review(
         });
     });
     action
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn passage_navigation_requires_the_exact_saved_reading_even_for_identical_file_bytes() {
+        let report = complyph_extract::Report::failure(
+            complyph_extract::Format::Pdf,
+            complyph_extract::Status::Unreadable,
+            "Fictional reading fixture",
+        );
+        let mut current = SavedExtraction {
+            sha256: "same-file".into(),
+            read_at: 0,
+            report,
+        };
+        let review = SavedReview {
+            id: 1,
+            document_id: 1,
+            created_at: 0,
+            review: complyph_checks::review(&current.report, &current.sha256, Context::default()),
+        };
+        let original = complyph_core::document_history::reading_sha256(&current.report).unwrap();
+        assert!(matching_reading(
+            &review,
+            &current,
+            Some(&original),
+            Some(&original)
+        ));
+        assert!(!matching_reading(&review, &current, None, Some(&original)));
+        current.report.reading = Some(complyph_extract::ReadingInfo {
+            profile: "different-reading-method".into(),
+            details: vec![],
+        });
+        let changed = complyph_core::document_history::reading_sha256(&current.report).unwrap();
+        assert!(!matching_reading(
+            &review,
+            &current,
+            Some(&changed),
+            Some(&original)
+        ));
+        current.sha256 = "different-file".into();
+        assert!(!matching_reading(
+            &review,
+            &current,
+            Some(&original),
+            Some(&original)
+        ));
+        assert!(!matching_reading(&review, &current, Some(&changed), None));
+    }
 }

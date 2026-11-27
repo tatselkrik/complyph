@@ -1,6 +1,6 @@
 # Reports, document versions and follow-up
 
-ComplyPH 0.13.0 retains document readings and keeps each saved review's automated findings and human follow-up separate. All processing and storage are local. No account, AI service, printer or command prompt is required.
+ComplyPH 0.14.0 retains document readings and keeps each saved review's automated findings and human follow-up separate. All processing and storage are local. No account, AI service, printer or command prompt is required.
 
 ## Compare revised documents
 
@@ -84,3 +84,7 @@ PDF export supports up to 200 pages and 8 MiB of report text. Unsupported script
 Windows data remains in **C:\ProgramData\ComplyPH**, restricted to the owning account, SYSTEM and Administrators. Private schema 6 contains retained readings/revision links alongside reviews and notes; the public legal library remains separate at schema 5. Private comparison does not open or modify that public catalog.
 
 Updates and uninstall preserve workspace data and originals. **Remove entry** removes that file's cached/retained readings, saved reviews and follow-up history; other linked files keep their own histories. Previously exported files and backups remain where saved. SQLite deletion/journals are not secure erasure, encryption or a tamper-proof audit against someone controlling the computer.
+
+## Reading-quality provenance
+
+New exports include reading warnings/details from the exact retained reading and recorded OCR rotation/layout/enhancement/per-page processing where available. Earlier absent settings stay unknown. A later improved OCR cache never rewrites an earlier review's quality context. Rerunning identical bytes with changed settings is labelled as a reading-method change during comparison. See [supported layouts and quality gates](READING_QUALITY.md).

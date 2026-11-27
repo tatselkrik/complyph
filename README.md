@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.13.0"><img src="https://img.shields.io/badge/version-0.13.0-142B49?style=flat-square" alt="Version 0.13.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.14.0"><img src="https://img.shields.io/badge/version-0.14.0-142B49?style=flat-square" alt="Version 0.14.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -30,7 +30,8 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 
 - **Connected review:** independently scrolling document and findings panes; click a finding to jump to and highlight its PDF page or Word paragraph/table passage.
 - **Offline legal provisions:** open the complete supporting article, related provisions or full preserved source from the exact version used by a saved review.
-- **Local OCR:** recognize scanned PDF pages with bundled English OCR, page references, low-confidence flags and a separate accuracy confirmation before numeric checking.
+- **Local OCR:** bundled English recognition with rotation, layout and faint-scan enhancement controls; page references, low-confidence flags and separate accuracy confirmation.
+- **Difficult document reading:** spatial PDF paragraphs/two-column text, labelled Word text boxes, Unicode font mapping and visible manual-review warnings for unsupported relationships or omitted content.
 - **Watched folder:** opt into local PDF/DOCX intake with a quiet interval, completion/lock checks, duplicate detection and pause/resume controls.
 - **Private document reader:** local extraction, text search, location navigation and content-hash-validated caching. Original files remain in place.
 - **Document versions:** explicitly link revisions, retain complete extracted readings, compare text changes and reopen each version’s own reviews and follow-up history.
@@ -53,9 +54,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/ComplyPH-Setup-0.13.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/ComplyPH-Windows-x64-0.13.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.13.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/ComplyPH-Setup-0.14.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/ComplyPH-Windows-x64-0.14.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -67,7 +68,7 @@ Normal use requires no command prompt or development tools. The current Windows 
 4. Select **Open supporting provision offline** to inspect the complete cited article and related provisions.
 5. Expand **Document review notes** or a finding’s **Reviewer notes and status**. Enter a reviewer name, note/reason and optional follow-up status, then **Save reviewer update**. Earlier entries remain visible.
 6. Select **Export PDF…** and choose a new local filename, or **Copy full report JSON**. Save pending notes first.
-7. Use **Reports → Open connected review** to return to a saved assessment. If the original has changed, passage navigation is disabled until a new review is made.
+7. Use **Reports → Open connected review** to return to a saved assessment. Exact retained readings remain available after originals move or change; older reviews without one show that limitation.
 
 A resolved follow-up status records a human decision and never changes the automated result or certifies compliance. Reviewer names are self-reported. Each saved review has separate tracking; a new review starts fresh. PDF exports contain private excerpts and notes, include all saved actions, and do not recheck current documents or laws. See [reports and tracking](docs/REPORTS.md).
 
@@ -83,7 +84,9 @@ Retained text remains available after originals move or change. Older reviews wi
 
 ## Scanned documents and folder intake
 
-Choose **Run local OCR** in Review to recognize PDF pages entirely on your computer. Inspect page text and uncertainty highlights, compare every number with the original, and confirm OCR accuracy separately before running checks. The installer includes the runtime; no OCR account or setup command is needed.
+Expand **OCR options** in Review to choose page rotation, reading layout and scan enhancement, then select **Run local OCR** to recognize PDF pages entirely on your computer. Inspect page text and uncertainty highlights, compare every number with the original, and confirm OCR accuracy separately before running checks. The installer includes the runtime; no OCR account or setup command is needed.
+
+Supported spatial PDF/Word layouts, manual-review gates and recorded reading methods are described in [document reading quality](docs/READING_QUALITY.md).
 
 Use **Settings → Watched document folder** to select a local intake folder. Completed PDF/DOCX files appear in Documents after a stability interval; unchanged/duplicate files are skipped. Polling runs while the app is open and never starts OCR or reviews automatically. See [OCR, folder controls and limits](docs/OCR_AND_FOLDERS.md).
 

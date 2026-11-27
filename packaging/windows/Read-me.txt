@@ -1,4 +1,4 @@
-ComplyPH 0.13.0 - Document revision comparisons
+ComplyPH 0.14.0 - Document reading quality
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
@@ -15,8 +15,9 @@ provisions and the full saved source are available in the same offline viewer.
 These controls do not open a browser or request an online source.
 
 Reports > Open connected review restores a saved review beside its document.
-If the original differs from that review, passage navigation is disabled; saved
-quotes and the matching historical legal source remain available. A missing or
+Exact retained text remains available after originals move or change. Earlier
+reviews without an exact retained reading show that limitation; saved quotes
+and the matching historical legal source remain available. A missing or
 mismatched legal snapshot is reported without substituting the latest version.
 
 Use Document review notes to record notes for a saved review. Each finding has
@@ -146,3 +147,9 @@ and copies no notes/statuses. Export comparison PDF or full JSON to a new file.
 Private schema 6 preserves old caches/reports/notes while adding version history.
 Missing historical text is never reconstructed from a changed original. Comparison
 covers extracted text, not images/layout or legal meaning. See Reports-and-revisions.md.
+
+Expand OCR options for page rotation, layout and faint-scan enhancement. Inspect
+every original page and number, then confirm OCR accuracy separately. Detected
+tables, unread content and other quality warnings require manual review. Word
+text boxes have their own locations; floating page placement is not inferred.
+See Reading-quality.md for supported layouts, retained method history and limits.

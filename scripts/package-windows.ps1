@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.13.0'
+$version = '0.14.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -29,6 +29,7 @@ Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destin
 Copy-Item -LiteralPath (Join-Path $root 'library/README.md') -Destination (Join-Path $stage 'Library-notes.md')
 Copy-Item -LiteralPath (Join-Path $root 'docs/LIBRARY_MAINTENANCE.md') -Destination (Join-Path $stage 'Library-maintenance.md')
 Copy-Item -LiteralPath (Join-Path $root 'docs/REPORTS.md') -Destination (Join-Path $stage 'Reports-and-revisions.md')
+Copy-Item -LiteralPath (Join-Path $root 'docs/READING_QUALITY.md') -Destination (Join-Path $stage 'Reading-quality.md')
 Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destination (Join-Path $output 'starter-library-manifest.json')
 $ocr = Join-Path $root 'target/ocr-runtime'
 foreach ($required in @('pdfium.dll','tesseract.dll','eng.traineddata','runtime-manifest.json','licenses')) {
@@ -63,13 +64,15 @@ try {
     $compiledHash = [Convert]::ToHexString($compiled.GetHashAndReset()).ToLowerInvariant()
 } finally { $compiled.Dispose() }
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Document revision comparisons'
+    project = 'ComplyPH'; version = $version; milestone = 'Document reading quality'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
     document_text_reading = 'offline PDF and DOCX'; private_schema = 6
     document_version_history = $true; retained_document_readings = $true; document_version_comparison = $true; finding_comparison = $true
     comparison_pdf_export = $true; comparison_json_export = $true; comparison_engine = 'complyph-document-comparison-1'
     revision_workflow_cases = 6; synthetic_revision_fixture_count = 5
-    local_ocr = $true; ocr_engine = 'complyph-ocr-1'; ocr_renderer = 'pdfium-8165'; ocr_language = 'eng'; synthetic_ocr_fixture_count = 3; ocr_max_pages = 20
+    reading_quality = $true; spatial_pdf_reading = $true; word_text_boxes = $true; ocr_rotation = $true; ocr_scan_enhancement = $true; ocr_layout_controls = $true; reading_warning_gates = $true; reading_provenance_export = $true
+    quality_profile = 'initial-reading-quality-v1'; quality_workflow_cases = 6; synthetic_quality_fixture_count = 12; ocr_processing_profile = 'complyph-raster-1'
+    local_ocr = $true; ocr_engine = 'complyph-ocr-2'; ocr_renderer = 'pdfium-8165'; ocr_language = 'eng'; synthetic_ocr_fixture_count = 3; ocr_max_pages = 20
     folder_monitoring = $true; folder_quiet_seconds = 10
     reviewer_tracking = $true; pdf_export = $true; pdf_engine = 'complyph-pdf-1'
     connected_review = $true; offline_exact_provisions = $true
@@ -78,7 +81,7 @@ $manifest = [ordered]@{
     official_publication_discovery = $true; rule_revalidation_tracking = $true; linux_downloader_support = $true
     library_maintenance_workflow_cases = 6; synthetic_publication_fixture_count = 2; compiled_rule_profile_sha256 = $compiledHash
     source_update_checks = $true; downloader_isolation = 'Windows AppContainer InternetClient'; update_schedule = 'daily while desktop is open, approved URLs only'; source_change_review = $true
-    synthetic_fixture_count = 7; reader_engine = 'complyph-text-1'
+    synthetic_fixture_count = 7; reader_engine = 'complyph-text-2'
     legal_checking = '20 focused numeric checks across seven domains'; rule_engine = 'complyph-rules-1'; validated_check_count = 20; validated_domain_count = 7; initial_pack_id = 'initial-seven-domain-v1'; synthetic_initial_fixture_count = 5; rule_pack_sha256 = (Get-FileHash -LiteralPath (Join-Path $root 'crates/checks/src/initial_rules.json') -Algorithm SHA256).Hash.ToLowerInvariant(); synthetic_check_fixture_count = 3; synthetic_sil_fixture_count = 5; sil_eligibility_gates = $true; workspace_default = 'C:\ProgramData\ComplyPH'; automatic_downloads = 'approved public source URLs only'
     starter_source_count = $library.sources.Count; starter_domain_count = $library.domains.Count
     starter_bundle_id = $library.bundle_id; verification_scope = $library.verification_scope
