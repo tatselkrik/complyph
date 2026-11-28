@@ -32,7 +32,7 @@ The developer-only `--desktop-quality-check --output NEW-JSON --data-dir UNUSED-
 The `initial-desktop-quality-v1` profile covers:
 
 - Twelve combinations of physical client sizes **1280 × 960**, **1920 × 1080**, **2560 × 1440**, and native scales **100%, 125%, 150%, 200%**. Each exercises fourteen page/review/form/dialog scenarios, validates navigation and window bounds, and checks exercised text-input names.
-- Five keyboard workflows: page shortcuts/focus, contextual search and typing, modal picker navigation/Escape, safe confirmation/Enter/Escape, and Tab/Enter/Space document navigation.
+- Five keyboard workflows: page shortcuts/focus, contextual search and typing, modal picker navigation/Escape, safe confirmation/Enter/Escape, and Tab/Enter/Space document navigation with reopening a retained version in its document tab.
 - Three recovery workflows: missing-original retry, malformed Word content blocking review, and repaired reading preserving saved review JSON, fingerprints, reviewer events and historical text.
 - Separate regressions for late reader replies and exact passage navigation, plus contrast checks on the application’s text/focus color pairs.
 

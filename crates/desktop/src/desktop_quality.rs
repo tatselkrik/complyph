@@ -372,6 +372,17 @@ fn keyboard_checks(
         "Space did not open the focused document row.",
     )?;
     finish_reading(&mut h, app)?;
+    // Opening a historical reading from Findings must reveal the document,
+    // rather than leave the compact view on the now-cleared findings pane.
+    app.review_pane = ReviewPane::Findings;
+    app.document_versions
+        .open(app.workspace.as_ref().unwrap(), doc.id);
+    h.settle(app);
+    h.click(app, "Read saved text")?;
+    require(
+        app.reader_view.is_retained() && app.review_pane == ReviewPane::Document,
+        "Opening a saved version did not select its document tab.",
+    )?;
     results.push(passed("tab_enter_and_space_activation"));
     Ok(results)
 }

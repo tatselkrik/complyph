@@ -1356,6 +1356,7 @@ impl ComplyApp {
                 match action {
                     crate::document_versions::VersionAction::Reading(reading) => {
                         self.selected = Some(reading.document_id);
+                        self.review_pane = ReviewPane::Document;
                         self.reader_view.open_retained(reading.saved);
                         self.check_view.clear();
                         self.navigate(Page::Review);
