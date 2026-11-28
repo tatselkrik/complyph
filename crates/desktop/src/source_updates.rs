@@ -127,8 +127,8 @@ impl SourceUpdates {
                 else{metadata.official_reference_url.clone().unwrap_or_default()}
             });
             let url=self.urls.entry(id).or_insert(suggested);
-            ui.label("Official publication URL to check:");
-            ui.add(TextEdit::singleline(url).desired_width(f32::INFINITY));
+            let label=ui.label("Official publication URL to check:");
+            ui.add(TextEdit::singleline(url).desired_width(f32::INFINITY)).labelled_by(label.id);
             widgets::muted(ui,"Approval allows HTTPS GET requests to this agency URL. Downloads are compared by hash and saved for review; dates and checking rules are not inferred from a byte change.");
             let busy=self.receiver.is_some();
             let mut action=None;

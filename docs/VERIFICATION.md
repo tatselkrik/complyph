@@ -1,8 +1,8 @@
-# Verification — ComplyPH 0.14.0
+# Verification — ComplyPH 0.15.0
 
 ## Automated Rust checks
 
-The native Linux tests pass 138 cases covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
+The native Linux tests pass 141 cases covering the reader, rules, storage, source updates and isolation. Windows runs the corresponding suite and an additional AppContainer file-denial test. One deliberately ignored stalled-child fixture is invoked and terminated by the supervisor test; it is not an untested feature. Formatting and workspace Clippy are checked with warnings denied. Builds use the lockfile and pinned Rust toolchain.
 
 - Nine rule-validation tests cover independently transcribed Article 83/87/86/85/91 boundaries (including 0.01 either side), favourable terms, unknown/excluded scope, meal/rest exceptions, incomplete reading, unsupported/all-in/conditional/quoted/conflicting wording, pinned source quotes and tampering, the original PDF/DOCX fixtures plus an unconfirmed sixth SIL finding, and earlier three-rule context/report compatibility.
 - Seven SIL rule tests independently cover five paid days, exact decimal boundaries and written values; separate eligibility facts and required basis; exemptions, special regimes and unknown service; unsupported/unpaid/pooled/conditional/quoted/conflicting wording; a condition in the next paragraph; OCR provenance/confirmation; and earlier five-rule context/report retention. Five real PDF/Word fixtures are reviewed through the actual executable, preserving originals and confirming saved eligibility/citations in PDF export.
@@ -36,6 +36,10 @@ The actual-executable reading-quality integration runs six workflows using twelv
 
 ## Offline observation
 
+The v0.15.0 desktop-quality acceptance exercises the shipped egui rendering, native-scale input and accessibility output at twelve size/scaling combinations, with fourteen scenarios each. Five keyboard workflows verify navigation/focus, search typing, modal picker confinement/Escape, safe removal defaults and Tab/Enter/Space activation. Three actual-reader recovery workflows verify missing/malformed originals, retry and unchanged historical review JSON, fingerprints, reviewer events and retained text. Existing workspace/result refusal is tested through the actual executable. Separate regressions verify contrast on the used palette pairs and refusal of late cancelled reader replies. See [desktop profile and limits](DESKTOP_QUALITY.md).
+
+The final v0.15.0 desktop-quality profile completed through the actual executable and bounded reader under `strace -f -e trace=network`, with **zero observed network system calls**. All twelve layout, five keyboard and three recovery cases passed; the deliberately damaged fictional original was restored byte for byte.
+
 The v0.14.0 sideways synthetic PDF was recognized through the actual desktop executable and bounded OCR worker under `strace -f -e trace=network`, using 270° correction, one-text-block layout and scan enhancement. Recognition, provenance and private persistence completed with **zero observed network system calls**. Original file bytes were preserved by the acceptance workflows.
 
 The v0.13.0 retained-reading comparison was run through the actual desktop executable under `strace -f -e trace=network`. It compared both selected review histories and five corrected numeric terms with **zero observed network system calls**. The earlier human resolution remained separate from the revised review's unresolved status.
@@ -61,6 +65,8 @@ The v0.4.0 desktop executable was run headlessly under `strace -f -e trace=netwo
 This observation covers those runs, not every possible operating-system action. Those earlier runs covered the offline desktop/checker path. In v0.7.0 the status command still makes no request, and source networking requires the separate AppContainer child. Parser resource guards are distinct from downloader OS confinement.
 
 ## Native interface
+
+The v0.15.0 native Linux flow was checked with one fictional long-name Word document at the minimum 640 × 480 client size: compact navigation, Ctrl+F filename typing, connected review tabs, a modal file picker with visible focus and Escape dismissal, **Keep document** initially focused and Enter preserving the entry, exact paragraph navigation/highlighting, and the bounded offline Article 83 window. Linux software OpenGL was used. Only the X11 accessibility fallback was available, so screen-reader compatibility and physical Windows display behavior remain unestablished.
 
 The v0.14.0 native flow was checked with fictional files: restoring OCR rotation/layout/enhancement, changing layout and rerunning locally, clearing the prior findings and both accuracy confirmations, and keeping the review action disabled until confirmed. Word text-box findings jumped to the exact labelled paragraph and highlighted the numeric passage. Embedded/alternative Word content showed manual-review warnings and unresolved numeric findings. The updated build reopened successfully after adding compact warning controls and the exact-reading navigation guard; the latter has an automated regression. Linux software OpenGL was used; interactive Windows display coverage is not established.
 
@@ -105,6 +111,7 @@ The isolated Windows test refuses pre-existing installations/data roots. It requ
 15. Six installed document-revision workflows, PDF/Word correction expectations, exact retained readings and per-version review histories, guarded local PDF/JSON export, and schema-6 migration. A separate upgrade uses the actual hash-pinned 0.12.0 executable to create a schema-5 workspace and resolved finding, then verifies unchanged original documents/cache/review/action rows, one retained reading and explicitly unknown legacy review/reading associations after upgrade.
 16. Six installed reading-quality workflows with eight ordinary-reader and six OCR cases, independent outcomes, manual-review warnings, original/public-catalog preservation and historical quality metadata in local PDF exports.
 17. Upgrade from the actual hash-pinned 0.13.0 application with a saved OCR reading and resolved finding. The old OCR-1 cache, retained-reading fingerprint, original records and warning context must survive unchanged; a deliberate OCR-2 rerun creates a second reading while preserving the earlier review and source/original bytes.
+18. The actual installed desktop-quality profile: twelve display-size/scaling combinations, fourteen scenarios per combination, five keyboard workflows and three missing/malformed/repaired-reader workflows. This runs headlessly and explicitly records that physical Windows display and qualified legal review were not performed. The packaged desktop guide must match the reviewed source bytes.
 
 A separate required Linux job verifies real Landlock/seccomp file-denial confinement and its Rust warnings. The publisher accepts packages only after both the Windows and Linux jobs succeed, from a successful `main` push run. It checks the exact source commit, manifests, provenance collection size, independent reader/check outcomes, reviewer-history/PDF evidence, ProgramData/ACL evidence, sample bytes, x64 GUI executable structure, checksums and uploaded asset digests before publishing. Each release includes machine-readable `windows-install-check.json` and `release-manifest.json`; those artifacts record the exact commit actually tested.
 

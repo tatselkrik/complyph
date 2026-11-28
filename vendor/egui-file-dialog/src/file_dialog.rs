@@ -1270,7 +1270,12 @@ impl FileDialog {
     ) {
         let mut is_open = true;
 
-        let re = self.create_window(&mut is_open).show(ctx, |ui| {
+        if self.config.as_modal {
+            ctx.memory_mut(|memory| {
+                memory.set_modal_layer(egui::LayerId::new(egui::Order::Middle, self.window_id))
+            });
+        }
+        let re = self.create_window(ctx, &mut is_open).show(ctx, |ui| {
             if !self.modals.is_empty() {
                 self.ui_update_modals(ui);
                 return;
@@ -1426,12 +1431,15 @@ impl FileDialog {
     }
 
     /// Creates a new egui window with the configured options.
-    fn create_window<'a>(&self, is_open: &'a mut bool) -> egui::Window<'a> {
+    fn create_window<'a>(&self, ctx: &egui::Context, is_open: &'a mut bool) -> egui::Window<'a> {
+        let bounds = ctx.content_rect().shrink(12.0);
         let mut window = egui::Window::new(self.get_window_title())
             .id(self.window_id)
             .open(is_open)
-            .default_size(self.config.default_size)
-            .min_size(self.config.min_size)
+            .default_size(self.config.default_size.min(bounds.size()))
+            .min_size(self.config.min_size.min(bounds.size()))
+            .max_size(bounds.size())
+            .constrain_to(bounds)
             .resizable(self.config.resizable)
             .movable(self.config.movable)
             .title_bar(self.config.title_bar)
@@ -1450,7 +1458,7 @@ impl FileDialog {
         }
 
         if let Some(size) = self.config.max_size {
-            window = window.max_size(size);
+            window = window.max_size(size.min(bounds.size()));
         }
 
         window
@@ -1713,7 +1721,8 @@ impl FileDialog {
         #[allow(clippy::cast_possible_truncation)]
         let margin = egui::Margin::symmetric(4, padding_top_bottom.floor() as i8);
 
-        let frame = egui::Frame::canvas(ui.style()).fill(ui.visuals().text_edit_bg_color())
+        let frame = egui::Frame::canvas(ui.style())
+            .fill(ui.visuals().text_edit_bg_color())
             .inner_margin(margin)
             .stroke(egui::Stroke::NONE);
 
@@ -1721,7 +1730,11 @@ impl FileDialog {
             .desired_width(width)
             .frame(frame);
 
-        let response = text_edit.show(ui).response;
+        let response = text_edit
+            .show(ui)
+            .response
+            .response
+            .accessible_name("Folder path");
 
         if self.path_edit_activate {
             response.request_focus();
@@ -1880,7 +1893,8 @@ impl FileDialog {
         #[allow(clippy::cast_possible_truncation)]
         let margin = egui::Margin::symmetric(4, padding_top_bottom.floor() as i8);
 
-        let frame = egui::Frame::canvas(ui.style()).fill(ui.visuals().text_edit_bg_color())
+        let frame = egui::Frame::canvas(ui.style())
+            .fill(ui.visuals().text_edit_bg_color())
             .inner_margin(margin)
             .stroke(egui::Stroke::NONE);
 
@@ -1888,7 +1902,11 @@ impl FileDialog {
             .desired_width(ui.available_width())
             .frame(frame);
 
-        let re = text_edit.show(ui).response;
+        let re = text_edit
+            .show(ui)
+            .response
+            .response
+            .accessible_name("Search files and folders");
 
         self.edit_search_on_text_input(ui);
 
@@ -2290,6 +2308,11 @@ impl FileDialog {
                         .margin(egui::Margin::symmetric(4, 3))
                         .desired_width(scroll_bar_width)
                         .show(ui);
+
+                    output.response.response = output
+                        .response
+                        .response
+                        .accessible_name("File name to save");
 
                     if self.file_name_input_request_focus {
                         self.highlight_file_name_input(&mut output);
@@ -2864,7 +2887,22 @@ impl FileDialog {
         let mut clicked = false;
 
         ui.add_enabled_ui(enabled, |ui| {
-            let response = ui.add_sized(size, egui::Button::new(label));
+            let name = if label == self.config.parent_directory_icon {
+                "Parent folder"
+            } else if label == self.config.back_icon {
+                "Previous folder"
+            } else if label == self.config.forward_icon {
+                "Next folder"
+            } else if label == self.config.new_folder_icon {
+                "Create folder"
+            } else if label == self.config.path_edit_icon {
+                "Edit folder path"
+            } else {
+                label
+            };
+            let response = ui
+                .add_sized(size, egui::Button::new(label))
+                .accessible_name(name);
             clicked = response.clicked();
 
             if let Some(err) = err_tooltip {
@@ -3128,28 +3166,13 @@ impl FileDialog {
 
     /// Executes the action when the keybinding `cancel` is pressed.
     fn exec_keybinding_cancel(&mut self) {
-        // We have to check if the `create_directory_dialog` and `path_edit_visible` is open,
-        // because egui does not consume pressing the escape key inside a text input.
-        // So when pressing the escape key inside a text input, the text input is closed
-        // but the keybindings still register the press on the escape key.
-        // (Although the keybindings are updated before the UI and they check whether another
-        //  widget is currently in focus!)
-        //
-        // This is practical for us because we can close the path edit and
-        // the create directory dialog.
-        // However, this causes problems when the user presses escape in other text
-        // inputs for which we have no status saved. This would then close the entire file dialog.
-        // To fix this, we check if any item was focused in the last frame.
-        //
-        // Note that this only happens with the escape key and not when the enter key is
-        // used to close a text input. This is why we don't have to check for the
-        // dialogs in `exec_keybinding_submit`.
-
+        // Dismiss an inner path/folder edit first. Otherwise Escape cancels the
+        // picker even after keyboard navigation has focused a button or search.
         if self.create_directory_dialog.is_open() {
             self.create_directory_dialog.close();
         } else if self.path_edit_visible {
             self.close_path_edit();
-        } else if !self.any_focused_last_frame {
+        } else {
             self.cancel();
         }
     }

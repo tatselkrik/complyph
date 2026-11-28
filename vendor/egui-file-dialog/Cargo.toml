@@ -4,7 +4,7 @@ version = "0.16.0"
 edition = "2021"
 license = "MIT"
 authors = ["Jannis Teipel <jannistpl@gmail.com>"]
-description = "Customizable egui file dialog; pinned with a LaborLens PH light-theme correction"
+description = "Customizable egui file dialog; pinned with ComplyPH theme, compact layout and keyboard corrections"
 repository = "https://github.com/jannistpl/egui-file-dialog"
 publish = false
 

@@ -12,7 +12,7 @@ if (!(Test-Path -LiteralPath $makensis)) {
     if (!$command) { throw 'Install the free NSIS 3 packaging tools.' }
     $makensis = $command.Source
 }
-$version = '0.14.0'
+$version = '0.15.0'
 $stage = Join-Path $root 'target/windows-package/ComplyPH'
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $output, $stage, (Join-Path $stage 'Samples') | Out-Null
@@ -30,6 +30,7 @@ Copy-Item -LiteralPath (Join-Path $root 'library/README.md') -Destination (Join-
 Copy-Item -LiteralPath (Join-Path $root 'docs/LIBRARY_MAINTENANCE.md') -Destination (Join-Path $stage 'Library-maintenance.md')
 Copy-Item -LiteralPath (Join-Path $root 'docs/REPORTS.md') -Destination (Join-Path $stage 'Reports-and-revisions.md')
 Copy-Item -LiteralPath (Join-Path $root 'docs/READING_QUALITY.md') -Destination (Join-Path $stage 'Reading-quality.md')
+Copy-Item -LiteralPath (Join-Path $root 'docs/DESKTOP_QUALITY.md') -Destination (Join-Path $stage 'Desktop-quality.md')
 Copy-Item -LiteralPath (Join-Path $root 'library/starter/manifest.json') -Destination (Join-Path $output 'starter-library-manifest.json')
 $ocr = Join-Path $root 'target/ocr-runtime'
 foreach ($required in @('pdfium.dll','tesseract.dll','eng.traineddata','runtime-manifest.json','licenses')) {
@@ -64,8 +65,12 @@ try {
     $compiledHash = [Convert]::ToHexString($compiled.GetHashAndReset()).ToLowerInvariant()
 } finally { $compiled.Dispose() }
 $manifest = [ordered]@{
-    project = 'ComplyPH'; version = $version; milestone = 'Document reading quality'
+    project = 'ComplyPH'; version = $version; milestone = 'Desktop quality improvements'
     source_commit = $sourceCommit; target = 'x86_64-pc-windows-msvc'; signing = 'unsigned'
+    desktop_quality = $true; desktop_quality_profile = 'initial-desktop-quality-v1'
+    desktop_layout_cases = 12; desktop_scenarios_per_layout = 14; desktop_keyboard_cases = 5; desktop_recovery_cases = 3
+    compact_review = $true; keyboard_navigation = $true; bounded_dialogs = $true
+    interactive_windows_display_tested = $false; qualified_legal_review = $false
     document_text_reading = 'offline PDF and DOCX'; private_schema = 6
     document_version_history = $true; retained_document_readings = $true; document_version_comparison = $true; finding_comparison = $true
     comparison_pdf_export = $true; comparison_json_export = $true; comparison_engine = 'complyph-document-comparison-1'

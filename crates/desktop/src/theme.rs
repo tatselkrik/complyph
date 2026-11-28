@@ -94,5 +94,48 @@ pub fn install(ctx: &egui::Context) {
     style.visuals.widgets.hovered.bg_stroke = Stroke::new(1.2, NAVY);
     style.visuals.widgets.active.bg_fill = BORDER;
     style.visuals.widgets.active.weak_bg_fill = BORDER;
+    style.visuals.widgets.active.bg_stroke = Stroke::new(2.0, NAVY);
     ctx.set_global_style(style);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn luminance(color: Color32) -> f64 {
+        let linear = |v: u8| {
+            let c = f64::from(v) / 255.0;
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linear(color.r()) + 0.7152 * linear(color.g()) + 0.0722 * linear(color.b())
+    }
+
+    #[test]
+    fn text_and_focus_colors_keep_contrast_on_their_actual_surfaces() {
+        let pairs = [
+            (NAVY, CREAM),
+            (NAVY, IVORY),
+            (MUTED, CREAM),
+            (MUTED, IVORY),
+            (CREAM, NAVY),
+            (NAV_MUTED, NAVY_DEEP),
+            (CREAM, NAVY_LIGHT),
+            (GREEN, GREEN_TINT),
+            (AMBER, AMBER_TINT),
+            (RED, RED_TINT),
+        ];
+        for (foreground, background) in pairs {
+            let a = luminance(foreground);
+            let b = luminance(background);
+            let contrast = (a.max(b) + 0.05) / (a.min(b) + 0.05);
+            assert!(
+                contrast >= 4.5,
+                "Text/focus contrast is {contrast:.2}: {foreground:?} on {background:?}"
+            );
+        }
+    }
 }

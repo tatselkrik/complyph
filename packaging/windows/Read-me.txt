@@ -1,10 +1,15 @@
-ComplyPH 0.14.0 - Document reading quality
+ComplyPH 0.15.0 - Desktop quality improvements
 
 Close ComplyPH and any earlier review-app windows before installing. Open ComplyPH from
 its shortcut. Normal use needs no command prompt, browser, Rust, Python, AI model,
 API key or subscription.
 
 Inspect document text and findings side by side with independent scrolling.
+Smaller windows use Document text / Findings tabs and a compact navigation rail.
+Ctrl+1-5 switches sections, Ctrl+O chooses a document, Ctrl+F focuses search.
+Use Tab / Shift+Tab and Enter / Space for keyboard navigation. Escape dismisses
+the picker or cancels removal. Keep document is the safe removal default.
+See Desktop-quality.md for controls, display checks and verification limits.
 Click a finding title or Show passage to jump to its saved PDF page or Word
 paragraph/table location and highlight its text. Search filters are cleared on a
 passage jump. Identical matches are identified rather than silently guessed.

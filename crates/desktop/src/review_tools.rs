@@ -164,16 +164,15 @@ impl ReviewTools {
                     revision: state.revision(rule), fingerprint: state.review_fingerprint.clone(),
                     status: rule.map_or(ReviewStatus::Unresolved, |r| state.status(r)), note: String::new(), message: None, conflict: false,
                 });
-            ui.label("Reviewer name (self-reported)");
-            ui.add(egui::TextEdit::singleline(&mut self.reviewer).char_limit(120).desired_width(f32::INFINITY));
+            let label=ui.label("Reviewer name (self-reported)");
+            ui.add(egui::TextEdit::singleline(&mut self.reviewer).char_limit(120).desired_width(f32::INFINITY)).labelled_by(label.id);
             widgets::muted(ui, "Stored with each action; this is not a verified identity or digital signature.");
             if rule.is_some() {
                 egui::ComboBox::from_id_salt("follow-up-status").selected_text(draft.status.label()).show_ui(ui, |ui| {
                     for status in ReviewStatus::ALL { ui.selectable_value(&mut draft.status, status, status.label()); }
                 });
             }
-            ui.label(if rule.is_some() { "Note or reason for status change (required)" } else { "Review note (required)" });
-            ui.add(egui::TextEdit::multiline(&mut draft.note).desired_rows(3).desired_width(f32::INFINITY).char_limit(2000));
+            crate::layout::multiline(ui,if rule.is_some() { "Note or reason for status change (required)" } else { "Review note (required)" },&mut draft.note,3,2000);
             if widgets::primary(ui, "Save reviewer update", !self.reviewer.trim().is_empty() && !draft.note.trim().is_empty() && !draft.conflict).clicked() {
                 let request = ReviewActionRequest {
                     review_fingerprint: draft.fingerprint.clone(), rule_id: rule.map(str::to_owned), expected_revision: draft.revision,

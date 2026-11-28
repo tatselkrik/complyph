@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.14.0"><img src="https://img.shields.io/badge/version-0.14.0-142B49?style=flat-square" alt="Version 0.14.0"></a>
+  <a href="https://github.com/tatselkrik/complyph/releases/tag/v0.15.0"><img src="https://img.shields.io/badge/version-0.15.0-142B49?style=flat-square" alt="Version 0.15.0"></a>
   <img src="https://img.shields.io/badge/desktop-Windows%20x64-2474ab?style=flat-square" alt="Windows x64">
   <img src="https://img.shields.io/badge/built%20with-Rust-a75b40?style=flat-square" alt="Built with Rust">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-32624A?style=flat-square" alt="MIT license"></a>
@@ -46,7 +46,7 @@ The library spans Labor, DOLE OSHS, Privacy/NPC, BIR, SSS, PhilHealth and Pag-IB
 - **Add legal source:** import local PDF/DOCX references with an official URL, issuing agency, compliance domains, issue/effective dates and verification notes. Retain original bytes and earlier versions.
 - **Traceable reference library:** 19 preserved references across seven domains, with source URLs, dates, integrity hashes, provenance labels and visible coverage gaps.
 - **Safe workspace storage:** Windows data at `C:\ProgramData\ComplyPH`, automatic migration from detected earlier workspaces and a folder picker for custom locations.
-- **Native interface:** navy blue and cream, with locally bundled fonts and no browser required for ordinary use.
+- **Native interface:** navy blue and cream, with compact navigation, document/findings tabs on smaller displays, keyboard shortcuts and locally bundled fonts. No browser is required for ordinary use.
 
 ## Install
 
@@ -54,9 +54,9 @@ Download the [latest Windows release](https://github.com/tatselkrik/complyph/rel
 
 | Package | Instructions |
 | --- | --- |
-| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/ComplyPH-Setup-0.14.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
-| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/ComplyPH-Windows-x64-0.14.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
-| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.14.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
+| [Installer](https://github.com/tatselkrik/complyph/releases/download/v0.15.0/ComplyPH-Setup-0.15.0.exe) | Close ComplyPH, run the installer, then open the desktop or Start menu shortcut. |
+| [Portable ZIP](https://github.com/tatselkrik/complyph/releases/download/v0.15.0/ComplyPH-Windows-x64-0.15.0.zip) | Extract the complete folder and open `ComplyPH.exe`. |
+| [Checksums](https://github.com/tatselkrik/complyph/releases/download/v0.15.0/SHA256SUMS.txt) | Compare the package's SHA-256 hash with the published checksum. |
 
 Normal use requires no command prompt or development tools. The current Windows binaries are unsigned and may trigger Microsoft SmartScreen. Updating or uninstalling preserves workspace data and original documents.
 
@@ -73,6 +73,8 @@ Normal use requires no command prompt or development tools. The current Windows 
 A resolved follow-up status records a human decision and never changes the automated result or certifies compliance. Reviewer names are self-reported. Each saved review has separate tracking; a new review starts fresh. PDF exports contain private excerpts and notes, include all saved actions, and do not recheck current documents or laws. See [reports and tracking](docs/REPORTS.md).
 
 A matching numeric term is not a complete compliance verdict. Unclear applicability, unsupported wording, conflicting values and incomplete extraction remain unresolved. See [supported checks and validation](docs/VALIDATED_CHECKS.md).
+
+On smaller windows the connected review uses **Document text / Findings** tabs; selecting a passage opens the document tab. **Ctrl+1–5** switches sections, **Ctrl+O** chooses a document and **Ctrl+F** focuses the current document/library search. Use Tab / Shift+Tab and Enter / Space for keyboard navigation. See [desktop controls and verification limits](docs/DESKTOP_QUALITY.md).
 
 ## Compare revised documents
 
@@ -134,7 +136,7 @@ Windows uses `%ProgramData%\ComplyPH`, normally `C:\ProgramData\ComplyPH`. The d
 
 Reader limits are 32 MiB input, 300 PDF pages, 4 MiB extracted text and a 20-second worker timeout. PDF OCR is available for up to 20 pages per run, with a 120-second elapsed limit and explicit human confirmation. Recognition estimates do not establish text accuracy. Images, text boxes, layout and revisions can affect coverage. The initial checks are technically tested, not qualified legal certification.
 
-Source checks require Windows AppContainer or supported Linux Landlock/seccomp confinement and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; no background service runs with the app closed. Other unsupported platforms/kernels remain offline. Publication discovery is bounded to approved UTF-8 HTML pages and qualifying links; it does not establish that every relevant issuance was found. Broader rule coverage, revised-document comparisons, reading-layout improvements, qualified legal review and optional AI review remain future work. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
+Source checks require Windows AppContainer or supported Linux Landlock/seccomp confinement and explicitly approved URLs. They run daily while the app is open and handle missed checks at the next launch; no background service runs with the app closed. Other unsupported platforms/kernels remain offline. Publication discovery is bounded to approved UTF-8 HTML pages and qualifying links; it does not establish that every relevant issuance was found. Broader rule/layout coverage, qualified legal review, assistive-technology and physical Windows-device checks, and optional AI review remain future work. The planned AI action includes an editable submission preview, local redaction and an explicit **Send to OpenAI** step; approved text would leave the device. See [PRIVACY.md](PRIVACY.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Build from source
 

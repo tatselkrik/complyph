@@ -201,8 +201,8 @@ impl ProvisionView {
         if !self.open {
             return;
         }
-        egui::Window::new("Offline legal library").id(egui::Id::unique("supporting-provision")).open(&mut self.open)
-            .default_size([820.0,620.0]).min_width(520.0).resizable(true).collapsible(false).show(ctx,|ui| {
+        crate::layout::window(ctx,egui::Window::new("Offline legal library").id(egui::Id::unique("supporting-provision")).open(&mut self.open)
+            .default_size([820.0,620.0]).resizable(true).collapsible(false)).show(ctx,|ui| {
                 if let Some(error)=&self.error {ui.colored_label(RED,error);widgets::muted(ui,"The report is unchanged. Its recorded citation and excerpt remain available; no online request or latest-version substitution was made.");return;}
                 let Some(source)=&mut self.source else{return;};
                 ui.label(RichText::new(&source.title).font(heading(20.0)));

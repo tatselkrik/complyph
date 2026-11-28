@@ -31,6 +31,7 @@ pub struct ReaderView {
     unit: usize,
     chunk: usize,
     search: String,
+    focus_search: bool,
     passage: Option<text_navigation::Passage>,
     scroll_to_passage: bool,
     jump_error: Option<String>,
@@ -53,6 +54,7 @@ impl Default for ReaderView {
             unit: 0,
             chunk: 0,
             search: String::new(),
+            focus_search: false,
             passage: None,
             scroll_to_passage: false,
             jump_error: None,
@@ -61,6 +63,12 @@ impl Default for ReaderView {
 }
 
 impl ReaderView {
+    pub fn is_reading(&self) -> bool {
+        matches!(self.state, State::Reading)
+    }
+    pub fn focus_find(&mut self) {
+        self.focus_search = true;
+    }
     pub fn is_retained(&self) -> bool {
         self.retained
     }
@@ -94,6 +102,7 @@ impl ReaderView {
     }
 
     pub fn clear(&mut self) {
+        self.focus_search = false;
         self.ocr_settings = Default::default();
         self.format = None;
         self.retained = false;
@@ -231,7 +240,6 @@ impl ReaderView {
                 }
                 State::Finished(saved) => {
                     let report = &saved.report;
-                    if let Some(error)=&self.jump_error {ui.colored_label(RED,error);}
                     if let Some(passage)=&mut self.passage {
                         ui.horizontal_wrapped(|ui| {
                             widgets::pill(ui,"Finding passage",AMBER,AMBER_TINT,false);
@@ -275,9 +283,11 @@ impl ReaderView {
                     });
                     if !report.units.is_empty() && report.text_bytes() > 0 {
                         ui.add_space(10.0);
-                        ui.horizontal(|ui| {
-                            ui.label("Find text");
-                            if ui.add(egui::TextEdit::singleline(&mut self.search).hint_text("Search this document…").desired_width(230.0)).changed() {
+                        ui.horizontal_wrapped(|ui| {
+                            let label=ui.label("Find text");
+                            let response=ui.add(egui::TextEdit::singleline(&mut self.search).hint_text("Search this document…").desired_width((ui.available_width()-10.0).clamp(80.0,230.0))).labelled_by(label.id);
+                            if std::mem::take(&mut self.focus_search){response.request_focus();response.scroll_to_me(Some(egui::Align::Center));}
+                            if response.changed() {
                                 self.chunk = 0;
                             }
                         });
@@ -304,7 +314,7 @@ impl ReaderView {
                             let count = boundaries.len().saturating_sub(1).max(1);
                             self.chunk = self.chunk.min(count - 1);
                             if count > 1 {
-                                ui.horizontal(|ui| {
+                                ui.horizontal_wrapped(|ui| {
                                     if ui.add_enabled(self.chunk > 0, egui::Button::new("Earlier text")).clicked() { self.chunk -= 1; }
                                     if ui.add_enabled(self.chunk + 1 < count, egui::Button::new("More text")).clicked() { self.chunk += 1; }
                                     ui.label(format!("Display section {} / {count} · same original location", self.chunk + 1));
@@ -384,6 +394,40 @@ fn ocr_controls(ui: &mut Ui, settings: &mut complyph_extract::OcrSettings) {
 mod tests {
     use super::*;
     use complyph_extract::{Format, Location, Report, TextUnit};
+
+    #[test]
+    fn late_cancelled_reply_cannot_replace_the_selected_retained_reading() {
+        let report = complyph_extract::extract(
+            Format::Docx,
+            include_bytes!("../../../examples/Synthetic labour issues.docx"),
+        );
+        let saved = SavedExtraction {
+            sha256: "fictional-selected-version".into(),
+            read_at: 0,
+            report,
+        };
+        let mut view = ReaderView::default();
+        let old_generation = view.generation;
+        let cancelled = Arc::new(AtomicBool::new(false));
+        view.cancel = Some(cancelled.clone());
+        view.state = State::Reading;
+        view.open_retained(saved.clone());
+        assert!(cancelled.load(Ordering::Relaxed));
+        let mut stale = saved.clone();
+        stale.sha256 = "fictional-earlier-version".into();
+        view.sender.send((old_generation, Ok(stale))).unwrap();
+        view.sender
+            .send((old_generation, Err("Earlier read failed.".into())))
+            .unwrap();
+        view.poll();
+        assert!(view.is_retained());
+        assert_eq!(view.current().unwrap().sha256, saved.sha256);
+        assert_eq!(view.current().unwrap().report, saved.report);
+        view.clear();
+        view.sender.send((old_generation, Ok(saved))).unwrap();
+        view.poll();
+        assert!(view.current().is_none());
+    }
 
     #[test]
     fn passage_jump_scrolls_the_outer_pane_to_the_text_viewport() {

@@ -53,7 +53,7 @@ $privateDatabase = Join-Path $legacyData 'private/workspace.sqlite3'
 $privateHash = (Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash
 $sentinel = Join-Path $legacyData 'private/preserve.fixture'
 'Synthetic preservation fixture.' | Set-Content -LiteralPath $sentinel
-$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.14.0.exe'
+$installer = Join-Path $root 'dist/windows/ComplyPH-Setup-0.15.0.exe'
 $process = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($process.ExitCode -ne 0) { throw "ComplyPH upgrade exit code: $($process.ExitCode)" }
 $application = Join-Path $installDirectory 'ComplyPH.exe'
@@ -459,6 +459,24 @@ if ($quality.private_schema -ne 6 -or $quality.public_schema -ne 5 -or $quality.
 foreach ($case in $quality.workflow_cases) { if ($case.passed -ne $true) { throw "Failed quality workflow: $($case.name)" } }
 foreach ($check in $quality.checks.PSObject.Properties) { if ($check.Value -ne $true) { throw "Failed reading-quality check: $($check.Name)" } }
 if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Reading-quality tests changed the default private workspace.' }
+$desktopOutput = Join-Path $fixtureRoot 'desktop-quality.json'
+$desktopRoot = Join-Path $fixtureRoot 'desktop-quality'
+$desktopStart = [Diagnostics.ProcessStartInfo]::new()
+$desktopStart.FileName = $application
+$desktopStart.UseShellExecute = $false
+$desktopStart.RedirectStandardError = $true
+foreach ($argument in @('--desktop-quality-check','--output',$desktopOutput,'--data-dir',$desktopRoot)) { $desktopStart.ArgumentList.Add($argument) }
+$desktopProcess = [Diagnostics.Process]::Start($desktopStart)
+$desktopErrors = $desktopProcess.StandardError.ReadToEndAsync()
+if (!$desktopProcess.WaitForExit(300000)) { $desktopProcess.Kill($true); throw 'Installed desktop-quality diagnostic timed out.' }
+if ($desktopProcess.ExitCode -ne 0) { throw ('Installed desktop-quality workflows failed: ' + $desktopErrors.GetAwaiter().GetResult()) }
+$desktopQuality = Get-Content -LiteralPath $desktopOutput -Raw | ConvertFrom-Json
+if ($desktopQuality.profile -ne 'initial-desktop-quality-v1' -or $desktopQuality.version -ne '0.15.0' -or $desktopQuality.layout_cases.Count -ne 12 -or $desktopQuality.keyboard_cases.Count -ne 5 -or $desktopQuality.recovery_cases.Count -ne 3) { throw 'Incomplete desktop-quality evidence.' }
+foreach ($case in $desktopQuality.layout_cases) { if ($case.passed -ne $true -or $case.scenarios -ne 14) { throw 'A desktop layout scenario failed.' } }
+foreach ($case in @($desktopQuality.keyboard_cases) + @($desktopQuality.recovery_cases)) { if ($case.passed -ne $true) { throw "Failed desktop workflow: $($case.name)" } }
+if ($desktopQuality.interactive_windows_display_tested -ne $false -or $desktopQuality.qualified_legal_review -ne $false) { throw 'Desktop evidence misrepresents its verification scope.' }
+if (!(Test-Path -LiteralPath (Join-Path $installDirectory 'Desktop-quality.md'))) { throw 'Desktop controls guide is missing.' }
+if ((Get-FileHash -LiteralPath $privateDatabase -Algorithm SHA256).Hash -ne $privateHash) { throw 'Desktop-quality tests changed the default private workspace.' }
 $catalogHash = (Get-FileHash -LiteralPath $catalog -Algorithm SHA256).Hash
 $reinstall = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
 if ($reinstall.ExitCode -ne 0 -or !(Test-Path -LiteralPath $application)) { throw 'Reinstallation lost the registered installation location.' }
@@ -564,6 +582,7 @@ $result = [ordered]@{
     private_schema = 6; validated_check_count = 20; installed_checks_passed = $true; synthetic_check_fixture_count = $checkResults.Count; check_results = $checkResults
     installed_document_revisions_passed = $true; released_v012_history_upgrade_passed = $true; document_revisions = $revisions
     installed_reading_quality_passed = $true; reading_quality = $quality; released_v013_reading_upgrade_passed = $true; reading_upgrade = $readingUpgrade
+    installed_desktop_quality_passed = $true; desktop_quality = $desktopQuality
     installed_initial_checks_passed = $true; initial_period_scope_gates_passed = $true; installed_initial_source_citations_passed = $true; initial_pdf_sources_passed = $true; synthetic_initial_fixture_count = $initialResults.Count; initial_results = $initialResults; rule_pack_sha256 = $expectedPackHash
     installed_sil_checks_passed = $true; sil_eligibility_gates_passed = $true; sil_pdf_basis_passed = $true; synthetic_sil_fixture_count = $silResults.Count; sil_results = $silResults
     installed_ocr_passed = $true; ocr_confirmation_gate_passed = $true; ocr_originals_preserved = $true; synthetic_ocr_fixture_count = $ocrResults.Count; ocr_results = $ocrResults

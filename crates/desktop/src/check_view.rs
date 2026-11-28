@@ -215,10 +215,9 @@ fn additional_scopes(
                     let scope=scopes.entry(rule.id.clone()).or_default();
                     super_scope(ui,&mut scope.coverage);
                     ui.checkbox(&mut scope.exceptions_reviewed,"I reviewed coverage, applicable amendments and exceptions for this check.");
-                    ui.label("Date within the period being reviewed (YYYY-MM-DD)");
-                    ui.add(egui::TextEdit::singleline(&mut scope.review_on).char_limit(10).desired_width(170.0));
-                    ui.label("Factual and applicability basis");
-                    ui.add(egui::TextEdit::multiline(&mut scope.basis).char_limit(1000).desired_rows(3).desired_width(f32::INFINITY));
+                    let label=ui.label("Date within the period being reviewed (YYYY-MM-DD)");
+                    ui.add(egui::TextEdit::singleline(&mut scope.review_on).char_limit(10).desired_width(170.0)).labelled_by(label.id);
+                    crate::layout::multiline(ui,"Factual and applicability basis",&mut scope.basis,3,1000);
                     widgets::muted(ui,"Record coverage, period and the records/base/exception evidence used. This assertion is saved locally and included in requested reports; the app does not verify the underlying facts.");
                 });
             }
@@ -285,13 +284,14 @@ fn sil_scope(ui: &mut Ui, scope: &mut complyph_checks::SilScope) {
         ],
         "Review existing SIL, vacation leave with pay of at least five days, establishments regularly employing fewer than ten employees, any valid Secretary-granted exemption, and other applicable exclusions. Ten employees is not fewer than ten. Do not infer an equivalent vacation benefit from a generic pooled-leave figure. More favourable contracts/CBAs and employer practice still need separate review.",
     );
-    ui.label("SIL eligibility basis (required for a numeric comparison)");
+    let label = ui.label("SIL eligibility basis (required for a numeric comparison)");
     ui.add(
         egui::TextEdit::multiline(&mut scope.basis)
             .desired_rows(3)
             .desired_width(f32::INFINITY)
             .char_limit(1000),
-    );
+    )
+    .labelled_by(label.id);
     widgets::muted(
         ui,
         "Record the review period, coverage/service records and exception/headcount/alternative-benefit basis. Saved locally with the review; this is a reviewer assertion, not independently verified eligibility.",

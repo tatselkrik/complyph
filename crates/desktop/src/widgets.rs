@@ -177,24 +177,42 @@ pub fn muted(ui: &mut Ui, text: &str) {
 }
 
 pub fn primary(ui: &mut Ui, label: &str, enabled: bool) -> Response {
-    ui.add_enabled(
+    let response = ui.add_enabled(
         enabled,
         egui::Button::new(RichText::new(label).font(heading(15.0)).color(CREAM))
             .fill(if enabled { NAVY } else { MUTED })
             .stroke(Stroke::NONE)
             .corner_radius(8)
             .min_size(vec2(166.0, 43.0)),
-    )
+    );
+    focus_ring(ui, &response, NAVY);
+    response
 }
 
 pub fn secondary(ui: &mut Ui, label: &str) -> Response {
-    ui.add(
+    let response = ui.add(
         egui::Button::new(RichText::new(label).font(heading(14.0)))
             .fill(IVORY)
             .stroke(Stroke::new(1.0, BORDER))
             .corner_radius(8)
             .min_size(vec2(100.0, 38.0)),
-    )
+    );
+    focus_ring(ui, &response, NAVY);
+    response
+}
+
+pub fn focus_ring(ui: &Ui, response: &Response, color: Color32) {
+    if response.has_focus() {
+        ui.painter().rect_stroke(
+            response.rect.expand(2.0),
+            9,
+            Stroke::new(2.0, color),
+            StrokeKind::Outside,
+        );
+    }
+    if response.gained_focus() {
+        response.scroll_to_me(Some(egui::Align::Center));
+    }
 }
 
 pub fn pill(ui: &mut Ui, text: &str, foreground: Color32, background: Color32, dot: bool) {
@@ -220,8 +238,14 @@ pub fn navigation(
     kind: Icon,
     selected: bool,
     count: Option<usize>,
+    compact: bool,
 ) -> Response {
-    let (rect, response) = ui.allocate_exact_size(vec2(ui.available_width(), 48.0), Sense::click());
+    let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 48.0), Sense::hover());
+    let response = ui.interact(
+        rect,
+        egui::Id::unique(("workspace-page", text)),
+        Sense::click(),
+    );
     let hovered = response.hovered();
     if selected || hovered {
         ui.painter()
@@ -241,22 +265,34 @@ pub fn navigation(
     };
     paint_icon(
         ui.painter(),
-        Rect::from_center_size(pos2(rect.left() + 25.0, rect.center().y), vec2(21.0, 21.0)),
+        Rect::from_center_size(
+            pos2(
+                if compact {
+                    rect.center().x
+                } else {
+                    rect.left() + 25.0
+                },
+                rect.center().y,
+            ),
+            vec2(21.0, 21.0),
+        ),
         kind,
         color,
     );
-    ui.painter().text(
-        pos2(rect.left() + 48.0, rect.center().y),
-        Align2::LEFT_CENTER,
-        text,
-        if selected {
-            heading(15.5)
-        } else {
-            FontId::proportional(15.5)
-        },
-        color,
-    );
-    if let Some(count) = count.filter(|c| *c > 0) {
+    if !compact {
+        ui.painter().text(
+            pos2(rect.left() + 48.0, rect.center().y),
+            Align2::LEFT_CENTER,
+            text,
+            if selected {
+                heading(15.5)
+            } else {
+                FontId::proportional(15.5)
+            },
+            color,
+        );
+    }
+    if let Some(count) = count.filter(|c| *c > 0 && !compact) {
         let badge =
             Rect::from_center_size(pos2(rect.right() - 23.0, rect.center().y), vec2(27.0, 24.0));
         ui.painter().rect_filled(badge, 6, NAVY_LIGHT);
@@ -272,6 +308,13 @@ pub fn navigation(
         ui.painter()
             .rect_stroke(rect, 8, Stroke::new(1.5, CREAM), StrokeKind::Inside);
     }
-    response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), text));
-    response.on_hover_cursor(egui::CursorIcon::PointingHand)
+    if response.gained_focus() {
+        response.scroll_to_me(Some(egui::Align::Center));
+    }
+    response.widget_info(|| {
+        egui::WidgetInfo::selected(egui::Role::Button, ui.is_enabled(), selected, text)
+    });
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(text)
 }

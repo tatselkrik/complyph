@@ -1,8 +1,8 @@
 # Roadmap
 
-Status reflects ComplyPH 0.14.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
+Status reflects ComplyPH 0.15.0. Checked items are available; unchecked items are planned. Future items do not have assigned release dates.
 
-## Available in 0.14.0
+## Available in 0.15.0
 
 - [x] Local PDF/DOCX extraction with source locations, content-hash caching and bounded worker processes.
 - [x] Side-by-side document and findings panes, highlighted evidence navigation and saved review history.
@@ -15,6 +15,7 @@ Status reflects ComplyPH 0.14.0. Checked items are available; unchecked items ar
 - [x] Local PDF OCR with bundled Windows runtime and a separate accuracy gate.
 - [x] Optional local watched-folder intake with pause/resume, stability checks, duplicate detection and persisted local history.
 - [x] Windows installation, workspace migration, protected `C:\ProgramData\ComplyPH` storage and preserving uninstall.
+- [x] Initial desktop-quality pass: compact layouts, bounded dialogs, keyboard shortcuts/focus, labelled edits and actual-application recovery tests.
 
 ## Six work areas
 
@@ -53,7 +54,7 @@ Local PDF OCR and optional nonrecursive folder intake are implemented. The finit
 
 ### 4. Optional AI review
 
-AI review is planned and is not included in 0.14.0. It is a separate action for a selected document, with an explicit disclosure and send step.
+AI review is planned and is not included in 0.15.0. It is a separate action for a selected document, with an explicit disclosure and send step.
 
 - [ ] Keep **offline review as the default**.
 - [ ] Add a separate **AI review** action for each document.
@@ -83,7 +84,10 @@ The complete maintenance workflow is available in 0.12.0. See [library maintenan
 
 Discovery is a bounded official-page link inventory, not an exhaustive legal search or automatic effectivity determination. A changed requirement still needs a newly implemented and tested rule profile; source adoption does not rewrite thresholds. Qualified Philippine legal review remains under item 6. Private document data never becomes source-updater input.
 
-### 6. Validation and desktop quality
+### 6. Validation and desktop quality — partly implemented
+
+- [x] Complete the finite [initial desktop-quality profile](DESKTOP_QUALITY.md): twelve size/scaling combinations, compact review, bounded dialogs, keyboard focus/shortcuts, safe removal defaults and labelled edits.
+- [x] Add actual-application missing/malformed-file retry and history-preservation cases, plus late-reader-reply and palette-contrast regressions. Require the installed Windows executable to pass the headless UI profile before publication.
 
 - [ ] Broaden representative synthetic cases, including paraphrases, exceptions, ambiguous wording, missing evidence and extraction failures; investigate missed issues and false flags.
 - [ ] Obtain qualified Philippine legal review of checking rules and their supporting interpretations; technical tests and legal review remain distinct.

@@ -107,6 +107,23 @@ jobs:
           assert check['manual_source_count'] == check['awaiting_verification_count'] == 1
           assert manifest['private_schema'] == check['private_schema'] == 6
           assert manifest['reader_engine'] == 'complyph-text-2'
+          assert manifest['desktop_quality'] is True and check['installed_desktop_quality_passed'] is True
+          desktop = check['desktop_quality']
+          assert desktop['profile'] == manifest['desktop_quality_profile'] == 'initial-desktop-quality-v1'
+          assert desktop['version'] == version
+          assert manifest['desktop_layout_cases'] == len(desktop['layout_cases']) == 12
+          assert {(c['physical_width'],c['physical_height'],c['scale']) for c in desktop['layout_cases']} == {(w,h,s) for w,h in [(1280,960),(1920,1080),(2560,1440)] for s in [1.0,1.25,1.5,2.0]}
+          assert manifest['desktop_scenarios_per_layout'] == 14
+          assert all(c['passed'] is True and c['scenarios'] == 14 for c in desktop['layout_cases'])
+          for name in ('compact_review','keyboard_navigation','bounded_dialogs'):
+              assert manifest[name] is True, name
+          assert manifest['desktop_keyboard_cases'] == len(desktop['keyboard_cases']) == 5
+          assert {c['name'] for c in desktop['keyboard_cases']} == {'page_shortcuts_and_focus','scoped_search_and_typing','file_picker_focus_and_dismissal','safe_confirmation_default_and_escape','tab_enter_and_space_activation'}
+          assert manifest['desktop_recovery_cases'] == len(desktop['recovery_cases']) == 3
+          assert {c['name'] for c in desktop['recovery_cases']} == {'missing_original_and_retry','malformed_original_blocks_review','repaired_reading_preserves_history'}
+          assert all(c['passed'] is True for c in desktop['keyboard_cases'] + desktop['recovery_cases'])
+          assert desktop['interactive_windows_display_tested'] is manifest['interactive_windows_display_tested'] is False
+          assert desktop['qualified_legal_review'] is manifest['qualified_legal_review'] is False
           assert check['installed_reading_quality_passed'] is True
           assert check['released_v013_reading_upgrade_passed'] is True
           for name in ('reading_quality','spatial_pdf_reading','word_text_boxes','ocr_rotation','ocr_scan_enhancement','ocr_layout_controls','reading_warning_gates','reading_provenance_export'):
@@ -217,7 +234,7 @@ jobs:
               sys.path.insert(0, 'scripts')
               from verify_ocr_runtime import verify
               verify({item['name']: package.read(prefix + item['name']) for item in runtime['files']})
-              for basename, source in (('Reading-quality.md','docs/READING_QUALITY.md'),('Reports-and-revisions.md','docs/REPORTS.md'),('Library-maintenance.md','docs/LIBRARY_MAINTENANCE.md')):
+              for basename, source in (('Desktop-quality.md','docs/DESKTOP_QUALITY.md'),('Reading-quality.md','docs/READING_QUALITY.md'),('Reports-and-revisions.md','docs/REPORTS.md'),('Library-maintenance.md','docs/LIBRARY_MAINTENANCE.md')):
                   matches = [name for name in package.namelist() if name.endswith('/' + basename)]
                   assert len(matches) == 1 and package.read(matches[0]) == Path(source).read_bytes()
               for sample in [path.name for path in Path('examples').iterdir() if path.is_file()]:
@@ -246,7 +263,7 @@ jobs:
           assert release['targetCommitish'] == os.environ['EXPECTED_COMMIT']
           PY
           else
-            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Document reading quality" --notes-file "docs/releases/$RELEASE_TAG.md"
+            gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$EXPECTED_COMMIT" --draft --title "ComplyPH $RELEASE_VERSION — Desktop quality improvements" --notes-file "docs/releases/$RELEASE_TAG.md"
           fi
       - name: Attach verified packages
         shell: bash

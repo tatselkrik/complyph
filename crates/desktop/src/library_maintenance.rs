@@ -158,8 +158,9 @@ fn ui_result<T>(result: std::result::Result<T, LibraryError>) -> Result<T, Strin
     result.map_err(|e| e.to_string())
 }
 fn field(ui: &mut Ui, label: &str, value: &mut String) {
-    ui.label(label);
-    ui.add(TextEdit::singleline(value).desired_width(f32::INFINITY));
+    let label = ui.label(label);
+    ui.add(TextEdit::singleline(value).desired_width(f32::INFINITY))
+        .labelled_by(label.id);
     ui.end_row();
 }
 pub(crate) fn prepare_public_reference(
@@ -357,7 +358,8 @@ impl LibraryMaintenance {
                 field(ui,"Reviewer *",&mut self.reviewer.actor);
                 field(ui,"Review date · YYYY-MM-DD *",&mut self.reviewer.review_on);
             });
-            ui.add(TextEdit::multiline(&mut self.reviewer.basis).desired_width(f32::INFINITY).desired_rows(2).hint_text("What was compared, the legal/scope conclusion and why this decision is appropriate. Required for changes."));
+            crate::layout::multiline(ui,"Decision basis *",&mut self.reviewer.basis,2,usize::MAX);
+            widgets::muted(ui,"Record what was compared, the legal/scope conclusion and why this decision is appropriate.");
             widgets::muted(ui,"Reviewer identity and conclusions are self-reported. The local audit records are not a legal certification.");
         });
     }
@@ -437,81 +439,83 @@ impl LibraryMaintenance {
         if self.open {
             let mut open = true;
             let mut action = None;
-            egui::Window::new("Library maintenance")
-                .id(egui::Id::unique("library-maintenance"))
-                .open(&mut open)
-                .default_size([1120.0, 760.0])
-                .min_width(780.0)
-                .resizable(true)
-                .collapsible(false)
-                .show(ctx, |ui| {
-                    let previous_tab = self.tab;
-                    ui.horizontal_wrapped(|ui| {
-                        for (tab, label) in [
-                            (Tab::Source, "Source details"),
-                            (Tab::Compare, "Version comparison"),
-                            (Tab::Rules, "Rule revalidation"),
-                            (Tab::Discovery, "Publication discovery"),
-                            (Tab::History, "Audit history"),
-                        ] {
-                            ui.selectable_value(&mut self.tab, tab, label);
-                        }
-                    });
-                    if previous_tab != self.tab {
-                        self.scroll_top = true;
+            crate::layout::window(
+                ctx,
+                egui::Window::new("Library maintenance")
+                    .id(egui::Id::unique("library-maintenance"))
+                    .open(&mut open)
+                    .default_size([1120.0, 760.0])
+                    .resizable(true)
+                    .collapsible(false),
+            )
+            .show(ctx, |ui| {
+                let previous_tab = self.tab;
+                ui.horizontal_wrapped(|ui| {
+                    for (tab, label) in [
+                        (Tab::Source, "Source details"),
+                        (Tab::Compare, "Version comparison"),
+                        (Tab::Rules, "Rule revalidation"),
+                        (Tab::Discovery, "Publication discovery"),
+                        (Tab::History, "Audit history"),
+                    ] {
+                        ui.selectable_value(&mut self.tab, tab, label);
                     }
-                    ui.separator();
-                    if let Some(message) = &self.message {
-                        ui.colored_label(AMBER, message);
-                    }
-                    if self.receiver.is_some() {
-                        ui.horizontal(|ui| {
-                            ui.spinner();
-                            ui.label("Reading a public reference locally…");
-                        });
-                    }
-                    let mut area = ScrollArea::vertical()
-                        .id_salt(("maintenance-content", self.tab))
-                        .max_height((ui.available_height() - 12.0).max(300.0));
-                    if std::mem::take(&mut self.scroll_top) {
-                        area = area.vertical_scroll_offset(0.0);
-                    }
-                    area.show(ui, |ui| {
-                        if matches!(self.tab, Tab::Source | Tab::Compare | Tab::History) {
-                            let mut selected = self.source_id;
-                            egui::ComboBox::from_id_salt("maintenance-source")
-                                .selected_text(
-                                    self.sources
-                                        .iter()
-                                        .find(|s| Some(s.id) == self.source_id)
-                                        .map(|s| s.metadata.title.as_str())
-                                        .unwrap_or("Choose source"),
-                                )
-                                .width(ui.available_width().min(800.0))
-                                .show_ui(ui, |ui| {
-                                    for source in &self.sources {
-                                        ui.selectable_value(
-                                            &mut selected,
-                                            Some(source.id),
-                                            &source.metadata.title,
-                                        );
-                                    }
-                                });
-                            if selected != self.source_id
-                                && let Some(id) = selected
-                            {
-                                action = Some(Action::Source(id));
-                            }
-                        }
-                        match self.tab {
-                            Tab::Source => self.source_ui(ui, &mut action),
-                            Tab::Compare => self.comparison_ui(ui, &mut action),
-                            Tab::Rules => self.rules_ui(ui, &mut action),
-                            Tab::Discovery => self.discovery_ui(ui, &mut action),
-                            Tab::History => self.history_ui(ui),
-                        }
-                    });
                 });
+                if previous_tab != self.tab {
+                    self.scroll_top = true;
+                }
+                ui.separator();
+                if let Some(message) = &self.message {
+                    ui.colored_label(AMBER, message);
+                }
+                if self.receiver.is_some() {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label("Reading a public reference locally…");
+                    });
+                }
+                let mut area = ScrollArea::vertical()
+                    .id_salt(("maintenance-content", self.tab))
+                    .max_height((ui.available_height() - 12.0).max(300.0));
+                if std::mem::take(&mut self.scroll_top) {
+                    area = area.vertical_scroll_offset(0.0);
+                }
+                area.show(ui, |ui| {
+                    if matches!(self.tab, Tab::Source | Tab::Compare | Tab::History) {
+                        let mut selected = self.source_id;
+                        egui::ComboBox::from_id_salt("maintenance-source")
+                            .selected_text(
+                                self.sources
+                                    .iter()
+                                    .find(|s| Some(s.id) == self.source_id)
+                                    .map(|s| s.metadata.title.as_str())
+                                    .unwrap_or("Choose source"),
+                            )
+                            .width(ui.available_width().min(800.0))
+                            .show_ui(ui, |ui| {
+                                for source in &self.sources {
+                                    ui.selectable_value(
+                                        &mut selected,
+                                        Some(source.id),
+                                        &source.metadata.title,
+                                    );
+                                }
+                            });
+                        if selected != self.source_id
+                            && let Some(id) = selected
+                        {
+                            action = Some(Action::Source(id));
+                        }
+                    }
+                    match self.tab {
+                        Tab::Source => self.source_ui(ui, &mut action),
+                        Tab::Compare => self.comparison_ui(ui, &mut action),
+                        Tab::Rules => self.rules_ui(ui, &mut action),
+                        Tab::Discovery => self.discovery_ui(ui, &mut action),
+                        Tab::History => self.history_ui(ui),
+                    }
+                });
+            });
             self.open = open;
             if let Some(action) = action
                 && let Err(error) = self.perform(action, catalog, directory, ctx)
@@ -556,18 +560,20 @@ impl LibraryMaintenance {
                 }
             });
         }
-        ui.label("Effectivity assessment");
+        let label = ui.label("Effectivity assessment");
         ui.add(
             TextEdit::multiline(&mut self.details.effectivity_note)
                 .desired_rows(2)
                 .desired_width(f32::INFINITY),
-        );
-        ui.label("Applicability and exceptions");
+        )
+        .labelled_by(label.id);
+        let label = ui.label("Applicability and exceptions");
         ui.add(
             TextEdit::multiline(&mut self.details.applicability_note)
                 .desired_rows(2)
                 .desired_width(f32::INFINITY),
-        );
+        )
+        .labelled_by(label.id);
         widgets::muted(
             ui,
             "Edits are append-only annotations for this exact version. Original acquisition metadata, hashes and historical citations remain preserved. Editing a URL does not approve online checks.",
@@ -1020,7 +1026,7 @@ impl LibraryMaintenance {
             if let Some(id) = rule.update_hold_id {
                 ui.checkbox(&mut self.withdraw_update_requirement,format!("I explicitly resolve the reviewed update requirements through assessment #{id}; my basis explains why this compiled profile is valid."));
             }
-            ui.add(TextEdit::singleline(&mut self.test_reference).desired_width(f32::INFINITY).hint_text("Test/evaluation reference and result, or required implementation/testing work"));
+            ui.add(TextEdit::singleline(&mut self.test_reference).desired_width(f32::INFINITY).hint_text("Test/evaluation reference and result, or required implementation/testing work")).accessible_name("Rule evaluation reference and result");
             ui.horizontal_wrapped(|ui| {
                 if widgets::primary(
                     ui,
@@ -1047,11 +1053,13 @@ impl LibraryMaintenance {
             ui,
             "Approve an official publication/listing page. Daily scans inventory PDF/DOCX and issuance links; they do not infer issue dates or legal effect, crawl other pages, or download discovered documents.",
         );
+        let label = ui.label("Official agency publication-page HTTPS URL");
         ui.add(
             TextEdit::singleline(&mut self.page_url)
                 .desired_width(f32::INFINITY)
                 .hint_text("Official agency publication-page HTTPS URL"),
-        );
+        )
+        .labelled_by(label.id);
         if let Ok(manifest) = starter_manifest() {
             egui::ComboBox::from_id_salt("discovery-domain")
                 .selected_text(
@@ -1098,6 +1106,7 @@ impl LibraryMaintenance {
         self.reviewer_form(ui);
         if ui
             .add(TextEdit::singleline(&mut self.query).hint_text("Filter titles and URLs"))
+            .accessible_name("Filter discovered citation titles and URLs")
             .changed()
         {
             self.link_page = 0;

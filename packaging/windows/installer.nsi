@@ -9,7 +9,7 @@ Unicode True
   !error "Pass /DUPDATER_EXE=path-to-complyph-updater.exe"
 !endif
 !ifndef OUTPUT_FILE
-  !define OUTPUT_FILE "ComplyPH-Setup-0.14.0.exe"
+  !define OUTPUT_FILE "ComplyPH-Setup-0.15.0.exe"
 !endif
 !ifndef NOTICES_FILE
   !error "Pass /DNOTICES_FILE=path-to-THIRD_PARTY_NOTICES.txt"
@@ -29,10 +29,10 @@ SetCompressor /SOLID lzma
 Icon "..\..\assets\icon.ico"
 UninstallIcon "..\..\assets\icon.ico"
 BrandingText "ComplyPH - Local document review"
-VIProductVersion "0.14.0.0"
+VIProductVersion "0.15.0.0"
 VIAddVersionKey /LANG=1033 "ProductName" "ComplyPH"
 VIAddVersionKey /LANG=1033 "FileDescription" "ComplyPH local legal source installer"
-VIAddVersionKey /LANG=1033 "FileVersion" "0.14.0"
+VIAddVersionKey /LANG=1033 "FileVersion" "0.15.0"
 VIAddVersionKey /LANG=1033 "LegalCopyright" "2026 ComplyPH contributors"
 
 !define MUI_WELCOMEPAGE_TITLE "Welcome to ComplyPH"
@@ -86,6 +86,7 @@ Section "ComplyPH" SEC_APP
   File /oname=Library-maintenance.md "..\..\docs\LIBRARY_MAINTENANCE.md"
   File /oname=Reports-and-revisions.md "..\..\docs\REPORTS.md"
   File /oname=Reading-quality.md "..\..\docs\READING_QUALITY.md"
+  File /oname=Desktop-quality.md "..\..\docs\DESKTOP_QUALITY.md"
   SetOutPath "$INSTDIR\OCR"
   File /r "..\..\target\ocr-runtime\*"
   SetOutPath "$INSTDIR\Samples"
@@ -95,7 +96,7 @@ Section "ComplyPH" SEC_APP
   CreateShortCut "$DESKTOP\ComplyPH.lnk" "$INSTDIR\ComplyPH.exe" "" "$INSTDIR\ComplyPH.ico"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayName" "ComplyPH"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.14.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayVersion" "0.15.0"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "Publisher" "ComplyPH contributors"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ComplyPH" "DisplayIcon" "$INSTDIR\ComplyPH.ico"
@@ -120,6 +121,7 @@ Section "Uninstall"
   Delete "$INSTDIR\Library-maintenance.md"
   Delete "$INSTDIR\Reports-and-revisions.md"
   Delete "$INSTDIR\Reading-quality.md"
+  Delete "$INSTDIR\Desktop-quality.md"
   Delete "$INSTDIR\Samples\Synthetic sample.pdf"
   Delete "$INSTDIR\Samples\Synthetic sample.docx"
   Delete "$INSTDIR\Samples\Synthetic employment.pdf"

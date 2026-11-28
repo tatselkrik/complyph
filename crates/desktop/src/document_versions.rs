@@ -298,10 +298,9 @@ impl DocumentVersions {
         if self.open {
             let mut open = self.open;
             let mut action = None;
-            egui::Window::new("Document versions").open(&mut open)
-                .default_size([1080.0,680.0]).max_width((ctx.content_rect().width()-24.0).max(600.0))
-                .max_height((ctx.content_rect().height()-24.0).max(400.0))
-                .anchor(egui::Align2::CENTER_CENTER,[0.0,0.0]).show(ctx,|ui|{
+            crate::layout::window(ctx,egui::Window::new("Document versions").open(&mut open)
+                .default_size([1080.0,680.0])
+                .anchor(egui::Align2::CENTER_CENTER,[0.0,0.0])).show(ctx,|ui|{
                 ui.horizontal_wrapped(|ui|{
                     let old=self.tab;
                     ui.selectable_value(&mut self.tab,Tab::History,"Version history");
@@ -441,8 +440,9 @@ impl DocumentVersions {
             );
         }
         for version in history.versions.iter().rev() {
-            egui::CollapsingHeader::new(format!("Version #{} · {} · {}",version.id,version.name,short(&version.document_sha256)))
+            egui::CollapsingHeader::new(format!("Version #{} · {}",version.id,short(&version.document_sha256)))
                 .id_salt(("document-version",version.id)).default_open(true).show(ui,|ui|{
+                ui.add(egui::Label::new(&version.name).wrap().selectable(true));
                 widgets::muted(ui,&format!("File SHA-256: {}",version.document_sha256));
                 widgets::muted(ui,&format!("First captured: {}. This is not a signing/effectivity date.",crate::app::format_date(version.captured_at)));
                 if version.readings.is_empty(){ui.colored_label(AMBER,"Historical review only. Its complete reading was not retained; a changed or missing original cannot reconstruct it.");}

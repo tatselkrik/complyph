@@ -12,6 +12,16 @@ use egui_file_dialog::{FileDialog, Filter};
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, Sender};
 
+#[path = "desktop_quality.rs"]
+pub(crate) mod quality;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum ReviewPane {
+    #[default]
+    Document,
+    Findings,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Page {
     Review,
@@ -100,7 +110,10 @@ pub struct ComplyApp {
     choosing: bool,
     notice: Option<Notice>,
     pending_remove: Option<i64>,
+    remove_focus: Option<i64>,
     file_dialog: FileDialog,
+    review_pane: ReviewPane,
+    focus_search: bool,
 }
 
 impl ComplyApp {
@@ -134,6 +147,7 @@ impl ComplyApp {
             choosing: false,
             notice: None,
             pending_remove: None,
+            remove_focus: None,
             file_dialog: FileDialog::new()
                 .title("Choose documents")
                 .add_file_filter(
@@ -153,6 +167,8 @@ impl ComplyApp {
                 .show_all_files_filter(false)
                 .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                 .as_modal(true),
+            review_pane: ReviewPane::Document,
+            focus_search: false,
         };
         match paths.and_then(|paths| Workspace::open(&paths).map(|workspace| (paths, workspace))) {
             Ok((paths, workspace)) => {
@@ -189,6 +205,7 @@ impl ComplyApp {
     }
 
     fn navigate(&mut self, page: Page) {
+        self.focus_search = false;
         self.page = page;
         self.preferences.last_page = page.key().to_owned();
         self.save_preferences();
@@ -252,6 +269,7 @@ impl ComplyApp {
     }
 
     fn select_document(&mut self, id: i64, ctx: &egui::Context) {
+        self.review_pane = ReviewPane::Document;
         self.selected = Some(id);
         self.check_view.clear();
         if let Some(workspace) = &self.workspace
@@ -291,6 +309,7 @@ impl ComplyApp {
                 self.selected = Some(review.document_id);
                 self.reader_view.open_retained(reading.saved);
                 self.check_view.set_review(review);
+                self.review_pane = ReviewPane::Findings;
                 self.notice=Some(Notice{text:"Showing the exact retained reading used by this saved review. Choose Review current file to prepare a new assessment.".into(),error:false});
             }
             Some(Ok(None)) => {
@@ -355,80 +374,116 @@ impl ComplyApp {
     }
 
     fn sidebar(&mut self, ui: &mut Ui, rect: Rect) {
+        let compact = crate::layout::DesktopLayout::new(ui.ctx().content_rect()).compact_navigation;
         ui.painter().rect_filled(rect, 0, NAVY_DEEP);
-        let brand = Rect::from_min_size(rect.min + vec2(22.0, 28.0), vec2(38.0, 38.0));
+        let brand = Rect::from_min_size(
+            rect.min + vec2(if compact { 17.0 } else { 22.0 }, 28.0),
+            vec2(38.0, 38.0),
+        );
         widgets::logo(ui.painter(), brand, CREAM);
-        ui.painter().text(
-            pos2(rect.left() + 73.0, rect.top() + 36.0),
-            Align2::LEFT_CENTER,
-            "ComplyPH",
-            heading(24.0),
-            IVORY,
-        );
-        ui.painter().text(
-            pos2(rect.left() + 74.0, rect.top() + 59.0),
-            Align2::LEFT_CENTER,
-            "P H I L I P P I N E S",
-            FontId::proportional(9.5),
-            NAV_MUTED,
-        );
+        if !compact {
+            ui.painter().text(
+                pos2(rect.left() + 73.0, rect.top() + 36.0),
+                Align2::LEFT_CENTER,
+                "ComplyPH",
+                heading(24.0),
+                IVORY,
+            );
+            ui.painter().text(
+                pos2(rect.left() + 74.0, rect.top() + 59.0),
+                Align2::LEFT_CENTER,
+                "P H I L I P P I N E S",
+                FontId::proportional(9.5),
+                NAV_MUTED,
+            );
+        }
 
         let nav = Rect::from_min_max(
-            rect.min + vec2(14.0, 128.0),
-            pos2(rect.right() - 14.0, rect.bottom() - 200.0),
+            rect.min
+                + vec2(
+                    if compact { 8.0 } else { 14.0 },
+                    if compact { 90.0 } else { 128.0 },
+                ),
+            pos2(
+                rect.right() - if compact { 8.0 } else { 14.0 },
+                rect.bottom() - if compact { 42.0 } else { 200.0 },
+            ),
         );
         ui.scope_builder(UiBuilder::new().max_rect(nav), |ui| {
-            ui.add_space(2.0);
-            ui.label(
-                RichText::new("    WORKSPACE")
-                    .font(heading(10.5))
-                    .color(NAV_MUTED),
-            );
-            ui.add_space(8.0);
-            for page in Page::ALL {
-                let count = if page == Page::Documents {
-                    Some(self.documents.len())
-                } else {
-                    None
-                };
-                if widgets::navigation(ui, page.label(), page.icon(), self.page == page, count)
-                    .clicked()
-                {
-                    self.navigate(page);
-                }
-                ui.add_space(3.0);
-            }
+            ScrollArea::vertical()
+                .id_salt("workspace-navigation")
+                .max_height(nav.height())
+                .show(ui, |ui| {
+                    ui.add_space(2.0);
+                    if !compact {
+                        ui.label(
+                            RichText::new("    WORKSPACE")
+                                .font(heading(10.5))
+                                .color(NAV_MUTED),
+                        );
+                    }
+                    ui.add_space(8.0);
+                    for page in Page::ALL {
+                        let count = if page == Page::Documents {
+                            Some(self.documents.len())
+                        } else {
+                            None
+                        };
+                        if widgets::navigation(
+                            ui,
+                            page.label(),
+                            page.icon(),
+                            self.page == page,
+                            count,
+                            compact,
+                        )
+                        .clicked()
+                        {
+                            self.navigate(page);
+                        }
+                        ui.add_space(3.0);
+                    }
+                });
         });
-        let privacy_rect = Rect::from_min_max(
-            pos2(rect.left() + 18.0, rect.bottom() - 172.0),
-            pos2(rect.right() - 18.0, rect.bottom() - 62.0),
-        );
-        ui.painter().rect_filled(privacy_rect, 10, NAVY);
-        widgets::paint_icon(
-            ui.painter(),
-            Rect::from_min_size(privacy_rect.min + vec2(14.0, 15.0), vec2(20.0, 20.0)),
-            Icon::Lock,
-            CREAM,
-        );
+        if !compact {
+            let privacy_rect = Rect::from_min_max(
+                pos2(rect.left() + 18.0, rect.bottom() - 172.0),
+                pos2(rect.right() - 18.0, rect.bottom() - 62.0),
+            );
+            ui.painter().rect_filled(privacy_rect, 10, NAVY);
+            widgets::paint_icon(
+                ui.painter(),
+                Rect::from_min_size(privacy_rect.min + vec2(14.0, 15.0), vec2(20.0, 20.0)),
+                Icon::Lock,
+                CREAM,
+            );
+            ui.painter().text(
+                privacy_rect.min + vec2(14.0, 53.0),
+                Align2::LEFT_CENTER,
+                "Private by design",
+                heading(13.0),
+                CREAM,
+            );
+            ui.painter().text(
+                privacy_rect.min + vec2(14.0, 76.0),
+                Align2::LEFT_CENTER,
+                "Your documents stay here.",
+                FontId::proportional(11.5),
+                NAV_MUTED,
+            );
+        }
         ui.painter().text(
-            privacy_rect.min + vec2(14.0, 53.0),
+            pos2(
+                rect.left() + if compact { 12.0 } else { 25.0 },
+                rect.bottom() - 24.0,
+            ),
             Align2::LEFT_CENTER,
-            "Private by design",
-            heading(13.0),
-            CREAM,
-        );
-        ui.painter().text(
-            privacy_rect.min + vec2(14.0, 76.0),
-            Align2::LEFT_CENTER,
-            "Your documents stay here.",
-            FontId::proportional(11.5),
-            NAV_MUTED,
-        );
-        ui.painter().text(
-            pos2(rect.left() + 25.0, rect.bottom() - 30.0),
-            Align2::LEFT_CENTER,
-            concat!("REVIEW TRACKING / ", env!("CARGO_PKG_VERSION")),
-            FontId::proportional(10.0),
+            if compact {
+                env!("CARGO_PKG_VERSION")
+            } else {
+                concat!("REVIEW TRACKING / ", env!("CARGO_PKG_VERSION"))
+            },
+            FontId::proportional(if compact { 9.0 } else { 10.0 }),
             NAV_MUTED,
         );
     }
@@ -465,7 +520,8 @@ impl ComplyApp {
     }
 
     fn stats(&self, ui: &mut Ui) {
-        ui.columns(3, |columns| {
+        let narrow = ui.available_width() < 680.0;
+        ui.columns(if narrow { 1 } else { 3 }, |columns| {
             for (index, label, value, description) in [
                 (
                     0,
@@ -486,9 +542,9 @@ impl ComplyApp {
                     "Original files stay in place",
                 ),
             ] {
-                widgets::card()
-                    .inner_margin(Margin::same(18))
-                    .show(&mut columns[index], |ui| {
+                widgets::card().inner_margin(Margin::same(18)).show(
+                    &mut columns[if narrow { 0 } else { index }],
+                    |ui| {
                         ui.set_min_width(ui.available_width());
                         widgets::eyebrow(ui, label);
                         ui.add_space(2.0);
@@ -498,7 +554,8 @@ impl ComplyApp {
                             29.0
                         })));
                         ui.label(RichText::new(description).size(12.0).color(MUTED));
-                    });
+                    },
+                );
             }
         });
     }
@@ -725,6 +782,7 @@ impl ComplyApp {
                 .clicked()
                 {
                     self.check_view.edit_scope();
+                    self.review_pane = ReviewPane::Findings;
                 }
                 if widgets::secondary(ui, "Choose another").clicked() {
                     self.choose_documents(ui.ctx());
@@ -759,24 +817,52 @@ impl ComplyApp {
             return;
         }
         ui.add_space(12.0);
-        let pane_height = ui.available_height().max(240.0);
+        let pane_height = crate::layout::remaining_height(ui);
         self.check_view
             .historical_reading(self.reader_view.is_retained());
         let mut reread = false;
         let mut action = None;
-        ui.columns(2, |columns| {
-            ScrollArea::vertical()
-                .id_salt(("document-pane", document.id))
-                .max_height(pane_height)
-                .auto_shrink([false, false])
-                .show(&mut columns[0], |ui| {
+        if crate::layout::review_split(ui) {
+            ui.columns(2, |columns| {
+                ScrollArea::vertical()
+                    .id_salt(("document-pane", document.id))
+                    .max_height(pane_height)
+                    .auto_shrink([false, false])
+                    .show(&mut columns[0], |ui| {
+                        reread = self.reader_view.show(ui, pane_height);
+                    });
+                ScrollArea::vertical()
+                    .id_salt(("findings-pane", document.id))
+                    .max_height(pane_height)
+                    .auto_shrink([false, false])
+                    .show(&mut columns[1], |ui| {
+                        if let (Some(workspace), Some(catalog)) = (&self.workspace, &self.catalog) {
+                            action = self.check_view.show(
+                                ui,
+                                workspace,
+                                catalog,
+                                document,
+                                self.reader_view.current(),
+                                &mut self.review_tools,
+                            );
+                        } else {
+                            widgets::muted(
+                                ui,
+                                "Resolve the local library/workspace error before reviewing.",
+                            );
+                        }
+                    });
+            });
+        } else {
+            ui.horizontal_wrapped(|ui| {
+                ui.selectable_value(&mut self.review_pane, ReviewPane::Document, "Document text");
+                ui.selectable_value(&mut self.review_pane, ReviewPane::Findings, "Findings");
+            });
+            match self.review_pane {
+                ReviewPane::Document => {
                     reread = self.reader_view.show(ui, pane_height);
-                });
-            ScrollArea::vertical()
-                .id_salt(("findings-pane", document.id))
-                .max_height(pane_height)
-                .auto_shrink([false, false])
-                .show(&mut columns[1], |ui| {
+                }
+                ReviewPane::Findings => {
                     if let (Some(workspace), Some(catalog)) = (&self.workspace, &self.catalog) {
                         action = self.check_view.show(
                             ui,
@@ -792,18 +878,21 @@ impl ComplyApp {
                             "Resolve the local library/workspace error before reviewing.",
                         );
                     }
-                });
-        });
+                }
+            }
+        }
         if let Some(action) = action {
             self.review_action(action, ui.ctx());
         }
         if self.reader_view.take_ocr_request()
             && let Some(paths) = self.paths.clone()
         {
+            self.review_pane = ReviewPane::Document;
             self.check_view.clear();
             self.reader_view
                 .start_ocr(paths, document.clone(), ui.ctx());
         } else if reread && let Some(paths) = self.paths.clone() {
+            self.review_pane = ReviewPane::Document;
             self.check_view.clear();
             self.reader_view
                 .start(paths, document.clone(), true, ui.ctx());
@@ -815,6 +904,7 @@ impl ComplyApp {
                 self.open_saved_review(*review, ctx)
             }
             crate::check_view::ReviewAction::Passage { hash, evidence } => {
+                self.review_pane = ReviewPane::Document;
                 self.reader_view.jump_to(&hash, &evidence)
             }
             crate::check_view::ReviewAction::Provision { review, finding } => {
@@ -838,15 +928,22 @@ impl ComplyApp {
             "Your documents",
             "An organized workspace, with your original files kept in place.",
         );
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             widgets::icon(ui, Icon::Search, 18.0, MUTED);
-            let width = (ui.available_width() - 205.0).max(170.0);
-            ui.add(
-                egui::TextEdit::singleline(&mut self.search)
-                    .hint_text("Search by filename...")
-                    .desired_width(width)
-                    .margin(vec2(10.0, 10.0)),
-            );
+            let width = (ui.available_width() - 205.0).max(130.0);
+            let response = ui
+                .add(
+                    egui::TextEdit::singleline(&mut self.search)
+                        .id(egui::Id::unique("documents-search"))
+                        .hint_text("Search by filename...")
+                        .desired_width(width)
+                        .margin(vec2(10.0, 10.0)),
+                )
+                .accessible_name("Search documents by filename");
+            if std::mem::take(&mut self.focus_search) {
+                response.request_focus();
+                response.scroll_to_me(Some(egui::Align::Center));
+            }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if widgets::primary(ui, "Add documents", !self.choosing).clicked() {
                     self.choose_documents(ui.ctx());
@@ -1053,6 +1150,13 @@ impl ComplyApp {
             self.save_preferences();
         }
         ui.add_space(18.0);
+        widgets::card().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            ui.label(RichText::new("Keyboard navigation").font(heading(19.0)));
+            widgets::muted(ui,"Tab / Shift+Tab moves between controls. Enter or Space activates a focused button. Escape dismisses the file picker or cancels document removal.");
+            widgets::muted(ui,"Ctrl+1–5 opens Review, Documents, Legal library, Reports or Settings. Ctrl+O chooses a document. Ctrl+F focuses search in Documents, an open document or the legal library.");
+        });
+        ui.add_space(18.0);
         if let Some(workspace) = &self.workspace {
             self.folder_watch.show(ui, workspace);
         }
@@ -1079,7 +1183,7 @@ impl ComplyApp {
             ui.set_min_width(ui.available_width());
             ui.label(RichText::new("ComplyPH").font(heading(20.0)));
             widgets::muted(ui,"A private workspace for Philippine compliance document review.");
-            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Reviewer notes and PDF reports")).size(12.5).color(MUTED));
+            ui.label(RichText::new(concat!("Version ", env!("CARGO_PKG_VERSION"), " · Desktop quality improvements")).size(12.5).color(MUTED));
             ui.add_space(8.0);
             ui.label(RichText::new("Twenty source-cited checks across seven domains are available. Each requires confirmed applicability and evidence. Approved source URLs can be checked daily while the app is open.").size(12.5).color(AMBER));
         });
@@ -1123,20 +1227,25 @@ impl ComplyApp {
         let document = self.documents.iter().find(|d| d.id == id).cloned();
         let Some(document) = document else {
             self.pending_remove = None;
+            self.remove_focus = None;
             return;
         };
         let mut remove = false;
         let mut cancel = false;
-        egui::Window::new("Remove this workspace entry?").collapsible(false).resizable(false)
-            .anchor(Align2::CENTER_CENTER,[0.0,0.0]).default_width(420.0).show(ctx,|ui| {
+        let shown=egui::Modal::new(egui::Id::unique("remove-entry-confirmation")).show(ctx,|ui| {
+                ui.set_width(420.0_f32.min(ctx.content_rect().width()-64.0));
+                ui.label(RichText::new("Remove this workspace entry?").font(heading(21.0)));
                 ui.label(RichText::new(&document.name).font(heading(17.0)));
                 ui.label("Its workspace entry, retained readings, saved reviews and follow-up history will be removed. Other linked files keep their own history. The original file stays where it is.");
                 ui.add_space(14.0);
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     remove=widgets::primary(ui,"Remove entry",true).clicked();
-                    cancel=widgets::secondary(ui,"Keep document").clicked();
+                    let keep=widgets::secondary(ui,"Keep document");
+                    if self.remove_focus!=Some(id){keep.request_focus();self.remove_focus=Some(id);}
+                    cancel=keep.clicked();
                 });
             });
+        cancel |= shown.should_close();
         if remove && let Some(workspace) = &self.workspace {
             match workspace
                 .remove_document(id)
@@ -1163,8 +1272,9 @@ impl ComplyApp {
                 }
             }
         }
-        if remove || cancel || ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+        if remove || cancel {
             self.pending_remove = None;
+            self.remove_focus = None;
         }
     }
 }
@@ -1184,9 +1294,7 @@ impl eframe::App for ComplyApp {
             self.notice=Some(Notice {text:"Folder intake added or updated local document entries. Open them from Documents and confirm reading accuracy and scope before review.".into(),error:false});
         }
         self.review_tools.tick(ctx, self.workspace.as_ref());
-        if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::O)) {
-            self.choose_documents(ctx);
-        }
+        self.shortcuts(ctx);
         let files = ctx.input(|i| {
             i.raw
                 .dropped_files
@@ -1198,23 +1306,22 @@ impl eframe::App for ComplyApp {
     }
 
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        self.render(ui);
+    }
+}
+
+impl ComplyApp {
+    fn render(&mut self, ui: &mut Ui) {
         let rect = ui.available_rect_before_wrap();
         ui.painter().rect_filled(rect, 0, CREAM);
-        let sidebar_width = if rect.width() < 1100.0 { 208.0 } else { 232.0 };
-        let sidebar_rect =
-            Rect::from_min_max(rect.min, pos2(rect.left() + sidebar_width, rect.bottom()));
-        let header_rect = Rect::from_min_max(
-            pos2(sidebar_rect.right(), rect.top()),
-            pos2(rect.right(), rect.top() + 66.0),
-        );
+        let layout = crate::layout::DesktopLayout::new(rect);
+        let sidebar_rect = layout.sidebar;
+        let header_rect = layout.header;
         self.sidebar(ui, sidebar_rect);
         self.topbar(ui, header_rect);
-        let content_rect = Rect::from_min_max(
-            pos2(sidebar_rect.right() + 30.0, header_rect.bottom() + 28.0),
-            pos2(rect.right() - 30.0, rect.bottom() - 20.0),
-        );
+        let content_rect = layout.content;
         ui.scope_builder(UiBuilder::new().max_rect(content_rect).layout(Layout::top_down(Align::Min)),|ui| {
-            if self.page==Page::Review && self.selected.is_some() && self.startup_error.is_none() {
+            if layout.split_review && self.page==Page::Review && self.selected.is_some() && self.startup_error.is_none() {
                 self.show_notice(ui);self.review(ui);return;
             }
             ScrollArea::vertical().id_salt(("main",self.page.key())).auto_shrink([false,false]).show(ui,|ui| {
@@ -1278,7 +1385,7 @@ impl eframe::App for ComplyApp {
             self.import_source = Some(source);
         }
         if let Some(source) = self.import_source.clone() {
-            egui::Window::new("Import existing workspace").collapsible(false).resizable(false).show(ui.ctx(),|ui| {
+            crate::layout::window(ui.ctx(),egui::Window::new("Import existing workspace").collapsible(false).resizable(false)).show(ui.ctx(),|ui| {
                 ui.label(format!("Copy from: {}",source.display()));
                 let target=self.paths.as_ref().map(|p|p.root.clone()).map(Ok).unwrap_or_else(complyph_core::default_workspace_target);
                 if let Ok(target)=&target {ui.label(format!("Activate at: {}",target.display()));}
@@ -1318,6 +1425,51 @@ impl eframe::App for ComplyApp {
             self.accept_files(files, ui.ctx());
         }
     }
+
+    fn shortcuts(&mut self, ctx: &egui::Context) {
+        if self.pending_remove.is_some()
+            || self.import_source.is_some()
+            || self.file_dialog.state() == &egui_file_dialog::DialogState::Open
+            || self.workspace_picker.state() == &egui_file_dialog::DialogState::Open
+            || ctx.memory(|m| m.top_modal_layer().is_some())
+        {
+            return;
+        }
+        let shortcut = |key| {
+            ctx.input_mut(|i| {
+                i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, key))
+            })
+        };
+        for (page, key) in Page::ALL.into_iter().zip([
+            egui::Key::Num1,
+            egui::Key::Num2,
+            egui::Key::Num3,
+            egui::Key::Num4,
+            egui::Key::Num5,
+        ]) {
+            if shortcut(key) {
+                self.navigate(page);
+                ctx.memory_mut(|m| {
+                    m.request_focus(egui::Id::unique(("workspace-page", page.label())))
+                });
+                return;
+            }
+        }
+        if shortcut(egui::Key::O) {
+            self.choose_documents(ctx);
+        }
+        if shortcut(egui::Key::F) {
+            match self.page {
+                Page::Documents => self.focus_search = true,
+                Page::Library => self.library_view.focus_find(),
+                Page::Review if self.selected.is_some() => {
+                    self.review_pane = ReviewPane::Document;
+                    self.reader_view.focus_find();
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
 fn import_files(paths: WorkspacePaths, files: Vec<PathBuf>, sender: &Sender<Message>) {
@@ -1351,8 +1503,20 @@ fn document_row(
     reviews: Option<u64>,
 ) -> egui::Response {
     let width = ui.available_width();
-    let height = if show_path { 91.0 } else { 72.0 };
-    let (rect, response) = ui.allocate_exact_size(vec2(width, height), Sense::click());
+    let narrow = width < 620.0;
+    let height = if show_path {
+        if narrow { 113.0 } else { 91.0 }
+    } else if narrow {
+        94.0
+    } else {
+        72.0
+    };
+    let (rect, _) = ui.allocate_exact_size(vec2(width, height), Sense::hover());
+    let response = ui.interact(
+        rect,
+        egui::Id::unique(("document-row", document.id)),
+        Sense::click(),
+    );
     if selected || response.hovered() {
         ui.painter().rect_filled(rect, 8, CREAM);
     }
@@ -1365,7 +1529,10 @@ fn document_row(
     widgets::paint_icon(ui.painter(), icon_rect.shrink(8.0), Icon::Document, NAVY);
     let name_rect = Rect::from_min_max(
         rect.min + vec2(65.0, 11.0),
-        pos2(rect.right() - 156.0, rect.top() + 36.0),
+        pos2(
+            rect.right() - if narrow { 40.0 } else { 156.0 },
+            rect.top() + 36.0,
+        ),
     );
     {
         let mut name_ui = ui.new_child(
@@ -1393,7 +1560,7 @@ fn document_row(
     );
     if show_path {
         let path_rect = Rect::from_min_max(
-            rect.min + vec2(65.0, 61.0),
+            rect.min + vec2(65.0, if narrow { 85.0 } else { 61.0 }),
             pos2(rect.right() - 20.0, rect.bottom()),
         );
         {
@@ -1414,8 +1581,16 @@ fn document_row(
         }
     }
     ui.painter().text(
-        pos2(rect.right() - 55.0, rect.top() + 35.0),
-        Align2::RIGHT_CENTER,
+        if narrow {
+            rect.min + vec2(65.0, 65.0)
+        } else {
+            pos2(rect.right() - 55.0, rect.top() + 35.0)
+        },
+        if narrow {
+            Align2::LEFT_CENTER
+        } else {
+            Align2::RIGHT_CENTER
+        },
         match reviews {
             Some(0) => "No saved reviews".to_owned(),
             Some(1) => "1 saved review".to_owned(),
@@ -1438,6 +1613,9 @@ fn document_row(
         Icon::Arrow,
         MUTED,
     );
+    if response.gained_focus() {
+        response.scroll_to_me(Some(egui::Align::Center));
+    }
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), &document.name)
     });

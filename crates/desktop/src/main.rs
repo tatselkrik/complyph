@@ -5,6 +5,7 @@ mod check_view;
 mod document_cli;
 mod document_versions;
 mod folder_watch;
+mod layout;
 mod library_cli;
 mod library_maintenance;
 mod library_rules;
@@ -30,15 +31,10 @@ fn main() -> eframe::Result {
         .map(Ok)
         .unwrap_or_else(WorkspacePaths::default_location);
     let options = eframe::NativeOptions {
-        viewport: eframe::egui::ViewportBuilder::default()
-            .with_title("ComplyPH")
-            .with_app_id("ph.complyph.desktop")
-            .with_icon(
-                eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/icon.png"))
-                    .expect("the bundled application icon is valid"),
-            )
-            .with_inner_size([1280.0, 860.0])
-            .with_min_inner_size([940.0, 680.0]),
+        viewport: layout::native_viewport().with_icon(
+            eframe::icon_data::from_png_bytes(include_bytes!("../../../assets/icon.png"))
+                .expect("the bundled application icon is valid"),
+        ),
         renderer: eframe::Renderer::Glow,
         ..Default::default()
     };
@@ -55,6 +51,13 @@ fn main() -> eframe::Result {
 fn parse_arguments() -> Option<PathBuf> {
     let mut arguments = std::env::args_os().skip(1);
     match arguments.next() {
+        Some(argument) if argument == "--desktop-quality-check" => {
+            if let Err(error) = app::quality::run_cli(arguments.collect()) {
+                eprintln!("{error}");
+                std::process::exit(2);
+            }
+            std::process::exit(0);
+        }
         Some(argument) if argument == "--document-action" => {
             if let Err(error) = document_cli::run(arguments.collect()) {
                 eprintln!("{error}");
@@ -167,7 +170,7 @@ fn parse_arguments() -> Option<PathBuf> {
         }
         Some(argument) if argument == "--help" || argument == "-h" => {
             println!(
-                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --library-action --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --document-action --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
+                "ComplyPH desktop\n\nOpen normally to read documents locally. Developer options:\n  --desktop-quality-check --output NEW-JSON --data-dir UNUSED-FIXTURE-DIRECTORY\n  --data-dir PATH\n  --read-file PATH --output NEW-JSON-FILE [--data-dir PATH]\n  --check-file PATH --context CONTEXT-JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --import-legal-source PATH --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --library-action --metadata JSON --output NEW-JSON-FILE --library-dir PATH\n  --document-action --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --review-state ID --output NEW-JSON-FILE [--data-dir PATH]\n  --review-action ID --metadata JSON --output NEW-JSON-FILE [--data-dir PATH]\n  --export-review-pdf ID --output NEW-PDF-FILE [--data-dir PATH]"
             );
             std::process::exit(0);
         }

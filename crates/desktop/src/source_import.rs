@@ -5,7 +5,7 @@ use complyph_library::{
     ImportOutcome, LibraryCatalog, ManualSourceFile, ManualSourceInput, ManualVerification,
     starter_manifest,
 };
-use eframe::egui::{self, RichText, ScrollArea, TextEdit};
+use eframe::egui::{self, RichText, ScrollArea};
 use egui_file_dialog::{DialogState, FileDialog, Filter};
 use std::{
     path::{Path, PathBuf},
@@ -193,7 +193,7 @@ impl SourceImportView {
             ui.set_width(670.0_f32.min(ctx.content_rect().width() - 64.0));
             ui.label(RichText::new("Add legal source").font(heading(24.0)));
             widgets::muted(ui, "Save a public legal reference to your local library. The original stays unchanged.");
-            ScrollArea::vertical().id_salt("source_import_form").max_height((ctx.content_rect().height() - 220.0).max(280.0)).show(ui, |ui| {
+            ScrollArea::vertical().id_salt("source_import_form").max_height((ctx.content_rect().height() - 300.0).max(100.0)).show(ui, |ui| {
                 ui.add_enabled_ui(!busy, |ui| {
                     ui.horizontal_wrapped(|ui| {
                         if widgets::secondary(ui, "Choose PDF / DOCX…").clicked() { self.picker.pick_file(); }
@@ -208,18 +208,16 @@ impl SourceImportView {
                             widgets::muted(ui, &file.extraction_note);
                         });
                     }
-                    egui::Grid::new("source_metadata").num_columns(2).spacing([16.0, 8.0]).show(ui, |ui| {
                         for (label, text, hint) in [
                             ("Title *", &mut self.input.title, "Publication title"),
                             ("Instrument / number *", &mut self.input.instrument, "e.g. Department Order 252-25"),
                             ("Issuing agency *", &mut self.input.issuer, "e.g. Department of Labor and Employment"),
                             ("Official URL *", &mut self.input.official_url, "https://…"),
                         ] {
-                            ui.label(label); ui.add(TextEdit::singleline(text).desired_width(440.0).hint_text(hint)); ui.end_row();
+                            crate::layout::field(ui,label,text,hint);
                         }
-                        ui.label("Issue date"); ui.add(TextEdit::singleline(&mut self.issued).hint_text("YYYY-MM-DD · blank if unknown").desired_width(440.0)); ui.end_row();
-                        ui.label("Effective from"); ui.add(TextEdit::singleline(&mut self.effective).hint_text("YYYY-MM-DD · blank if unknown").desired_width(440.0)); ui.end_row();
-                    });
+                        crate::layout::field(ui,"Issue date",&mut self.issued,"YYYY-MM-DD · blank if unknown");
+                        crate::layout::field(ui,"Effective from",&mut self.effective,"YYYY-MM-DD · blank if unknown");
                     widgets::muted(ui, "The official URL is recorded as a citation. ComplyPH does not open or verify it online.");
                     ui.label(RichText::new("Compliance domains *").font(heading(15.0)));
                     if let Ok(manifest) = starter_manifest() {
@@ -234,8 +232,8 @@ impl SourceImportView {
                         });
                     }
                     ui.collapsing("Effectivity and applicability notes", |ui| {
-                        ui.add(TextEdit::multiline(&mut self.input.effectivity_note).hint_text("Effectivity conditions or publication details").desired_width(f32::INFINITY).desired_rows(2));
-                        ui.add(TextEdit::multiline(&mut self.input.applicability_note).hint_text("Scope, exclusions or amendments to reconcile").desired_width(f32::INFINITY).desired_rows(2));
+                        crate::layout::multiline(ui,"Effectivity conditions or publication details",&mut self.input.effectivity_note,2,usize::MAX);
+                        crate::layout::multiline(ui,"Scope, exclusions or amendments to reconcile",&mut self.input.applicability_note,2,usize::MAX);
                     });
                     ui.label(RichText::new("Verification status").font(heading(15.0)));
                     ui.radio_value(&mut self.input.verification, ManualVerification::AwaitingVerification, "Awaiting verification");
@@ -244,7 +242,7 @@ impl SourceImportView {
                         ui.checkbox(&mut self.identity_confirmed, "I compared this copy with the official publication.");
                         widgets::muted(ui, "This records your review; it does not become a verified agency download.");
                     }
-                    ui.add(TextEdit::multiline(&mut self.input.verification_note).hint_text("Verification notes · required for identity checked").desired_width(f32::INFINITY).desired_rows(2));
+                    crate::layout::multiline(ui,"Verification notes · required for identity checked",&mut self.input.verification_note,2,usize::MAX);
                 });
             });
             if let Some(error) = &self.error { ui.colored_label(RED, error); }

@@ -15,6 +15,7 @@ struct Reader {
 }
 
 pub struct LibraryView {
+    focus_search: bool,
     sources: Vec<SourceRecord>,
     query: String,
     domain: String,
@@ -31,6 +32,7 @@ pub struct LibraryView {
 impl Default for LibraryView {
     fn default() -> Self {
         Self {
+            focus_search: false,
             sources: Vec::new(),
             query: String::new(),
             domain: String::new(),
@@ -54,6 +56,9 @@ impl Default for LibraryView {
 }
 
 impl LibraryView {
+    pub fn focus_find(&mut self) {
+        self.focus_search = true;
+    }
     pub fn load(&mut self, catalog: &LibraryCatalog) -> Result<(), LibraryError> {
         self.sources = catalog.sources()?;
         self.updates.load(catalog)?;
@@ -159,12 +164,18 @@ impl LibraryView {
             }
         });
         ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            ui.add(
-                TextEdit::singleline(&mut self.query)
-                    .hint_text("Search titles, instruments, or issuers…")
-                    .desired_width(400.0),
-            );
+        ui.horizontal_wrapped(|ui| {
+            let response = ui
+                .add(
+                    TextEdit::singleline(&mut self.query)
+                        .hint_text("Search titles, instruments, or issuers…")
+                        .desired_width(ui.available_width().min(400.0)),
+                )
+                .accessible_name("Search legal sources");
+            if std::mem::take(&mut self.focus_search) {
+                response.request_focus();
+                response.scroll_to_me(Some(egui::Align::Center));
+            }
             if !self.query.is_empty() && widgets::secondary(ui, "Clear").clicked() {
                 self.query.clear();
             }
@@ -386,12 +397,18 @@ impl LibraryView {
             self.maintenance.open(catalog, Some(reader.id), false);
         }
         ui.add_space(12.0);
-        ui.horizontal(|ui| {
-            ui.add(
-                TextEdit::singleline(&mut reader.find)
-                    .hint_text("Find in this source…")
-                    .desired_width(330.0),
-            );
+        ui.horizontal_wrapped(|ui| {
+            let response = ui
+                .add(
+                    TextEdit::singleline(&mut reader.find)
+                        .hint_text("Find in this source…")
+                        .desired_width(ui.available_width().min(330.0)),
+                )
+                .accessible_name("Find in saved legal source");
+            if std::mem::take(&mut self.focus_search) {
+                response.request_focus();
+                response.scroll_to_me(Some(egui::Align::Center));
+            }
             if widgets::secondary(ui, "Find next").clicked() && !reader.find.trim().is_empty() {
                 let query = reader.find.trim().to_lowercase();
                 let next = (1..=reader.pages.len())
